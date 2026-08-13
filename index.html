@@ -1,0 +1,1938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>E&C ROUTE PLANNER</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="gold">
+    <link href="//fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Combined and simplified CSS from both files */
+        :root {
+            --accent: #facc15; --bg: #111827; --card: #1f2937; --text: #f9fafb; --card-text: #e5e7eb;
+            --active-green: #22c55e; --archive-orange: #f97316; --note-blue: #3b82f6; --pro-blue: #2563eb;
+            --header-bg: #030712; --input-bg: #374151; --border: #4b5563; --modal-bg: #111827;
+            --shadow-soft: 0 10px 15px -3px rgba(0,0,0,0.3), 0 4px 6px -4px rgba(0,0,0,0.3);
+        }
+                       body.light-mode {
+            --bg: #f3f4f6; --card: #ffffff; --text: #111827; --card-text: #374151; --header-bg: #ffffff;
+            --input-bg: #f9fafb; --border: #e5e7eb; --modal-bg: #ffffff; --accent: #2563eb; --active-green: #16a34a;
+        }
+        body.light-mode * { color: #000 !important; }
+        body.light-mode button { background: #fff !important; color: #000 !important; border: 1px solid #ccc !important; }
+        body.light-mode .primary { background: #fff !important; border: 2px solid #00b32d !important; }
+        body.light-mode .map-btn svg {
+            stroke: #000 !important;
+        }
+        body.light-mode #map-btn {
+            background: #fff !important;
+            border: 1px solid #333 !important;
+            font-size: 12px !important;
+            color: #000 !important;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        body.light-mode #map-btn::after {
+            content: "MAP";
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
+        header { padding: 16px 24px; background: var(--header-bg); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-soft); }
+        .header-logo { height: 24px; width: auto; margin-right: 12px; vertical-align: middle; filter: drop-shadow(0 0 3px var(--accent)); cursor: pointer; }
+        .shiny-text { background: linear-gradient(to right, var(--accent) 20%, #ccc 50%, var(--accent) 80%); background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text; animation: text-shine 3s linear infinite; }
+        @keyframes text-shine { to { background-position: 200% center; } }
+
+        #login-overlay { position: fixed; inset: 0; background: #050505; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .login-box { width: 100%; max-width: 350px; background: #111; padding: 40px; border-radius: 12px; border: 1px solid #222; text-align: center; }
+        .login-input { width: 100%; padding: 14px; margin: 12px 0; background: #0a0a0a; border: 1px solid #333; color: #fff; border-radius: 6px; font-size: 16px; outline: none; }
+        .login-submit { width: 100%; padding: 14px; margin-top: 20px; background: var(--accent); border: none; color: #000; font-weight: 700; border-radius: 6px; cursor: pointer; text-transform: uppercase; }
+
+        .flex-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        .input-wrap { position: relative; flex: 1; }
+        input, select, textarea { width: 100%; padding: 12px 16px; background: var(--input-bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+        input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(250,204,21,0.2); }
+        .suggestions-box { position: absolute; top: 100%; left: 0; right: 0; background: var(--card); border: 1px solid var(--border); z-index: 5000; max-height: 200px; overflow-y: auto; display: none; }
+        .suggestion-item { padding: 14px; border-bottom: 1px solid var(--border); cursor: pointer; color: var(--text); }
+        .suggestion-item:hover { background: var(--accent); color: #000; }
+        .suggestion-reset { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 9px; font-weight: 700; cursor: pointer; color: #666; text-transform: uppercase; z-index: 10; }
+
+        #map-modal { display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; background: #000; }
+        #map { width: 100%; height: 100%; }
+        .close-map { position: fixed; top: 20px; right: 20px; z-index: 3005; background: #b71c1c; color: #fff; border: none; width: 140px; height: 40px; font-weight: 700; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        #zoom-out-btn { top: 70px; background: #448800; }
+        #reset-driver-view-btn { position: absolute; bottom: 20px; left: 20px; z-index: 3005; background: #222; color: #fff; border: 1px solid #fff; border-radius: 6px; padding: 8px 12px; font-weight: 700; cursor: pointer; display: none; }
+
+        .primary { padding: 14px 16px; background: var(--btn-bg, #374151); color: var(--text); font-weight: 700; border: 1px solid var(--border); border-bottom: 3px solid var(--accent); cursor: pointer; border-radius: 8px; text-transform: uppercase; }
+        .btn-add { background: var(--active-green); color: #000; border: none; padding: 14px 24px; font-weight: 700; border-radius: 8px; cursor: pointer; text-transform: uppercase; }
+        .btn-clear { background: #b71c1c; color: #fff; border: none; padding: 8px 16px; font-weight: 700; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        .btn-save { background: #2563eb; color: #fff; border: none; padding: 8px 16px; font-weight: 700; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        .btn-delete-all-saved { background: #f97316; color: #fff; border: none; padding: 8px 16px; font-weight: 700; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+
+        #job-list-container { background: var(--card); border-radius: 12px; padding: 15px; margin: 20px; border: 1px solid var(--border); box-shadow: var(--shadow-soft); }
+        #job-list { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
+        .job-item { display: flex; align-items: center; gap: 12px; background: var(--input-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); cursor: grab; user-select: none; -webkit-user-select: none; position: relative; }
+        .job-item.sortable-ghost { opacity: 0.4; background: var(--accent); }
+        .job-number { background: #fff; color: #000; font-weight: 900; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+        .job-info { flex: 1; overflow: hidden; }
+        .job-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .job-address { font-size: 12px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .star-icon { width: 24px; height: 24px; cursor: pointer; fill: none; stroke: var(--accent); stroke-width: 2; z-index: 2; }
+        .star-icon.active { fill: var(--accent); }
+        .delete-icon { width: 20px; height: 20px; cursor: pointer; fill: #b71c1c; z-index: 2; }
+
+        #install-btn { display: none; background: var(--pro-blue); color: #fff; border: none; padding: 14px 16px; font-size: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; text-transform: uppercase; position: fixed; right: 15px; bottom: 15px; z-index: 1002; }
+
+        /* Map button styles */
+        .map-btn {
+            background: repeating-linear-gradient(45deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 4px, transparent 4px, transparent 8px), #2c3e50;
+            color: white;
+            border: 1px solid #fff;
+            padding: 6px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0;
+            line-height: 1;
+            min-width: 36px;
+            min-height: 36px;
+        }
+        .map-btn-glow {
+            box-shadow: 0 0 15px var(--accent);
+        }
+
+        /* Driver map label style (from command.html) */
+        .driver-map-label { color: #00ff00 !important; font-weight: 700; text-shadow: 0 0 2px #000; }
+
+        /* ETA glow */
+        .eta-glow {
+            border-color: #00bfff !important;
+            box-shadow: 0 0 15px #00bfff;
+        }
+
+        /* ---------- NEW STYLES FOR BULLSEYE, DONE OVERLAY, CHECKMARK ---------- */
+        /* Bullseye button */
+        .bullseye-btn {
+            background: #fff;
+            border: 2px solid #333;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, border-color 0.2s;
+            outline: none;
+            margin: 0 0 8px 0; /* spacing above default controls */
+        }
+        .bullseye-btn.active {
+            border-color: #ff6600;
+            background: #ffcc00;
+        }
+
+        /* Done overlay for list items (removed but keep old styles for possible references) */
+        .done-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            z-index: 10;
+            cursor: default;
+        }
+        .done-overlay .done-btn {
+            background: #fff;
+            border: 3px solid #00aa00;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            color: #000;
+        }
+        .done-overlay .checkmark-svg {
+            width: 60px;
+            height: 60px;
+        }
+        .done-overlay .checkmark-path {
+            stroke: #00aa00;
+            stroke-width: 4;
+            fill: none;
+            stroke-dasharray: 100;
+            stroke-dashoffset: 100;
+            animation: draw-check 1.5s forwards;
+        }
+        @keyframes draw-check {
+            to { stroke-dashoffset: 0; }
+        }
+        /* New styles for Details button inside overlay (no longer used) */
+        .done-overlay .details-btn {
+            background: #fff;
+            border: 3px solid #3b82f6;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            color: #000;
+        }
+        .done-overlay .details-btn.open {
+            background: #3b82f6;
+            color: #fff;
+        }
+        .done-overlay {
+            gap: 10px;
+            justify-content: center;
+        }
+
+        /* Details dropdown (old) - keep for reference but not used */
+        .details-dropdown {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 4px 0 8px 0;
+            display: block;
+        }
+        .details-dropdown textarea {
+            width: 100%;
+            padding: 8px;
+            background: var(--input-bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            resize: vertical;
+            min-height: 60px;
+            font-family: inherit;
+        }
+        .details-dropdown .details-close-btn {
+            margin-top: 8px;
+            background: #3b82f6;
+            color: #fff;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Saved routes pills container */
+        #saved-routes-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+              .saved-route-pill {
+            background: gold;
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            border: 1px solid #b8860b;
+            transition: background 0.2s;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        .saved-route-pill:hover {
+            background: #ffd700;
+        }
+        .saved-route-pill.loading {
+            opacity: 0.6;
+        }
+
+        /* Share button bottom right - REMOVED */
+
+        /* InfoWindow button style - modified to transparent background */
+        .done-infowindow-btn {
+            border: 3px solid #00aa00;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            background: transparent;
+            color: #000;
+            display: inline-block;
+        }
+        .done-infowindow-btn:active {
+            background: rgba(0,0,0,0.1);
+        }
+        .gm-style .gm-style-iw-c {
+            padding: 10px !important;
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+        .gm-style .gm-style-iw-d {
+            overflow: hidden !important;
+            background: transparent !important;
+        }
+        /* Hide the default close button (x) */
+        .gm-style-iw button[title="Close"] {
+            display: none !important;
+        }
+
+        /* ETA button spin */
+        .eta-spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Date modal - REMOVED */
+
+        /* ---- Address Picker Modal styles ---- */
+        #address-picker-modal {
+            display: none;
+            position: fixed;
+            z-index: 4000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: #111;
+        }
+        #address-picker-modal .picker-header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 10;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 16px;
+            border-radius: 8px;
+            backdrop-filter: blur(4px);
+        }
+        #address-picker-modal .picker-header input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 6px;
+            border: 1px solid #555;
+            background: #222;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+        }
+        #address-picker-modal .picker-header input:focus {
+            border-color: var(--accent);
+        }
+        #address-picker-modal .picker-close {
+            background: #b71c1c;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        #address-picker-modal .picker-map {
+            width: 100%;
+            height: 100%;
+        }
+        #address-picker-modal .picker-info {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            color: #fff;
+            padding: 16px 24px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 90%;
+            backdrop-filter: blur(4px);
+            border: 1px solid #444;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            z-index: 10;
+            min-width: 200px;
+        }
+        #address-picker-modal .picker-info .addr-detail {
+            font-size: 14px;
+            word-break: break-word;
+        }
+        #address-picker-modal .picker-info .plus-code {
+            font-size: 12px;
+            color: #aaa;
+            background: #222;
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid #555;
+        }
+        #address-picker-modal .picker-info .picker-confirm {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        /* pin button inside address input */
+        .address-pin-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            font-size: 20px;
+            line-height: 1;
+        }
+        .address-pin-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--accent);
+            stroke: #333;
+            stroke-width: 1;
+        }
+        .address-pin-btn:hover {
+            opacity: 0.8;
+        }
+
+        /* Details modal - REMOVED */
+
+        @media (max-width: 768px) {
+            header { padding: 8px 12px; }
+            .header-logo { height: 20px; }
+            #address-picker-modal .picker-header { flex-wrap: wrap; }
+            #address-picker-modal .picker-info { bottom: 20px; min-width: auto; width: 90%; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Overlay (exact copy from command.html) -->
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2 style="color:var(--accent);">ROUTE PLANNER LOGIN</h2>
+            <input type="email" id="login-user" class="login-input" placeholder="Email" autofocus>
+            <input type="password" id="login-pin" class="login-input" placeholder="Password">
+            <button class="login-submit" onclick="attemptLogin()">Authorize</button>
+        </div>
+    </div>
+
+    <!-- Header (similar to command.html) -->
+    <header>
+    <div style="display: flex; align-items: center; gap: 10px; flex-shrink:0;">
+        <img src="icon2.png" class="header-logo" alt="Logo" onclick="toggleTheme()">
+        <span class="shiny-text" style="font-size:16px; font-weight:700;">E&C ROUTE PLANNER</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
+        <button id="route-btn" class="map-btn" onclick="openExternalRoute()" aria-label="Route"><svg viewBox="0 0 24 24" width="20" height="20" stroke="white" fill="none" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button>
+        <!-- ETA button (clock) added here -->
+        <button id="eta-btn" class="map-btn" onclick="calculateETAOnDemand()" aria-label="Calculate ETA" title="Calculate ETA and distance">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="white" fill="none" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+                <line x1="12" y1="2" x2="12" y2="4"/>
+                <line x1="12" y1="20" x2="12" y2="22"/>
+                <line x1="2" y1="12" x2="4" y2="12"/>
+                <line x1="20" y1="12" x2="22" y2="12"/>
+            </svg>
+        </button>
+        <button id="map-btn" class="map-btn" onclick="openMap()" aria-label="Map" style="background: url('//mt.google.com/vt/lyrs=m&x=235&y=348&z=10') center/cover; border: 1px solid #fff;"></button>
+    </div>
+</header>
+
+    <!-- Input fields with autocomplete -->
+    <div style="padding: 20px;">
+        <div style="background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); box-shadow: var(--shadow-soft);">
+            <div class="flex-row">
+                <div class="rel" style="position: relative; width: 100%;">
+                    <input type="text" id="f-name" class="glow-field" placeholder="Contact/Business Name" autocomplete="off" oninput="handleNameInput(this.value)" onblur="setTimeout(()=>document.getElementById('suggestions').style.display='none', 200)" style="padding-right:50px;">
+                    <div id="suggestions" class="suggestions-box"></div>
+                    <div onclick="resetFormFields()" class="suggestion-reset" style="right:36px;">RESET</div>
+                </div>
+            </div>
+            <div class="flex-row">
+                <div class="input-wrap" style="flex: 0.7; position: relative;">
+                    <input type="text" id="f-address" placeholder="Address">
+                    <button class="address-pin-btn" onclick="openAddressPicker()" aria-label="Pick address from map">
+                        <svg viewBox="0 0 24 24" width="22" height="22">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="input-wrap" style="flex: 0.3;">
+                    <input type="text" id="f-city" placeholder="City" oninput="handleCityInput(this.value)">
+                    <div id="city-suggestions" class="suggestions-box"></div>
+                </div>
+            </div>
+            <button class="btn-add" onclick="addJob()" style="width:100%; margin-top:10px;">ADD TO ROUTE</button>
+            <div style="display: flex; justify-content: space-between; margin-top: 10px; gap:8px;">
+                <div style="display:flex; gap:8px;">
+                    <!-- Removed Save Route and Delete All Routes buttons -->
+                </div>
+                <!-- Clear All button removed from here, moved to bottom of list -->
+            </div>
+        </div>
+
+        <!-- Saved Routes Pills -->
+        <div id="saved-routes-container"></div>
+
+        <!-- ETA Display -->
+        <div id="eta-display" style="margin-top:15px; background:var(--card); border-radius:12px; padding:12px; border:1px solid var(--border); display:none; color:var(--text);">
+            <span>Total ETA: <span id="eta-time">0</span> <span id="eta-adjusted" style="color:#ff8c00; display:none;">(<span id="eta-adjusted-time">0</span>)</span> <span id="eta-distance-display" style="display:inline;">| <span id="eta-distance">0</span> km</span></span>
+        </div>
+
+        <!-- Job List Container (like mini-map-list from driver.html) -->
+        <div id="job-list-container">
+            <h3 style="margin-top:0; color:var(--accent); display: flex; align-items: center; gap: 8px;">
+                ROUTE STOPS
+                <span id="stop-counter" style="display:none; border:2px solid white; color:#ff8c00; font-weight:bold; padding:0 8px; border-radius:12px; font-size:14px;"></span>
+            </h3>
+            <div id="job-list"></div>
+            <div id="empty-state" style="text-align:center; color:#666; padding:20px;">No jobs added. Use the form above to add stops.</div>
+            <!-- Clear All button placed at bottom right -->
+            <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                <button class="btn-clear" onclick="clearAllJobs()">CLEAR ALL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Modal (exact from command.html) -->
+    <div id="map-modal">
+        <button id="close-map-btn" class="close-map" onclick="closeMap()">CLOSE MAP</button>
+        <button id="zoom-out-btn" class="close-map" onclick="zoomToAll()" style="top:70px; background:#448800;">ZOOM OUT</button>
+        <button id="reset-driver-view-btn" onclick="resetMapView()" style="display:none;">← BACK</button>
+        <div id="map"></div>
+    </div>
+
+    <!-- Address Picker Modal -->
+    <div id="address-picker-modal">
+        <div class="picker-header">
+            <input type="text" id="picker-search" placeholder="Search for a town, city, or area..." autocomplete="off" style="flex:1;">
+            <button id="picker-go-btn" style="background:#22c55e; color:#000; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="searchAddressPicker()">Go</button>
+            <button class="picker-close" onclick="closeAddressPicker()">✕</button>
+        </div>
+        <div id="picker-map" class="picker-map"></div>
+        <div class="picker-info" id="picker-info">
+            <div class="addr-detail" id="picker-address-display">Select a location on the map</div>
+            <div class="plus-code" id="picker-pluscode-display">Plus Code: —</div>
+            <button class="picker-confirm" id="picker-confirm-btn" onclick="confirmAddress()">Use this address</button>
+        </div>
+    </div>
+
+    <!-- Install App Button -->
+    <button id="install-btn">Install App</button>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA6umETP8wBUEV41ugAtiNiChUeLmmwmZI&libraries=geometry,drawing,places&callback=initMap" async defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+    <script>
+        // Firebase config (same as original)
+        firebase.initializeApp({
+            apiKey: "AIzaSyAKmgoXA4m3cRTmxJq4aUyva5SVvFbTNqg",
+            authDomain: "eandccourier-36fcc.firebaseapp.com",
+            databaseURL: "https://eandccourier-36fcc-default-rtdb.firebaseio.com",
+            projectId: "eandccourier-36fcc",
+            messagingSenderId: "1067680083511",
+            appId: "1:1067680083511:android:22d1eb3757302492bd19b2"
+        });
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        // Global variables
+        let currentUser = null;
+        let jobs = {};              // All jobs under developer/route_planner/jobs
+        let manualOrder = [];        // Array of job IDs in current order (from Firebase)
+        let optimizedOrder = [];     // Array of job IDs after route optimization
+        let addressData = {};        // From address_lookup
+        let map, mainMap, mapMarkers = {}, activePolyline = null, mapBoundsInitialized = false;
+        let autocompleteAddress;     // Google Places Autocomplete for address field
+        let etaTotalMinutes = 0;
+        let etaTotalKm = 0;
+
+        // New globals for tracking and overlays
+        let isTracking = false;
+        let userMarker = null;
+        let userCircle = null;
+        let locationWatchId = null;
+        let activeInfoWindow = null;
+
+        // Global for ETA calculation status
+        let etaCalculating = false;
+
+        // Global for details modal - REMOVED
+
+        // Global for date selection - REMOVED
+
+        // Theme handling (copied from command.html)
+        if (localStorage.getItem('ec_theme') === 'light') document.body.classList.add('light-mode');
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            localStorage.setItem('ec_theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+            if (map) map.setOptions({ styles: document.body.classList.contains('light-mode') ? [] : mapStyles });
+        }
+
+        // Map styles (from command.html)
+        const mapStyles = [{"featureType":"all","elementType":"all","stylers":[{"invert_lightness":!0},{"saturation":10},{"lightness":30},{"gamma":0.5},{"hue":"#435158"}]}];
+
+        // ---------- LOGIN (copied from command.html) ----------
+        function attemptLogin() {
+            const email = document.getElementById('login-user').value.trim();
+            const pass = document.getElementById('login-pin').value.trim();
+            if (!email || !pass) return;
+            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+                .then(() => auth.signInWithEmailAndPassword(email, pass))
+                .catch(err => alert("Login Failed: " + err.message));
+        }
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                const email = user.email;
+                const username = email.split('@')[0].toLowerCase();
+                db.ref(`roles/${username}/command`).once('value').then(snap => {
+                    if (snap.val() === true) {
+                        currentUser = username;
+                        document.getElementById('login-overlay').style.display = 'none';
+                        initApp();
+                    } else {
+                        alert("ACCESS DENIED");
+                        auth.signOut();
+                        document.getElementById('login-overlay').style.display = 'flex';
+                    }
+                });
+            } else {
+                document.getElementById('login-overlay').style.display = 'flex';
+            }
+        });
+
+        // ---------- DATA LISTENERS (under /developer/route_planner) ----------
+        function initApp() {
+            // Listen for address_lookup (shared data, no change)
+            db.ref('address_lookup').on('value', snap => { addressData = snap.val() || {}; });
+
+            // Listen for jobs under developer/route_planner/jobs
+            db.ref('developer/route_planner/jobs').on('value', snap => {
+                jobs = snap.val() || {};
+                updateRoute();  // Re-optimize and render
+                // Auto-save after changes
+                autoSaveRoute();
+            });
+
+            // Listen for manual order
+            db.ref('developer/route_planner/manual_order').on('value', snap => {
+                manualOrder = snap.val() || [];
+                updateRoute();  // Re-optimize with new order
+                // Auto-save after changes
+                autoSaveRoute();
+            });
+
+            // Listen for saved routes (only for pills)
+            db.ref('developer/route_planner/saved_routes').on('value', snap => {
+                renderSavedPills(snap.val() || {});
+            });
+
+            // Initialize Places Autocomplete on address field
+            initPlaces();
+
+            // Load user's saved route if exists
+            if (currentUser) {
+                loadUserSavedRoute(currentUser);
+            }
+        }
+
+        // ---------- ADDRESS AUTOCOMPLETE (from command.html) ----------
+        function handleNameInput(val) {
+            showSuggestions(val, 'suggestions', name => `<div class="suggestion-item" onclick="selectClient('${name.replace(/'/g, "\\'")}')">${name}</div>`);
+        }
+        function handleCityInput(val) {
+            showSuggestions(val, 'city-suggestions', city => `<div class="suggestion-item" onclick="selectCity('${city.replace(/'/g, "\\'")}')">${city} (${addressData[city]?.city})</div>`);
+        }
+        function showSuggestions(val, elementId, htmlCallback) {
+            const box = document.getElementById(elementId);
+            if (val.length < 1) { box.style.display = 'none'; return; }
+            const matches = Object.keys(addressData).filter(key => key.toLowerCase().startsWith(val.toLowerCase().trim()));
+            if (matches.length === 0) { box.style.display = 'none'; return; }
+            box.innerHTML = matches.map(htmlCallback).join('');
+            box.style.display = 'block';
+        }
+        function selectClient(name) {
+            const data = addressData[name];
+            if (!data) return;
+            document.getElementById('f-name').value = name;
+            document.getElementById('f-address').value = data.address || '';
+            document.getElementById('f-city').value = data.city || '';
+            document.getElementById('suggestions').style.display = 'none';
+        }
+        function selectCity(city) {
+            document.getElementById('f-city').value = city;
+            document.getElementById('city-suggestions').style.display = 'none';
+        }
+        function resetFormFields() {
+            document.getElementById('f-name').value = '';
+            document.getElementById('f-address').value = '';
+            document.getElementById('f-city').value = '';
+        }
+
+        // Google Places Autocomplete (copied from command.html)
+        function initPlaces() {
+            const addressInput = document.getElementById('f-address');
+            if (!addressInput) return;
+            const options = {
+                componentRestrictions: { country: 'ca' },
+                bounds: new google.maps.Circle({ center: new google.maps.LatLng(49.848, -99.950), radius: 50000 }).getBounds(),
+                strictBounds: false
+            };
+            autocompleteAddress = new google.maps.places.Autocomplete(addressInput, options);
+            autocompleteAddress.addListener('place_changed', () => {
+                const place = autocompleteAddress.getPlace();
+                if (!place.address_components) return;
+                // Extract city
+                for (let comp of place.address_components) {
+                    if (comp.types.includes('locality')) {
+                        document.getElementById('f-city').value = comp.long_name;
+                        break;
+                    }
+                }
+            });
+        }
+
+        // ---------- JOB MANAGEMENT ----------
+        function addJob() {
+            const name = document.getElementById('f-name').value.trim();
+            const address = document.getElementById('f-address').value.trim();
+            const city = document.getElementById('f-city').value.trim();
+            if (!name || !address || !city) {
+                alert("Please fill in all fields.");
+                return;
+            }
+            const newJob = {
+                name: name,
+                pickup_location: address,
+                city: city,
+                status: 'pending_pickup',
+                timestamp: Date.now(),
+                created_by: currentUser,
+                manual_priority: false,
+                box_qty: 0,
+                piece_qty: 0,
+                envelope_qty: 0,
+                skid_qty: 0,
+                weight_lbs: 0,
+                other_details: ''
+            };
+            // Push job to Firebase
+            const newJobRef = db.ref('developer/route_planner/jobs').push();
+            newJobRef.set(newJob).then(() => {
+                // After job is saved, update address_lookup
+                const sanitizedKey = name.replace(/[.#$\[\]\/]/g, "").trim();
+                const updateObj = {
+                    address: address,
+                    city: city,
+                    last_edit_by: currentUser
+                };
+                db.ref("address_lookup").child(sanitizedKey).update(updateObj);
+                resetFormFields();
+            }).catch(err => alert("Error adding job: " + err.message));
+        }
+
+        function deleteJob(id) {
+            if (confirm("Remove this job from route?")) {
+                db.ref(`developer/route_planner/jobs/${id}`).remove();
+            }
+        }
+
+        function clearAllJobs() {
+            if (confirm("Clear all jobs?")) {
+                db.ref('developer/route_planner/jobs').remove();
+                document.getElementById('eta-display').style.display = 'none';
+                document.getElementById('eta-display').classList.remove('eta-glow');
+                document.getElementById('stop-counter').style.display = 'none';
+                etaTotalMinutes = 0;
+                etaTotalKm = 0;
+                // Auto-save will clear the saved route
+            }
+        }
+
+        function togglePriority(id, current) {
+            const newVal = !current;
+            db.ref(`developer/route_planner/jobs/${id}/manual_priority`).set(newVal);
+            // No need to update manualOrder here; the route will reorder based on flags and existing manualOrder.
+        }
+
+        // ---------- ROUTE OPTIMIZATION (adapted from driver.html's updateRoute) ----------
+        async function updateRoute() {
+            if (!jobs) return;
+
+            // Filter only pending_pickup jobs (all jobs in this app)
+            const pendingJobs = Object.entries(jobs)
+                .filter(([id, job]) => job.status === 'pending_pickup')
+                .map(([id, job]) => ({ id, ...job }));
+
+            if (pendingJobs.length === 0) {
+                optimizedOrder = [];
+                renderList();
+                if (activePolyline) activePolyline.setMap(null);
+                if (mapMarkers) Object.values(mapMarkers).forEach(m => m.setMap(null));
+                mapMarkers = {};
+                // Remove glow from map button
+                const mapBtn = document.getElementById('map-btn');
+                if (mapBtn) mapBtn.classList.remove('map-btn-glow');
+                // Do not hide ETA display automatically; it will be hidden if etaTotalMinutes is 0
+                document.getElementById('stop-counter').style.display = 'none';
+                // If etaTotalMinutes is 0, hide display
+                if (etaTotalMinutes === 0) {
+                    document.getElementById('eta-display').style.display = 'none';
+                    document.getElementById('eta-display').classList.remove('eta-glow');
+                }
+                return;
+            }
+
+            // Group jobs by identical address + city
+            const groups = [];
+            const groupMap = new Map();
+            pendingJobs.forEach(job => {
+                const key = `${job.pickup_location}, ${job.city}`.toLowerCase();
+                if (!groupMap.has(key)) {
+                    groupMap.set(key, { key, jobs: [], addrString: `${job.pickup_location}, ${job.city}` });
+                }
+                groupMap.get(key).jobs.push(job);
+            });
+            groupMap.forEach(group => groups.push(group));
+
+            // Separate priority groups (any job in group has manual_priority true)
+            const priorityGroups = [];
+            const normalGroups = [];
+            groups.forEach(group => {
+                if (group.jobs.some(j => j.manual_priority)) priorityGroups.push(group);
+                else normalGroups.push(group);
+            });
+
+            // Sort priority groups by their order in manualOrder
+            priorityGroups.sort((a, b) => {
+                const aId = a.jobs[0].id;
+                const bId = b.jobs[0].id;
+                const idxA = manualOrder.indexOf(aId);
+                const idxB = manualOrder.indexOf(bId);
+                return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+            });
+
+            let orderedNormalGroups = normalGroups;
+            if (normalGroups.length > 1) {
+                // Determine origin for normal group optimization
+                // If there are priority groups, start from the last priority group's address; otherwise start from depot
+                let originAddress;
+                if (priorityGroups.length > 0) {
+                    // Last priority group's address
+                    originAddress = priorityGroups[priorityGroups.length - 1].addrString;
+                } else {
+                    originAddress = "1604 Moreland Ave, Brandon MB"; // depot
+                }
+                const destinationAddress = "1604 Moreland Ave, Brandon MB"; // depot
+
+                try {
+                    const origin = { address: originAddress };
+                    const destination = { address: destinationAddress };
+                    const waypoints = normalGroups.map(g => ({ address: g.addrString }));
+                    const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-Goog-Api-Key": "AIzaSyA6umETP8wBUEV41ugAtiNiChUeLmmwmZI",
+                            "X-Goog-FieldMask": "routes.optimizedIntermediateWaypointIndex,routes.legs.distanceMeters,routes.legs.endLocation"
+                        },
+                        body: JSON.stringify({
+                            origin: origin,
+                            destination: destination,
+                            intermediates: waypoints,
+                            travelMode: "DRIVE",
+                            optimizeWaypointOrder: true
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.routes && data.routes[0] && data.routes[0].optimizedIntermediateWaypointIndex) {
+                        const indices = data.routes[0].optimizedIntermediateWaypointIndex;
+                        orderedNormalGroups = indices.map(idx => normalGroups[idx]);
+
+                        // Now find the group closest to originAddress using the legs distances
+                        const legs = data.routes[0].legs || [];
+                        // legs length = number of intermediates + 1 (final leg to destination)
+                        // Accumulate distance from origin to each waypoint
+                        let cumulativeDistance = 0;
+                        const distances = [];
+                        for (let i = 0; i < legs.length - 1; i++) {
+                            // leg i is from origin/previous waypoint to waypoint i
+                            const legDist = parseFloat(legs[i].distanceMeters) || 0;
+                            cumulativeDistance += legDist;
+                            distances.push(cumulativeDistance);
+                        }
+                        // distances array length should equal number of intermediates (orderedNormalGroups.length)
+                        if (distances.length === orderedNormalGroups.length) {
+                            // Find index of smallest distance
+                            let minIdx = 0;
+                            for (let i = 1; i < distances.length; i++) {
+                                if (distances[i] < distances[minIdx]) minIdx = i;
+                            }
+                            // Rotate orderedNormalGroups so that minIdx becomes first
+                            if (minIdx > 0) {
+                                const rotated = orderedNormalGroups.slice(minIdx).concat(orderedNormalGroups.slice(0, minIdx));
+                                orderedNormalGroups = rotated;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Optimization failed, using original order", e);
+                }
+            }
+
+            const finalGroups = priorityGroups.concat(orderedNormalGroups);
+
+            // Build optimizedOrder from finalGroups
+            optimizedOrder = [];
+            finalGroups.forEach(group => {
+                group.jobs.forEach(job => optimizedOrder.push(job.id));
+            });
+
+            // Now compute full route with segmentation for >25 stops (but do NOT update etaTotalMinutes/Km here)
+            // We only compute polyline and markers; ETA is calculated on-demand.
+            try {
+                const depotAddress = "1604 Moreland Ave, Brandon MB";
+                const maxIntermediates = 25;
+                const totalGroups = finalGroups.length;
+                let segments = [];
+                let start = 0;
+                while (start < totalGroups) {
+                    let end = Math.min(start + maxIntermediates, totalGroups);
+                    let segmentGroups = finalGroups.slice(start, end);
+                    let originAddr = (start === 0) ? depotAddress : finalGroups[start - 1].addrString;
+                    let destAddr, intermediates;
+                    if (end === totalGroups) {
+                        destAddr = depotAddress;
+                        intermediates = segmentGroups.map(g => g.addrString);
+                    } else {
+                        destAddr = segmentGroups[segmentGroups.length - 1].addrString;
+                        intermediates = segmentGroups.slice(0, -1).map(g => g.addrString);
+                    }
+                    segments.push({ originAddr, destAddr, intermediates, segmentGroups });
+                    start = end;
+                }
+
+                let combinedPath = [];
+
+                for (let seg of segments) {
+                    const origin = { address: seg.originAddr };
+                    const destination = { address: seg.destAddr };
+                    const waypoints = seg.intermediates.map(addr => ({ address: addr }));
+                    const requestBody = {
+                        origin: origin,
+                        destination: destination,
+                        intermediates: waypoints,
+                        travelMode: "DRIVE",
+                        optimizeWaypointOrder: false
+                    };
+                    const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-Goog-Api-Key": "AIzaSyA6umETP8wBUEV41ugAtiNiChUeLmmwmZI",
+                            "X-Goog-FieldMask": "routes.polyline.encodedPolyline,routes.legs.endLocation"
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+                    const result = await response.json();
+                    if (result.routes && result.routes[0]) {
+                        const route = result.routes[0];
+                        if (route.polyline) {
+                            const path = google.maps.geometry.encoding.decodePath(route.polyline.encodedPolyline);
+                            combinedPath = combinedPath.concat(path);
+                        }
+                        if (route.legs) {
+                            for (let i = 0; i < seg.segmentGroups.length; i++) {
+                                let leg = route.legs[i];
+                                if (leg && leg.endLocation) {
+                                    // We'll use this to place markers (no ETA needed)
+                                    let group = seg.segmentGroups[i];
+                                    let loc = leg.endLocation.latLng;
+                                    if (loc) {
+                                        group.jobs.forEach(job => {
+                                            db.ref(`developer/route_planner/jobs/${job.id}`).update({ lat: loc.latitude, lng: loc.longitude });
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        console.warn("Segment route failed:", result);
+                    }
+                }
+
+                // Draw polyline
+                if (map && combinedPath.length > 0) {
+                    if (activePolyline) activePolyline.setMap(null);
+                    activePolyline = new google.maps.Polyline({
+                        path: combinedPath,
+                        geodesic: true,
+                        strokeColor: "#00d4ff",
+                        strokeOpacity: 0.8,
+                        strokeWeight: 6,
+                        map: map
+                    });
+                }
+
+                // Create markers from grouped jobs (using lat/lng saved above)
+                if (map) {
+                    Object.values(mapMarkers).forEach(m => m.setMap(null));
+                    mapMarkers = {};
+                    // We need to iterate over finalGroups in order and get the first job's lat/lng
+                    let counter = 0;
+                    for (let group of finalGroups) {
+                        let firstJob = group.jobs[0];
+                        let lat = firstJob.lat;
+                        let lng = firstJob.lng;
+                        if (lat && lng) {
+                            const labelText = `${counter+1}. ${firstJob.name || ''}`;
+                            const marker = new google.maps.Marker({
+                                position: { lat: lat, lng: lng },
+                                map: map,
+                                label: {
+                                    text: labelText,
+                                    color: '#00b32d',
+                                    fontWeight: 'bold',
+                                    fontSize: '12px',
+                                    className: 'driver-map-label'
+                                },
+                                icon: {
+                                    path: google.maps.SymbolPath.CIRCLE,
+                                    scale: 14,
+                                    fillColor: '#ff9800',
+                                    fillOpacity: 1,
+                                    strokeColor: 'white',
+                                    strokeWeight: 2
+                                }
+                            });
+                            // No click listener needed
+                            mapMarkers[firstJob.id] = marker;
+                            counter++;
+                        }
+                    }
+                }
+
+            } catch (e) {
+                console.error("Route fetch error", e);
+                // Fallback: just use the finalGroups order without polyline
+                optimizedOrder = [];
+                finalGroups.forEach(group => group.jobs.forEach(job => optimizedOrder.push(job.id)));
+            }
+
+            renderList();
+
+            // Add glow to map button if there are jobs
+            const mapBtn = document.getElementById('map-btn');
+            if (mapBtn) {
+                if (optimizedOrder.length > 0) {
+                    mapBtn.classList.add('map-btn-glow');
+                } else {
+                    mapBtn.classList.remove('map-btn-glow');
+                }
+            }
+
+            // Update ETA display only if we have previously computed ETA (etaTotalMinutes != 0)
+            if (etaTotalMinutes > 0) {
+                updateETADisplay();
+            } else {
+                document.getElementById('eta-display').style.display = 'none';
+                document.getElementById('eta-display').classList.remove('eta-glow');
+            }
+            // Update stop counter
+            const counter = document.getElementById('stop-counter');
+            if (optimizedOrder.length > 0) {
+                counter.textContent = optimizedOrder.length;
+                counter.style.display = 'inline-block';
+            } else {
+                counter.style.display = 'none';
+            }
+        }
+
+        // ---------- RENDER JOB LIST (simplified from driver.html) ----------
+        function renderList() {
+            const container = document.getElementById('job-list');
+            const emptyState = document.getElementById('empty-state');
+            const counter = document.getElementById('stop-counter');
+            if (!optimizedOrder || optimizedOrder.length === 0) {
+                container.innerHTML = '';
+                emptyState.style.display = 'block';
+                counter.style.display = 'none';
+                return;
+            }
+            emptyState.style.display = 'none';
+            // Update counter
+            counter.textContent = optimizedOrder.length;
+            counter.style.display = 'inline-block';
+
+            let html = '';
+            optimizedOrder.forEach((id, index) => {
+                const job = jobs[id];
+                if (!job) return;
+                const isPriority = job.manual_priority || false;
+                const starClass = isPriority ? 'active' : '';
+                html += `
+                    <div class="job-item" data-id="${id}">
+                        <span class="job-number">${index + 1}</span>
+                        <div class="job-info">
+                            <div class="job-name">${job.name || 'No name'}</div>
+                            <div class="job-address">${job.pickup_location || ''}, ${job.city || ''}</div>
+                        </div>
+                        <svg class="star-icon ${starClass}" viewBox="0 0 24 24" onclick="togglePriority('${id}', ${isPriority})">
+                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                        </svg>
+                        <svg class="delete-icon" viewBox="0 0 24 24" onclick="deleteJob('${id}')">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+
+            // Attach click listeners to job items - now open in Google Maps
+            container.querySelectorAll('.job-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    // Ignore clicks on star or delete icons (they have their own handlers)
+                    if (e.target.closest('.star-icon')) return;
+                    if (e.target.closest('.delete-icon')) return;
+                    const jobId = this.dataset.id;
+                    if (!jobId) return;
+                    // Open in Google Maps
+                    openStopInMaps(jobId);
+                });
+            });
+
+            // Reinitialize Sortable after rendering
+            initSortable();
+        }
+
+        // ---------- SORTABLE (drag & drop) ----------
+        let sortableInstance;
+        function initSortable() {
+            if (sortableInstance) sortableInstance.destroy();
+            const list = document.getElementById('job-list');
+            sortableInstance = new Sortable(list, {
+                animation: 150,
+                delay: 400,
+                delayOnTouchOnly: true,
+                draggable: '.job-item',
+                ghostClass: 'sortable-ghost',
+                onStart: function() {
+                    // No details modal to close
+                },
+                onEnd: function(evt) {
+                    // Get new order from DOM
+                    const items = list.querySelectorAll('.job-item');
+                    const newOrder = Array.from(items).map(item => item.dataset.id);
+                    // Update manualOrder in Firebase
+                    db.ref('developer/route_planner/manual_order').set(newOrder);
+                    // For the dragged item, set manual_priority to true (like driver.html)
+                    const draggedId = evt.item.dataset.id;
+                    if (draggedId) {
+                        db.ref(`developer/route_planner/jobs/${draggedId}/manual_priority`).set(true);
+                    }
+                }
+            });
+        }
+
+        // ---------- OPEN STOP IN GOOGLE MAPS ----------
+        function openStopInMaps(jobId) {
+            const job = jobs[jobId];
+            if (!job) return;
+            const address = job.pickup_location + ', ' + job.city;
+            if (!address) {
+                alert("No address available for this stop.");
+                return;
+            }
+            const encoded = encodeURIComponent(address);
+            // Use native app if possible, fallback to web
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            if (/android/i.test(userAgent)) {
+                window.location.href = `intent://www.google.com/maps/dir/?api=1&destination=${encoded}&travelmode=driving#Intent;scheme=https;package=com.google.android.apps.maps;end`;
+            } else if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+                window.location.href = `comgooglemaps://?daddr=${encoded}&directionsmode=driving`;
+            } else {
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encoded}&travelmode=driving`, '_blank');
+            }
+        }
+
+        // ---------- DETAILS MODAL FUNCTIONS - REMOVED ----------
+
+        // ---------- MAP FUNCTIONS (from command.html) ----------
+        function initMap() {
+            if (!google.maps) return;
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 49.8425, lng: -99.9497 },
+                zoom: 12,
+                gestureHandling: 'greedy',
+                styles: document.body.classList.contains('light-mode') ? [] : mapStyles
+            });
+            mainMap = map; // alias
+
+            // ---- Add bullseye button as custom control ----
+            const bullseyeDiv = document.createElement('div');
+            bullseyeDiv.innerHTML = `<button class="bullseye-btn" id="bullseye-btn" aria-label="Track my location">🎯</button>`;
+            const bullseyeBtn = bullseyeDiv.querySelector('#bullseye-btn');
+            map.controls[google.maps.ControlPosition.BOTTOM_RIGHT].push(bullseyeDiv);
+
+            // Toggle tracking on click
+            bullseyeBtn.addEventListener('click', function() {
+                if (isTracking) {
+                    stopTracking();
+                } else {
+                    startTracking();
+                }
+            });
+
+            // Initialize address picker map after main map is ready
+            initAddressPickerMap();
+        }
+
+        // ---- Location Tracking ----
+        function startTracking() {
+            if (!navigator.geolocation) {
+                alert("Geolocation not supported by your browser.");
+                return;
+            }
+            const btn = document.getElementById('bullseye-btn');
+            if (btn) btn.classList.add('active');
+            isTracking = true;
+
+            // Watch position
+            locationWatchId = navigator.geolocation.watchPosition(
+                function(pos) {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    const loc = new google.maps.LatLng(lat, lng);
+
+                    // Remove old marker/circle if any
+                    if (userMarker) userMarker.setMap(null);
+                    if (userCircle) userCircle.setMap(null);
+
+                    // Create pulsing circle
+                    userCircle = new google.maps.Circle({
+                        map: map,
+                        center: loc,
+                        radius: 20,
+                        fillColor: '#ff6600',
+                        fillOpacity: 0.5,
+                        strokeColor: '#ff6600',
+                        strokeWeight: 2,
+                        strokeOpacity: 0.8
+                    });
+                    // Animate circle (pulse)
+                    let pulseInterval = setInterval(function() {
+                        if (!userCircle) { clearInterval(pulseInterval); return; }
+                        let rad = userCircle.getRadius();
+                        let newRad = rad + 5;
+                        if (newRad > 40) newRad = 20;
+                        userCircle.setRadius(newRad);
+                        // Also toggle opacity slightly
+                        let op = userCircle.getFillOpacity();
+                        let newOp = (op === 0.5) ? 0.8 : 0.5;
+                        userCircle.setFillOpacity(newOp);
+                    }, 500);
+
+                    // Store interval to clear later
+                    userCircle._pulseInterval = pulseInterval;
+
+                    // Create marker at user location (small dot)
+                    userMarker = new google.maps.Marker({
+                        position: loc,
+                        map: map,
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 8,
+                            fillColor: '#ff6600',
+                            fillOpacity: 1,
+                            strokeColor: '#fff',
+                            strokeWeight: 2
+                        }
+                    });
+
+                    // Center map on user
+                    map.panTo(loc);
+                    map.setZoom(15);
+                },
+                function(err) {
+                    console.error("Geolocation error:", err);
+                    alert("Unable to get your location: " + err.message);
+                    stopTracking();
+                },
+                { enableHighAccuracy: true, maximumAge: 10000 }
+            );
+        }
+
+        function stopTracking() {
+            if (locationWatchId) {
+                navigator.geolocation.clearWatch(locationWatchId);
+                locationWatchId = null;
+            }
+            if (userMarker) {
+                userMarker.setMap(null);
+                userMarker = null;
+            }
+            if (userCircle) {
+                if (userCircle._pulseInterval) {
+                    clearInterval(userCircle._pulseInterval);
+                }
+                userCircle.setMap(null);
+                userCircle = null;
+            }
+            isTracking = false;
+            const btn = document.getElementById('bullseye-btn');
+            if (btn) btn.classList.remove('active');
+            // Zoom back to route bounds if any
+            if (optimizedOrder.length > 0 && activePolyline) {
+                const bounds = new google.maps.LatLngBounds();
+                activePolyline.getPath().forEach(p => bounds.extend(p));
+                map.fitBounds(bounds);
+            } else {
+                map.setCenter({ lat: 49.8425, lng: -99.9497 });
+                map.setZoom(12);
+            }
+        }
+
+        // ---------- ETA ON-DEMAND CALCULATION ----------
+        async function calculateETAOnDemand() {
+            if (etaCalculating) return;
+            if (!optimizedOrder || optimizedOrder.length === 0) {
+                alert("No stops to calculate ETA.");
+                return;
+            }
+            const etaBtn = document.getElementById('eta-btn');
+            etaBtn.disabled = true;
+            etaBtn.classList.add('eta-spin');
+            etaCalculating = true;
+
+            try {
+                // Group jobs by address (same as in updateRoute)
+                const pendingJobs = Object.entries(jobs)
+                    .filter(([id, job]) => job.status === 'pending_pickup')
+                    .map(([id, job]) => ({ id, ...job }));
+                const groupMap = new Map();
+                pendingJobs.forEach(job => {
+                    const key = `${job.pickup_location}, ${job.city}`.toLowerCase();
+                    if (!groupMap.has(key)) {
+                        groupMap.set(key, { key, jobs: [], addrString: `${job.pickup_location}, ${job.city}` });
+                    }
+                    groupMap.get(key).jobs.push(job);
+                });
+                const groups = Array.from(groupMap.values());
+                // Order groups based on optimizedOrder
+                const jobIdToGroup = {};
+                groups.forEach(group => {
+                    group.jobs.forEach(job => jobIdToGroup[job.id] = group);
+                });
+                const orderedGroups = [];
+                const seenGroups = new Set();
+                optimizedOrder.forEach(id => {
+                    const group = jobIdToGroup[id];
+                    if (group && !seenGroups.has(group.key)) {
+                        seenGroups.add(group.key);
+                        orderedGroups.push(group);
+                    }
+                });
+
+                const origin = "1604 Moreland Ave, Brandon MB";
+                const destination = "1604 Moreland Ave, Brandon MB";
+                const waypoints = orderedGroups.map(g => ({ address: g.addrString }));
+
+                const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Goog-Api-Key": "AIzaSyA6umETP8wBUEV41ugAtiNiChUeLmmwmZI",
+                        "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.legs.duration,routes.legs.distanceMeters"
+                    },
+                    body: JSON.stringify({
+                        origin: { address: origin },
+                        destination: { address: destination },
+                        intermediates: waypoints,
+                        travelMode: "DRIVE",
+                        optimizeWaypointOrder: false
+                    })
+                });
+                const data = await response.json();
+                if (data.routes && data.routes[0]) {
+                    const route = data.routes[0];
+                    let totalDurationSeconds = 0;
+                    let totalDistanceMeters = 0;
+                    if (route.legs) {
+                        route.legs.forEach(leg => {
+                            totalDurationSeconds += parseFloat(leg.duration.replace('s', ''));
+                            totalDistanceMeters += parseFloat(leg.distanceMeters);
+                        });
+                    } else {
+                        totalDurationSeconds = parseFloat(route.duration.replace('s', ''));
+                        totalDistanceMeters = parseFloat(route.distanceMeters);
+                    }
+                    etaTotalMinutes = totalDurationSeconds / 60;
+                    etaTotalKm = totalDistanceMeters / 1000;
+                    updateETADisplay();
+                } else {
+                    alert("Could not calculate ETA.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error calculating ETA.");
+            } finally {
+                etaCalculating = false;
+                etaBtn.disabled = false;
+                etaBtn.classList.remove('eta-spin');
+            }
+        }
+
+        // ---------- UPDATE ETA DISPLAY ----------
+        function updateETADisplay() {
+            const display = document.getElementById('eta-display');
+            const etaTime = document.getElementById('eta-time');
+            const etaAdjusted = document.getElementById('eta-adjusted');
+            const etaAdjustedTime = document.getElementById('eta-adjusted-time');
+            const etaDistance = document.getElementById('eta-distance');
+            if (!optimizedOrder || optimizedOrder.length === 0 || etaTotalMinutes === 0) {
+                display.style.display = 'none';
+                display.classList.remove('eta-glow');
+                return;
+            }
+            // Format time
+            const totalMinutes = etaTotalMinutes;
+            const hours = Math.floor(totalMinutes / 60);
+            const mins = Math.round(totalMinutes % 60);
+            let timeStr = '';
+            if (hours > 0) timeStr += hours + 'h ';
+            timeStr += mins + 'm';
+            etaTime.textContent = timeStr;
+            // Adjusted time
+            const stops = optimizedOrder.length;
+            const adjustedMinutes = totalMinutes + 3 * stops;
+            const adjHours = Math.floor(adjustedMinutes / 60);
+            const adjMins = Math.round(adjustedMinutes % 60);
+            let adjStr = '';
+            if (adjHours > 0) adjStr += adjHours + 'h ';
+            adjStr += adjMins + 'm';
+            etaAdjustedTime.textContent = adjStr;
+            etaAdjusted.style.display = 'inline';
+            // Distance
+            etaDistance.textContent = etaTotalKm.toFixed(1);
+            display.style.display = 'block';
+            display.classList.add('eta-glow');
+        }
+
+        // ---------- SAVE ROUTE - REMOVED (auto-save replaces) ----------
+        // The saveCurrentRoute function is removed.
+
+        // ---------- DELETE ALL SAVED ROUTES - REMOVED ----------
+        // The deleteAllSavedRoutes function is removed.
+
+        // ---------- RENDER SAVED ROUTES PILLS ----------
+        function renderSavedPills(data) {
+            const container = document.getElementById('saved-routes-container');
+            container.innerHTML = '';
+            const keys = Object.keys(data);
+            if (keys.length === 0) return;
+            keys.forEach(key => {
+                const route = data[key];
+                const label = route.label || 'Unnamed';
+                const pill = document.createElement('div');
+                pill.className = 'saved-route-pill';
+                pill.textContent = label;
+                pill.dataset.key = key;
+                // Click to load (only if not the user's auto-saved route? We'll allow loading any)
+                pill.addEventListener('click', function(e) {
+                    if (this.classList.contains('loading')) return;
+                    if (confirm(`Load route "${label}"? This will replace your current stops.`)) {
+                        loadSavedRoute(key);
+                    }
+                });
+                // Long press to delete (mousedown + mouseup timer)
+                let timer = null;
+                pill.addEventListener('mousedown', function(e) {
+                    timer = setTimeout(() => {
+                        if (confirm(`Delete saved route "${label}"?`)) {
+                            db.ref(`developer/route_planner/saved_routes/${key}`).remove()
+                                .catch(err => alert("Error deleting route: " + err.message));
+                        }
+                    }, 500);
+                });
+                pill.addEventListener('mouseup', function(e) {
+                    if (timer) { clearTimeout(timer); timer = null; }
+                });
+                pill.addEventListener('mouseleave', function(e) {
+                    if (timer) { clearTimeout(timer); timer = null; }
+                });
+                // Touch events for mobile
+                pill.addEventListener('touchstart', function(e) {
+                    timer = setTimeout(() => {
+                        if (confirm(`Delete saved route "${label}"?`)) {
+                            db.ref(`developer/route_planner/saved_routes/${key}`).remove()
+                                .catch(err => alert("Error deleting route: " + err.message));
+                        }
+                    }, 500);
+                });
+                pill.addEventListener('touchend', function(e) {
+                    if (timer) { clearTimeout(timer); timer = null; }
+                });
+                pill.addEventListener('touchmove', function(e) {
+                    if (timer) { clearTimeout(timer); timer = null; }
+                });
+                container.appendChild(pill);
+            });
+        }
+
+        // ---------- LOAD SAVED ROUTE ----------
+        function loadSavedRoute(key) {
+            const ref = db.ref(`developer/route_planner/saved_routes/${key}`);
+            ref.once('value').then(snap => {
+                const data = snap.val();
+                if (!data || !data.stops || data.stops.length === 0) {
+                    alert("Route is empty.");
+                    return;
+                }
+                // Set ETA from saved data
+                etaTotalMinutes = data.etaTotalMinutes || 0;
+                etaTotalKm = data.etaTotalKm || 0;
+                // Clear current jobs
+                db.ref('developer/route_planner/jobs').remove();
+                // Add each stop as a new job, preserving details
+                const newJobs = {};
+                const promises = [];
+                data.stops.forEach((stop, index) => {
+                    const newJob = {
+                        name: stop.name || '',
+                        pickup_location: stop.pickup_location || '',
+                        city: stop.city || '',
+                        status: 'pending_pickup',
+                        timestamp: stop.timestamp || Date.now(),
+                        created_by: stop.created_by || currentUser,
+                        manual_priority: stop.manual_priority || false,
+                        box_qty: stop.box_qty || 0,
+                        piece_qty: stop.piece_qty || 0,
+                        envelope_qty: stop.envelope_qty || 0,
+                        skid_qty: stop.skid_qty || 0,
+                        weight_lbs: stop.weight_lbs || 0,
+                        other_details: stop.other_details || ''
+                    };
+                    const newRef = db.ref('developer/route_planner/jobs').push();
+                    promises.push(newRef.set(newJob));
+                    // Store the new ID to set manual_order later
+                    newJobs[index] = newRef.key;
+                });
+                Promise.all(promises).then(() => {
+                    // After all jobs are added, set manual_order in the saved order
+                    const orderArray = Object.values(newJobs);
+                    db.ref('developer/route_planner/manual_order').set(orderArray);
+                    // updateRoute will be triggered automatically
+                    // Also update ETA display with loaded ETA
+                    if (etaTotalMinutes > 0) {
+                        updateETADisplay();
+                    }
+                }).catch(err => alert("Error loading route: " + err.message));
+            }).catch(err => alert("Error loading saved route: " + err.message));
+        }
+
+        // ---------- AUTO SAVE ROUTE ----------
+        function autoSaveRoute() {
+            if (!currentUser) return;
+            if (!optimizedOrder || optimizedOrder.length === 0) {
+                // If route is empty, remove the auto-saved route for this user
+                db.ref(`developer/route_planner/saved_routes/${currentUser}`).remove().catch(err => console.warn("Could not remove auto-saved route:", err));
+                return;
+            }
+            // Build stops array from optimizedOrder
+            const stops = [];
+            optimizedOrder.forEach(id => {
+                const job = jobs[id];
+                if (job) {
+                    stops.push({
+                        name: job.name,
+                        pickup_location: job.pickup_location,
+                        city: job.city,
+                        manual_priority: job.manual_priority || false,
+                        box_qty: job.box_qty || 0,
+                        piece_qty: job.piece_qty || 0,
+                        envelope_qty: job.envelope_qty || 0,
+                        skid_qty: job.skid_qty || 0,
+                        weight_lbs: job.weight_lbs || 0,
+                        other_details: job.other_details || '',
+                        timestamp: job.timestamp,
+                        created_by: job.created_by
+                    });
+                }
+            });
+            if (stops.length === 0) return;
+            const routeData = {
+                label: currentUser, // Use username as label
+                timestamp: Date.now(),
+                stops: stops,
+                etaTotalMinutes: etaTotalMinutes,
+                etaTotalKm: etaTotalKm
+            };
+            // Save under the username key (overwrites)
+            db.ref(`developer/route_planner/saved_routes/${currentUser}`).set(routeData)
+                .catch(err => console.warn("Auto-save failed:", err));
+        }
+
+        // ---------- LOAD USER'S SAVED ROUTE ON LOGIN ----------
+        function loadUserSavedRoute(username) {
+            const ref = db.ref(`developer/route_planner/saved_routes/${username}`);
+            ref.once('value').then(snap => {
+                const data = snap.val();
+                if (data && data.stops && data.stops.length > 0) {
+                    // Load this route
+                    loadSavedRoute(username);
+                }
+            }).catch(err => console.warn("Could not load user's saved route:", err));
+        }
+
+        // ---------- SHARE ROUTE - REMOVED ----------
+        // All share functions removed.
+
+        // ---------- MAP FUNCTIONS (continued) ----------
+        function openMap() {
+            document.getElementById('map-modal').style.display = 'block';
+            setTimeout(() => {
+                google.maps.event.trigger(map, 'resize');
+                if (optimizedOrder.length > 0 && activePolyline) {
+                    const bounds = new google.maps.LatLngBounds();
+                    activePolyline.getPath().forEach(p => bounds.extend(p));
+                    map.fitBounds(bounds);
+                } else {
+                    map.setCenter({ lat: 49.8425, lng: -99.9497 });
+                    map.setZoom(12);
+                }
+            }, 100);
+        }
+
+        function closeMap() {
+            document.getElementById('map-modal').style.display = 'none';
+        }
+
+        function zoomToAll() {
+            if (activePolyline) {
+                const bounds = new google.maps.LatLngBounds();
+                activePolyline.getPath().forEach(p => bounds.extend(p));
+                map.fitBounds(bounds);
+            }
+        }
+
+        function resetMapView() {
+            // Similar to resetDriverView but without driver
+            zoomToAll();
+        }
+
+        // ---------- EXTERNAL ROUTE NAVIGATION (similar to driver.html) ----------
+        function openExternalRoute() {
+            if (optimizedOrder.length === 0) {
+                alert("No stops to route.");
+                return;
+            }
+            // Show prompt about 10-stop limit
+            if (!confirm("Note: This will route only the first 10 stops.\nProceed?")) {
+                return;
+            }
+            const origin = "1604 Moreland Ave, Brandon MB";
+            const destination = "1604 Moreland Ave, Brandon MB";
+            const seenLocs = new Set();
+            // Limit to first 10 stops for the external maps link (Google Maps URL limit)
+            const maxStopsForExternal = 10;
+            let stopsAdded = 0;
+            const waypoints = optimizedOrder.map(id => {
+                if (stopsAdded >= maxStopsForExternal) return "";
+                const job = jobs[id];
+                if (!job) return "";
+                // Use pickup_location and city (no business name) for accuracy
+                const addr = job.pickup_location;
+                const city = job.city || "Brandon";
+                const key = `${addr}, ${city}`;
+                if (seenLocs.has(key)) return "";
+                seenLocs.add(key);
+                stopsAdded++;
+                return encodeURIComponent(key);
+            }).filter(w => w !== "").join("|");
+
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            if (/android/i.test(userAgent)) {
+                window.location.href = `intent://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${waypoints}&travelmode=driving#Intent;scheme=https;package=com.google.android.apps.maps;end`;
+            } else if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+                window.location.href = `comgooglemaps://?saddr=${encodeURIComponent(origin)}&daddr=${encodeURIComponent(destination)}&waypoints=${waypoints}&directionsmode=driving`;
+            } else {
+                window.open(`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${waypoints}&travelmode=driving`, '_blank');
+            }
+        }
+
+        // ---------- PWA INSTALL ----------
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-btn').style.display = 'block';
+        });
+        document.getElementById('install-btn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') deferredPrompt = null;
+                document.getElementById('install-btn').style.display = 'none';
+            }
+        });
+
+        // ---------- UTILS ----------
+        function formatTime12(ts) { /* not used but kept for consistency */ }
+
+        // ========== ADDRESS PICKER FUNCTIONS ==========
+        let pickerMap = null;
+        let pickerMarker = null;
+        let pickerGeocoder = null;
+        let pickerAutocomplete = null;
+        let pickerInitialized = false;
+        let selectedLocation = null; // {lat, lng, address, plusCode}
+
+        function initAddressPickerMap() {
+            if (pickerInitialized) return;
+            const container = document.getElementById('picker-map');
+            if (!container) return;
+            if (!google.maps) return;
+
+            const defaultCenter = { lat: 49.8425, lng: -99.9497 };
+            pickerMap = new google.maps.Map(container, {
+                center: defaultCenter,
+                zoom: 12,
+                mapTypeId: 'roadmap',
+                styles: mapStyles,
+                gestureHandling: 'greedy'
+            });
+
+            // Geocoder
+            pickerGeocoder = new google.maps.Geocoder();
+
+            // Draggable marker
+            pickerMarker = new google.maps.Marker({
+                position: defaultCenter,
+                map: pickerMap,
+                draggable: true,
+                animation: google.maps.Animation.DROP,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 8,
+                    fillColor: '#ff9800',
+                    fillOpacity: 1,
+                    strokeColor: '#ffffff',
+                    strokeWeight: 2
+                }
+            });
+
+            // When marker is dragged, update info
+            pickerMarker.addListener('dragend', function() {
+                const pos = pickerMarker.getPosition();
+                updatePickerInfo(pos.lat(), pos.lng());
+            });
+
+            // Click on map to move marker
+            pickerMap.addListener('click', function(e) {
+                const lat = e.latLng.lat();
+                const lng = e.latLng.lng();
+                pickerMarker.setPosition({ lat, lng });
+                updatePickerInfo(lat, lng);
+            });
+
+            // Setup Places Autocomplete for search input
+            const searchInput = document.getElementById('picker-search');
+            if (searchInput) {
+                pickerAutocomplete = new google.maps.places.Autocomplete(searchInput, {
+                    types: ['geocode'],
+                    componentRestrictions: { country: 'ca' }
+                });
+                pickerAutocomplete.addListener('place_changed', function() {
+                    const place = pickerAutocomplete.getPlace();
+                    if (!place.geometry) return;
+                    const location = place.geometry.location;
+                    const lat = location.lat();
+                    const lng = location.lng();
+                    pickerMap.panTo({ lat, lng });
+                    pickerMap.setZoom(14);
+                    pickerMarker.setPosition({ lat, lng });
+                    updatePickerInfo(lat, lng);
+                });
+            }
+
+            // Initially set marker to Brandon center and get address
+            updatePickerInfo(defaultCenter.lat, defaultCenter.lng);
+
+            pickerInitialized = true;
+        }
+
+        function openAddressPicker() {
+            const modal = document.getElementById('address-picker-modal');
+            modal.style.display = 'block';
+            // Ensure map is initialized
+            if (!pickerInitialized) {
+                initAddressPickerMap();
+            }
+            // Trigger resize
+            setTimeout(() => {
+                if (pickerMap) {
+                    google.maps.event.trigger(pickerMap, 'resize');
+                    // If we have a selected location, center there, else center on current marker
+                    const pos = pickerMarker.getPosition();
+                    if (pos) {
+                        pickerMap.setCenter(pos);
+                    }
+                }
+            }, 100);
+            // Clear search input
+            document.getElementById('picker-search').value = '';
+            // Update info if marker is set
+            if (pickerMarker) {
+                const pos = pickerMarker.getPosition();
+                if (pos) {
+                    updatePickerInfo(pos.lat(), pos.lng());
+                }
+            }
+        }
+
+        function closeAddressPicker() {
+            document.getElementById('address-picker-modal').style.display = 'none';
+        }
+
+        function updatePickerInfo(lat, lng) {
+            const latLng = { lat, lng };
+            // Reverse geocode to get address and plus code
+            pickerGeocoder.geocode({ location: latLng }, function(results, status) {
+                let address = '';
+                let plusCode = '';
+                if (status === 'OK' && results.length > 0) {
+                    // Get formatted address
+                    address = results[0].formatted_address || '';
+                    // Look for plus code in results
+                    for (let result of results) {
+                        if (result.types && result.types.includes('plus_code')) {
+                            // This is a plus code result
+                            plusCode = result.formatted_address || '';
+                            break;
+                        }
+                        // Some results have address_components with plus_code? Actually plus code is a separate type.
+                        // Also check for plus_code in the result's address_components? Not typical.
+                        // Alternatively, we can use the Geocoding API's plus_code field.
+                        // Since we are using the client-side geocoder, the plus code might be in the result's plus_code property.
+                        if (result.plus_code) {
+                            plusCode = result.plus_code.compound_code || result.plus_code.global_code || '';
+                        }
+                    }
+                    // If no plus code found, try to get from address components? Not reliable.
+                    // We can also generate plus code using the library? Not included.
+                    // Fallback: use the lat/lng to construct a plus code using the Open Location Code library? Not included.
+                    // We'll just use what we have.
+                } else {
+                    address = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+                }
+
+                // If plusCode is empty, try to get from results again
+                if (!plusCode) {
+                    // Sometimes the plus code is in the address_components with type 'plus_code'
+                    for (let result of results) {
+                        if (result.address_components) {
+                            for (let comp of result.address_components) {
+                                if (comp.types && comp.types.includes('plus_code')) {
+                                    plusCode = comp.long_name || comp.short_name || '';
+                                    break;
+                                }
+                            }
+                        }
+                        if (plusCode) break;
+                    }
+                }
+
+                // Store selected location
+                selectedLocation = {
+                    lat: lat,
+                    lng: lng,
+                    address: address,
+                    plusCode: plusCode || ''
+                };
+
+                // Update UI
+                document.getElementById('picker-address-display').textContent = address || 'Address not found';
+                document.getElementById('picker-pluscode-display').textContent = plusCode ? `Plus Code: ${plusCode}` : 'Plus Code: —';
+            });
+        }
+
+        // ---------- New: Search Address Picker (Go button) ----------
+        function searchAddressPicker() {
+            const input = document.getElementById('picker-search');
+            const query = input.value.trim();
+            if (!query) return;
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ address: query, region: 'ca' }, function(results, status) {
+                if (status === 'OK' && results.length > 0) {
+                    const location = results[0].geometry.location;
+                    const lat = location.lat();
+                    const lng = location.lng();
+                    pickerMap.panTo({ lat, lng });
+                    pickerMap.setZoom(14);
+                    pickerMarker.setPosition({ lat, lng });
+                    updatePickerInfo(lat, lng);
+                } else {
+                    alert('Location not found.');
+                }
+            });
+        }
+
+        function confirmAddress() {
+            if (!selectedLocation) {
+                alert("No location selected.");
+                return;
+            }
+            // Prioritize actual address over plus code
+            let addressToUse = selectedLocation.address || selectedLocation.plusCode;
+            if (!addressToUse) {
+                alert("Could not determine address.");
+                return;
+            }
+            document.getElementById('f-address').value = addressToUse;
+            closeAddressPicker();
+        }
+
+        // Override the initMap to also initialize picker after map is ready (already done inside initMap)
+        // But we need to ensure initAddressPickerMap is called when map is ready.
+        // We already added call inside initMap.
+
+        // Ensure that the map styles are also applied to picker map when theme changes?
+        // Not necessary for now.
+
+    </script>
+</body>
+</html>
