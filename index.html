@@ -229,34 +229,7 @@
             font-weight: bold;
         }
 
-        /* Saved routes pills container */
-        #saved-routes-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 10px;
-        }
-              .saved-route-pill {
-            background: gold;
-            color: #000;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 14px;
-            border: 1px solid #b8860b;
-            transition: background 0.2s;
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-        }
-        .saved-route-pill:hover {
-            background: #ffd700;
-        }
-        .saved-route-pill.loading {
-            opacity: 0.6;
-        }
+        /* Saved routes pills container - removed, keeping for safety */
 
         /* Share button bottom right - REMOVED */
 
@@ -500,8 +473,7 @@
             </div>
         </div>
 
-        <!-- Saved Routes Pills -->
-        <!-- removed saved-routes-container -->
+        <!-- Saved Routes Pills - removed -->
 
         <!-- ETA Display -->
         <div id="eta-display" style="margin-top:15px; background:var(--card); border-radius:12px; padding:12px; border:1px solid var(--border); display:none; color:var(--text);">
@@ -653,7 +625,7 @@
                 autoSaveRoute();
             });
 
-            // Listen for saved routes (only for pills) - removed to hide pills
+            // Listen for saved routes - removed to hide pills
 
             // Initialize Places Autocomplete on address field
             initPlaces();
@@ -841,22 +813,65 @@
             });
 
             let orderedNormalGroups = normalGroups;
+            // If there are no priority groups, ensure the closest stop to origin is first
+            if (priorityGroups.length === 0 && normalGroups.length > 1) {
+                const originAddress = "1604 Moreland Ave, Brandon MB";
+                try {
+                    // Get driving distances from origin to each normal group using Distance Matrix API
+                    const destinations = normalGroups.map(g => g.addrString);
+                    const distResponse = await fetch("https://maps.googleapis.com/maps/api/distancematrix/json?origins=" + encodeURIComponent(originAddress) + "&destinations=" + encodeURIComponent(destinations.join("|")) + "&key=AIzaSyA6umETP8wBUEV41ugAtiNiChUeLmmwmZI");
+                    const distData = await distResponse.json();
+                    if (distData.status === "OK" && distData.rows && distData.rows.length > 0) {
+                        const elements = distData.rows[0].elements;
+                        let minDistance = Infinity;
+                        let minIndex = 0;
+                        elements.forEach((el, idx) => {
+                            if (el.status === "OK" && el.distance && el.distance.value < minDistance) {
+                                minDistance = el.distance.value;
+                                minIndex = idx;
+                            }
+                        });
+                        // Rotate normalGroups so the closest is first
+                        if (minIndex > 0) {
+                            orderedNormalGroups = normalGroups.slice(minIndex).concat(normalGroups.slice(0, minIndex));
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Distance Matrix fallback failed, using original order", e);
+                }
+            }
+
+            // If we have priority groups, we don't rotate normal groups; priority groups come first.
+            // But we still may want to optimize the normal groups after priorities.
+            // The rest of the code will handle that.
+
+            // If no priority groups, we already rotated orderedNormalGroups to start with the closest.
+            // Now we can optimize the normal groups using the API to get a good overall route,
+            // but we want to preserve the first stop as the closest. We'll set optimizeWaypointOrder to true,
+            // then after getting the optimized order, we will rotate so the closest is first again.
+            // However, we already set orderedNormalGroups to the closest-first, but the API may reorder.
+            // So we'll do the optimization and then rotate back based on the closest.
+
+            // But we already have the closest index, so we can do the rotation after optimization.
+
+            // We'll proceed with the existing optimization logic.
+            let optimizedNormalGroups = orderedNormalGroups; // will be updated
+
             if (normalGroups.length > 1) {
                 // Determine origin for normal group optimization
-                // If there are priority groups, start from the last priority group's address; otherwise start from depot
                 let originAddress;
                 if (priorityGroups.length > 0) {
                     // Last priority group's address
                     originAddress = priorityGroups[priorityGroups.length - 1].addrString;
                 } else {
-                    originAddress = "1604 Moreland Ave, Brandon MB"; // depot
+                    originAddress = "1604 Moreland Ave, Brandon MB";
                 }
                 const destinationAddress = "1604 Moreland Ave, Brandon MB"; // depot
 
                 try {
                     const origin = { address: originAddress };
                     const destination = { address: destinationAddress };
-                    const waypoints = normalGroups.map(g => ({ address: g.addrString }));
+                    const waypoints = orderedNormalGroups.map(g => ({ address: g.addrString }));
                     const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
                         method: "POST",
                         headers: {
@@ -875,40 +890,32 @@
                     const data = await response.json();
                     if (data.routes && data.routes[0] && data.routes[0].optimizedIntermediateWaypointIndex) {
                         const indices = data.routes[0].optimizedIntermediateWaypointIndex;
-                        orderedNormalGroups = indices.map(idx => normalGroups[idx]);
+                        optimizedNormalGroups = indices.map(idx => orderedNormalGroups[idx]);
 
-                        // Now find the group closest to originAddress using the legs distances
-                        const legs = data.routes[0].legs || [];
-                        // legs length = number of intermediates + 1 (final leg to destination)
-                        // Accumulate distance from origin to each waypoint
-                        let cumulativeDistance = 0;
-                        const distances = [];
-                        for (let i = 0; i < legs.length - 1; i++) {
-                            // leg i is from origin/previous waypoint to waypoint i
-                            const legDist = parseFloat(legs[i].distanceMeters) || 0;
-                            cumulativeDistance += legDist;
-                            distances.push(cumulativeDistance);
-                        }
-                        // distances array length should equal number of intermediates (orderedNormalGroups.length)
-                        if (distances.length === orderedNormalGroups.length) {
-                            // Find index of smallest distance
-                            let minIdx = 0;
-                            for (let i = 1; i < distances.length; i++) {
-                                if (distances[i] < distances[minIdx]) minIdx = i;
-                            }
-                            // Rotate orderedNormalGroups so that minIdx becomes first
-                            if (minIdx > 0) {
-                                const rotated = orderedNormalGroups.slice(minIdx).concat(orderedNormalGroups.slice(0, minIdx));
-                                orderedNormalGroups = rotated;
+                        // Now, if there are no priority groups, we need to ensure the closest stop is first.
+                        // We already have the closest index from before, but after optimization it may have moved.
+                        // We'll find the index of the closest group in optimizedNormalGroups.
+                        if (priorityGroups.length === 0) {
+                            // We know the closest group was the first in orderedNormalGroups (or we rotated).
+                            // But we can find it by comparing addrString.
+                            const closestAddr = orderedNormalGroups[0].addrString;
+                            const closestIdx = optimizedNormalGroups.findIndex(g => g.addrString === closestAddr);
+                            if (closestIdx > 0) {
+                                const rotated = optimizedNormalGroups.slice(closestIdx).concat(optimizedNormalGroups.slice(0, closestIdx));
+                                optimizedNormalGroups = rotated;
                             }
                         }
+                    } else {
+                        // If optimization failed, keep orderedNormalGroups
+                        optimizedNormalGroups = orderedNormalGroups;
                     }
                 } catch (e) {
                     console.warn("Optimization failed, using original order", e);
+                    optimizedNormalGroups = orderedNormalGroups;
                 }
             }
 
-            const finalGroups = priorityGroups.concat(orderedNormalGroups);
+            const finalGroups = priorityGroups.concat(optimizedNormalGroups);
 
             // Build optimizedOrder from finalGroups
             optimizedOrder = [];
