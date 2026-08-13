@@ -501,7 +501,7 @@
         </div>
 
         <!-- Saved Routes Pills -->
-        <div id="saved-routes-container"></div>
+        <!-- removed saved-routes-container -->
 
         <!-- ETA Display -->
         <div id="eta-display" style="margin-top:15px; background:var(--card); border-radius:12px; padding:12px; border:1px solid var(--border); display:none; color:var(--text);">
@@ -516,10 +516,7 @@
             </h3>
             <div id="job-list"></div>
             <div id="empty-state" style="text-align:center; color:#666; padding:20px;">No jobs added. Use the form above to add stops.</div>
-            <!-- Clear All button placed at bottom right -->
-            <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
-                <button class="btn-clear" onclick="clearAllJobs()">CLEAR ALL</button>
-            </div>
+            <!-- Clear All button removed from here -->
         </div>
     </div>
 
@@ -656,10 +653,7 @@
                 autoSaveRoute();
             });
 
-            // Listen for saved routes (only for pills)
-            db.ref('developer/route_planner/saved_routes').on('value', snap => {
-                renderSavedPills(snap.val() || {});
-            });
+            // Listen for saved routes (only for pills) - removed to hide pills
 
             // Initialize Places Autocomplete on address field
             initPlaces();
@@ -1458,60 +1452,7 @@
         // ---------- DELETE ALL SAVED ROUTES - REMOVED ----------
         // The deleteAllSavedRoutes function is removed.
 
-        // ---------- RENDER SAVED ROUTES PILLS ----------
-        function renderSavedPills(data) {
-            const container = document.getElementById('saved-routes-container');
-            container.innerHTML = '';
-            const keys = Object.keys(data);
-            if (keys.length === 0) return;
-            keys.forEach(key => {
-                const route = data[key];
-                const label = route.label || 'Unnamed';
-                const pill = document.createElement('div');
-                pill.className = 'saved-route-pill';
-                pill.textContent = label;
-                pill.dataset.key = key;
-                // Click to load (only if not the user's auto-saved route? We'll allow loading any)
-                pill.addEventListener('click', function(e) {
-                    if (this.classList.contains('loading')) return;
-                    if (confirm(`Load route "${label}"? This will replace your current stops.`)) {
-                        loadSavedRoute(key);
-                    }
-                });
-                // Long press to delete (mousedown + mouseup timer)
-                let timer = null;
-                pill.addEventListener('mousedown', function(e) {
-                    timer = setTimeout(() => {
-                        if (confirm(`Delete saved route "${label}"?`)) {
-                            db.ref(`developer/route_planner/saved_routes/${key}`).remove()
-                                .catch(err => alert("Error deleting route: " + err.message));
-                        }
-                    }, 500);
-                });
-                pill.addEventListener('mouseup', function(e) {
-                    if (timer) { clearTimeout(timer); timer = null; }
-                });
-                pill.addEventListener('mouseleave', function(e) {
-                    if (timer) { clearTimeout(timer); timer = null; }
-                });
-                // Touch events for mobile
-                pill.addEventListener('touchstart', function(e) {
-                    timer = setTimeout(() => {
-                        if (confirm(`Delete saved route "${label}"?`)) {
-                            db.ref(`developer/route_planner/saved_routes/${key}`).remove()
-                                .catch(err => alert("Error deleting route: " + err.message));
-                        }
-                    }, 500);
-                });
-                pill.addEventListener('touchend', function(e) {
-                    if (timer) { clearTimeout(timer); timer = null; }
-                });
-                pill.addEventListener('touchmove', function(e) {
-                    if (timer) { clearTimeout(timer); timer = null; }
-                });
-                container.appendChild(pill);
-            });
-        }
+        // ---------- RENDER SAVED ROUTES PILLS - REMOVED ----------
 
         // ---------- LOAD SAVED ROUTE ----------
         function loadSavedRoute(key) {
