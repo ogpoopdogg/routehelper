@@ -866,15 +866,10 @@
             // Clear arrow markers
             arrowMarkers.forEach(m => m.setMap(null));
             arrowMarkers = [];
-            if (originMarker) { originMarker.setMap(null); originMarker = null; }
+            // removed originMarker removal and creation, now it's permanent
             if (!routeState.isFinalized || routeState.order.length === 0) return;
 
             const origin = { lat: 49.8425, lng: -99.9497 };
-            originMarker = new google.maps.Marker({
-                position: origin,
-                map: map,
-                title: 'You Are Here'
-            });
             const path = [origin];
             routeState.order.forEach(id => {
                 const job = jobs[id];
@@ -974,21 +969,24 @@
         }
 
         function zoomToAllWaypoints() {
-            const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
             const bounds = new google.maps.LatLngBounds();
-            let hasPoints = false;
+            bounds.extend({ lat: 49.8425, lng: -99.9497 });
+            let hasJob = false;
+            const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
             pendingIds.forEach(id => {
                 const job = jobs[id];
                 if (job.lat && job.lng) {
                     bounds.extend({ lat: job.lat, lng: job.lng });
-                    hasPoints = true;
+                    hasJob = true;
                 }
             });
-            if (hasPoints && map) {
-                map.fitBounds(bounds);
-            } else if (map) {
-                map.setCenter({ lat: 49.8425, lng: -99.9497 });
-                map.setZoom(12);
+            if (map) {
+                if (hasJob) {
+                    map.fitBounds(bounds);
+                } else {
+                    map.setCenter({ lat: 49.8425, lng: -99.9497 });
+                    map.setZoom(12);
+                }
             }
         }
 
@@ -1207,6 +1205,13 @@
                 styles: document.body.classList.contains('light-mode') ? [] : mapStyles
             });
             mainMap = map;
+
+            // Create permanent origin marker
+            originMarker = new google.maps.Marker({
+                position: { lat: 49.8425, lng: -99.9497 },
+                map: map,
+                title: '1604 Moreland Ave (Origin)'
+            });
 
             // Bullseye button removed as per request
 
