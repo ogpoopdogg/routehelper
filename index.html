@@ -458,9 +458,14 @@
                 const username = email.split('@')[0].toLowerCase();
                 db.ref(`roles/${username}/command`).once('value').then(snap => {
                     if (snap.val() === true) {
-                        currentUser = username.charAt(0).toUpperCase() + username.slice(1);
-                        document.getElementById('login-overlay').style.display = 'none';
-                        initApp();
+                        db.ref('developer/route_planner/saved_routes').once('value').then(routesSnap => {
+                            const routesData = routesSnap.val() || {};
+                            const existingKey = Object.keys(routesData).find(k => k.toLowerCase() === username.toLowerCase());
+                            currentUser = existingKey || (username.charAt(0).toUpperCase() + username.slice(1));
+                            console.log('Resolved currentUser key for route lookup:', currentUser);
+                            document.getElementById('login-overlay').style.display = 'none';
+                            initApp();
+                        });
                     } else {
                         alert("ACCESS DENIED");
                         auth.signOut();
