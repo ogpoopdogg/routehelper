@@ -145,6 +145,7 @@
         .map-btn-glow { box-shadow: 0 0 15px var(--accent); }
 
         .driver-map-label { color: #00ff00 !important; font-weight: 700; text-shadow: 0 0 2px #000; }
+        .driver-map-label-pending { color: #ff9800 !important; font-weight: 700; text-shadow: 0 0 2px #000; }
 
         .eta-glow { border-color: #00bfff !important; box-shadow: 0 0 15px #00bfff; }
 
@@ -431,6 +432,7 @@
         let pickerMap = null, pickerMarker = null, pickerGeocoder = null, pickerAutocomplete = null, pickerInitialized = false;
         let selectedLocation = null;
         let arrowMarkers = [];
+        let originMarker = null;
 
         // Theme
         if (localStorage.getItem('ec_theme') === 'light') document.body.classList.add('light-mode');
@@ -750,10 +752,10 @@
                             map: map,
                             label: {
                                 text: labelText,
-                                color: '#FFD700',
+                                color: '#ff9800',
                                 fontWeight: 'bold',
                                 fontSize: '18px',
-                                className: 'driver-map-label'
+                                className: 'driver-map-label-pending'
                             },
                             icon: {
                                 path: google.maps.SymbolPath.CIRCLE,
@@ -832,9 +834,15 @@
             // Clear arrow markers
             arrowMarkers.forEach(m => m.setMap(null));
             arrowMarkers = [];
+            if (originMarker) { originMarker.setMap(null); originMarker = null; }
             if (!routeState.isFinalized || routeState.order.length === 0) return;
 
             const origin = { lat: 49.8425, lng: -99.9497 };
+            originMarker = new google.maps.Marker({
+                position: origin,
+                map: map,
+                title: 'You Are Here'
+            });
             const path = [origin];
             routeState.order.forEach(id => {
                 const job = jobs[id];
