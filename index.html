@@ -867,7 +867,8 @@
             arrowMarkers.forEach(m => m.setMap(null));
             arrowMarkers = [];
             // removed originMarker removal and creation, now it's permanent
-            if (!routeState.isFinalized || routeState.order.length === 0) return;
+            if (routeState.order.length === 0) return;
+            if (!routeState.isFinalized && !isOrderingMode) return;
 
             const origin = { lat: 49.8425, lng: -99.9497 };
             const path = [origin];
@@ -1025,6 +1026,7 @@
 
             saveRouteState();
             renderList();
+            updatePolyline();
 
             const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
             const assignedIdsNow = Object.keys(routeState.assignedIndices);
