@@ -553,77 +553,89 @@
             db.ref(`developer/route_planner/saved_routes/${currentUser}`).set(routeData).catch(err => console.warn("Save saved route error:", err));
         }
 
+        // ---------- LOAD ROUTE STATE (FIXED) ----------
         function loadRouteState() {
             if (!currentUser) return;
             const savedRef = db.ref(`developer/route_planner/saved_routes/${currentUser}`);
             savedRef.once('value').then(snap => {
                 const saved = snap.val();
                 if (saved && (saved.order || saved.stops)) {
-                    // Safely convert saved.order to array regardless of whether it's an array or object
+                    // 1) Try to restore from saved.order (array of IDs)
                     let orderArr = saved.order ? (Array.isArray(saved.order) ? saved.order : Object.values(saved.order)) : [];
-                    if (orderArr.length > 0) {
-                        routeState.order = orderArr.filter(id => jobs[id]);
+                    // Filter to only IDs that currently exist in jobs
+                    let validOrder = orderArr.filter(id => jobs[id]);
+                    if (validOrder.length > 0) {
+                        // Use the valid order
+                        routeState.order = validOrder;
                         routeState.isFinalized = saved.isFinalized || false;
-                        // Rebuild indices to ensure correct numbering
                         const newAssigned = {};
                         routeState.order.forEach((id, i) => newAssigned[id] = i+1);
                         routeState.assignedIndices = newAssigned;
-                        // Load ETA if present
                         if (saved.etaTotalMinutes !== undefined) {
                             etaTotalMinutes = saved.etaTotalMinutes;
                             etaTotalKm = saved.etaTotalKm || 0;
                         }
-                        // Update route_state to keep in sync
-                        saveRouteState();
+                        // Do NOT call saveRouteState() here to avoid overwriting with empty data
                         updateUI();
                         updateETADisplay();
                         return;
-                    } else if (saved.stops) {
-                        // Fallback to stops array (old format) - safely convert to array
-                        let stopsArr = Array.isArray(saved.stops) ? saved.stops : Object.values(saved.stops);
-                        if (stopsArr.length > 0) {
-                            const jobEntries = Object.entries(jobs);
-                            const order = [];
-                            stopsArr.forEach((stop) => {
-                                const match = jobEntries.find(([id, j]) =>
-                                    j.name === stop.name &&
-                                    j.pickup_location === stop.pickup_location &&
-                                    j.city === stop.city
-                                );
-                                if (match) order.push(match[0]);
-                            });
-                            if (order.length === stopsArr.length) {
-                                routeState.order = order;
-                                routeState.isFinalized = saved.isFinalized !== undefined ? saved.isFinalized : true;
-                                const indices = {};
-                                order.forEach((id, i) => indices[id] = i+1);
-                                routeState.assignedIndices = indices;
-                                if (saved.etaTotalMinutes !== undefined) {
-                                    etaTotalMinutes = saved.etaTotalMinutes;
-                                    etaTotalKm = saved.etaTotalKm || 0;
-                                }
-                                // Update route_state
-                                saveRouteState();
-                                updateUI();
-                                updateETADisplay();
-                                return;
+                    }
+
+                    // 2) If order is empty or invalid, try to use saved.stops to recreate jobs
+                    let stopsArr = saved.stops ? (Array.isArray(saved.stops) ? saved.stops : Object.values(saved.stops)) : [];
+                    if (stopsArr.length > 0) {
+                        // Clear existing jobs before recreating
+                        db.ref('developer/route_planner/jobs').remove();
+                        // Create new jobs from stops data
+                        const newPromises = stopsArr.map(stop => {
+                            const newJob = {
+                                name: stop.name || '',
+                                pickup_location: stop.pickup_location || '',
+                                city: stop.city || '',
+                                status: 'pending_pickup',
+                                timestamp: stop.timestamp || Date.now(),
+                                created_by: stop.created_by || currentUser,
+                                box_qty: stop.box_qty || 0,
+                                piece_qty: stop.piece_qty || 0,
+                                envelope_qty: stop.envelope_qty || 0,
+                                skid_qty: stop.skid_qty || 0,
+                                weight_lbs: stop.weight_lbs || 0,
+                                other_details: stop.other_details || ''
+                            };
+                            const newRef = db.ref('developer/route_planner/jobs').push();
+                            return newRef.set(newJob).then(() => newRef.key);
+                        });
+                        Promise.all(newPromises).then(newIds => {
+                            // After all new jobs are created, set the order and indices
+                            routeState.order = newIds;
+                            routeState.isFinalized = saved.isFinalized || true; // assume finalized after load
+                            const newAssigned = {};
+                            routeState.order.forEach((id, i) => newAssigned[id] = i+1);
+                            routeState.assignedIndices = newAssigned;
+                            if (saved.etaTotalMinutes !== undefined) {
+                                etaTotalMinutes = saved.etaTotalMinutes;
+                                etaTotalKm = saved.etaTotalKm || 0;
                             }
-                        }
+                            // Now save the new state so future loads use IDs
+                            saveRouteState();
+                            updateUI();
+                            updateETADisplay();
+                        }).catch(err => console.warn("Error recreating jobs from saved stops:", err));
+                        return;
                     }
                 }
-                // fallback to route_state
+
+                // 3) Fallback to route_state
                 db.ref(`developer/route_planner/route_state/${currentUser}`).once('value').then(snap2 => {
                     const data = snap2.val();
                     if (data) {
-                        // Safely convert data.order to array
                         let orderArr = data.order ? (Array.isArray(data.order) ? data.order : Object.values(data.order)) : [];
                         routeState.order = orderArr.filter(id => jobs[id]);
                         routeState.isFinalized = data.isFinalized || false;
-                        // Rebuild indices
                         const newAssigned = {};
                         routeState.order.forEach((id, i) => newAssigned[id] = i+1);
                         routeState.assignedIndices = newAssigned;
-                        // Do NOT call saveRouteState() here to avoid overwriting loaded data
+                        // Do NOT call saveRouteState() here
                     } else {
                         routeState.order = [];
                         routeState.isFinalized = false;
