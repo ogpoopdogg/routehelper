@@ -103,8 +103,8 @@
         }
         .create-route-btn.map-modal-btn {
             position: fixed;
-            top: 120px;
-            right: 20px;
+            top: 60px;
+            left: 20px;
             z-index: 3005;
             width: 140px;
             height: 40px;
@@ -341,7 +341,7 @@
         </div>
 
         <!-- CREATE ROUTE button (main page) -->
-        <button id="create-route-main" class="create-route-btn" onclick="startCreateRoute()">CREATE ROUTE</button>
+        <button id="create-route-main" class="create-route-btn" style="margin-top: 15px;" onclick="startCreateRoute()">CREATE ROUTE</button>
 
         <!-- ETA Display -->
         <div id="eta-display" style="margin-top:15px; background:var(--card); border-radius:12px; padding:12px; border:1px solid var(--border); display:none; color:var(--text);">
@@ -430,6 +430,7 @@
         let userMarker = null, userCircle = null, locationWatchId = null;
         let pickerMap = null, pickerMarker = null, pickerGeocoder = null, pickerAutocomplete = null, pickerInitialized = false;
         let selectedLocation = null;
+        let arrowMarkers = [];
 
         // Theme
         if (localStorage.getItem('ec_theme') === 'light') document.body.classList.add('light-mode');
@@ -736,13 +737,13 @@
                             }
                         });
                     } else {
-                        // Unassigned: pulsing amber
+                        // Unassigned: pulsing blue with gold label
                         marker = new google.maps.Marker({
                             position: { lat, lng },
                             map: map,
                             label: {
                                 text: labelText,
-                                color: '#FFBF00',
+                                color: '#FFD700',
                                 fontWeight: 'bold',
                                 fontSize: '12px',
                                 className: 'driver-map-label'
@@ -750,7 +751,7 @@
                             icon: {
                                 path: google.maps.SymbolPath.CIRCLE,
                                 scale: 14,
-                                fillColor: '#FFBF00',
+                                fillColor: '#2196F3',
                                 fillOpacity: 1,
                                 strokeColor: 'white',
                                 strokeWeight: 2
@@ -760,9 +761,9 @@
                             map: map,
                             center: { lat, lng },
                             radius: 20,
-                            fillColor: '#FFBF00',
+                            fillColor: '#2196F3',
                             fillOpacity: 0.3,
-                            strokeColor: '#FFBF00',
+                            strokeColor: '#2196F3',
                             strokeWeight: 2,
                             strokeOpacity: 0.6
                         });
@@ -811,6 +812,9 @@
         function updatePolyline() {
             if (!map) return;
             if (activePolyline) { activePolyline.setMap(null); activePolyline = null; }
+            // Clear arrow markers
+            arrowMarkers.forEach(m => m.setMap(null));
+            arrowMarkers = [];
             if (!routeState.isFinalized || routeState.order.length === 0) return;
 
             const origin = { lat: 49.8425, lng: -99.9497 };
@@ -832,6 +836,42 @@
                     strokeWeight: 6,
                     map: map
                 });
+
+                // Add directional arrows (two per segment)
+                const arrowColor = "#00d4ff";
+                const arrowSymbol = {
+                    path: 'M 0,-6 L 4,0 L 0,6 L -4,0 Z',
+                    fillColor: arrowColor,
+                    fillOpacity: 1,
+                    strokeColor: arrowColor,
+                    strokeWeight: 0,
+                    scale: 1.2
+                };
+                const pathArray = activePolyline.getPath().getArray();
+                for (let i = 0; i < pathArray.length - 1; i++) {
+                    const p1 = pathArray[i];
+                    const p2 = pathArray[i+1];
+                    const dist = google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
+                    if (dist < 10) continue; // skip tiny segments
+                    const heading = google.maps.geometry.spherical.computeHeading(p1, p2);
+                    // place at 1/3 and 2/3
+                    const frac1 = 1/3, frac2 = 2/3;
+                    const pos1 = google.maps.geometry.spherical.computeOffset(p1, dist * frac1, heading);
+                    const pos2 = google.maps.geometry.spherical.computeOffset(p1, dist * frac2, heading);
+                    const arrowMarker1 = new google.maps.Marker({
+                        position: pos1,
+                        map: map,
+                        icon: { ...arrowSymbol, rotation: heading },
+                        clickable: false
+                    });
+                    const arrowMarker2 = new google.maps.Marker({
+                        position: pos2,
+                        map: map,
+                        icon: { ...arrowSymbol, rotation: heading },
+                        clickable: false
+                    });
+                    arrowMarkers.push(arrowMarker1, arrowMarker2);
+                }
             }
         }
 
@@ -868,10 +908,31 @@
                 if (!document.getElementById('map-modal').style.display || document.getElementById('map-modal').style.display === 'none') {
                     openMap();
                 }
+                // Zoom to all waypoints
+                zoomToAllWaypoints();
                 updateUI();
                 if (createRouteMainBtn) createRouteMainBtn.classList.add('active');
                 if (createRouteMapBtn) createRouteMapBtn.classList.add('active');
             });
+        }
+
+        function zoomToAllWaypoints() {
+            const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+            const bounds = new google.maps.LatLngBounds();
+            let hasPoints = false;
+            pendingIds.forEach(id => {
+                const job = jobs[id];
+                if (job.lat && job.lng) {
+                    bounds.extend({ lat: job.lat, lng: job.lng });
+                    hasPoints = true;
+                }
+            });
+            if (hasPoints && map) {
+                map.fitBounds(bounds);
+            } else if (map) {
+                map.setCenter({ lat: 49.8425, lng: -99.9497 });
+                map.setZoom(12);
+            }
         }
 
         function assignNumber(jobId) {
@@ -1110,8 +1171,7 @@
                         btn.classList.add('pulse-glow');
                         btn.classList.remove('active');
                     } else if (isOrdering) {
-                        btn.classList.add('active');
-                        btn.classList.remove('pulse-glow');
+                        btn.classList.add('active', 'pulse-glow');
                     } else {
                         btn.classList.remove('pulse-glow', 'active');
                     }
@@ -1130,13 +1190,7 @@
             });
             mainMap = map;
 
-            const bullseyeDiv = document.createElement('div');
-            bullseyeDiv.innerHTML = `<button class="bullseye-btn" id="bullseye-btn" aria-label="Track my location">🎯</button>`;
-            const bullseyeBtn = bullseyeDiv.querySelector('#bullseye-btn');
-            map.controls[google.maps.ControlPosition.BOTTOM_RIGHT].push(bullseyeDiv);
-            bullseyeBtn.addEventListener('click', function() {
-                if (isTracking) stopTracking(); else startTracking();
-            });
+            // Bullseye button removed as per request
 
             initAddressPickerMap();
             updateUI();
@@ -1432,7 +1486,7 @@
             closeAddressPicker();
         }
 
-        // ---------- TRACKING ----------
+        // ---------- TRACKING (removed bullseye control, but keep functions for safety) ----------
         function startTracking() {
             if (!navigator.geolocation) { alert("Geolocation not supported."); return; }
             const btn = document.getElementById('bullseye-btn');
