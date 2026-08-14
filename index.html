@@ -458,7 +458,7 @@
                 const username = email.split('@')[0].toLowerCase();
                 db.ref(`roles/${username}/command`).once('value').then(snap => {
                     if (snap.val() === true) {
-                        currentUser = username;
+                        currentUser = username.charAt(0).toUpperCase() + username.slice(1);
                         document.getElementById('login-overlay').style.display = 'none';
                         initApp();
                     } else {
