@@ -608,15 +608,7 @@
             } else {
                 counter.style.display = 'none';
             }
-            // Check for new stops to auto-insert (only if finalized)
-            if (routeState.isFinalized) {
-                const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
-                const assignedIds = Object.keys(routeState.assignedIndices);
-                const newIds = pendingIds.filter(id => !assignedIds.includes(id));
-                if (newIds.length > 0) {
-                    autoInsertNewStop();
-                }
-            }
+            // Removed auto-insertion of new stops when finalized
         }
 
         // ---------- RENDER LIST ----------
@@ -691,20 +683,33 @@
 
                 const number = routeState.assignedIndices[id] || null;
                 const isAssigned = number !== null;
-                const labelText = isAssigned ? `${number}. ${job.name || ''}` : job.name || '';
+                let labelText = isAssigned ? `${number}. ${job.name || ''}` : job.name || '';
 
                 let marker;
                 if (isFinal) {
-                    marker = new google.maps.Marker({
-                        position: { lat, lng },
-                        map: map,
-                        label: {
+                    // For unassigned jobs, display with larger gold label
+                    let labelOptions;
+                    if (number === null) {
+                        labelOptions = {
+                            text: labelText,
+                            color: '#FFD700',
+                            fontWeight: 'bold',
+                            fontSize: '16px',
+                            className: 'driver-map-label'
+                        };
+                    } else {
+                        labelOptions = {
                             text: labelText,
                             color: '#00b32d',
                             fontWeight: 'bold',
                             fontSize: '12px',
                             className: 'driver-map-label'
-                        },
+                        };
+                    }
+                    marker = new google.maps.Marker({
+                        position: { lat, lng },
+                        map: map,
+                        label: labelOptions,
                         icon: {
                             path: google.maps.SymbolPath.CIRCLE,
                             scale: 14,
@@ -842,9 +847,9 @@
                     path: 'M 0,-6 L 4,0 L 0,6 L -4,0 Z',
                     fillColor: arrowColor,
                     fillOpacity: 1,
-                    strokeColor: arrowColor,
-                    strokeWeight: 0,
-                    scale: 1.2
+                    strokeColor: '#000000',
+                    strokeWeight: 1,
+                    scale: 2.5
                 };
                 const pathArray = activePolyline.getPath().getArray();
                 for (let i = 0; i < pathArray.length - 1; i++) {
@@ -1051,79 +1056,8 @@
             }).catch(err => alert("Error adding job: " + err.message));
         }
 
-        // ---------- AUTO-INSERTION ----------
-        function autoInsertNewStop() {
-            if (!routeState.isFinalized) return;
-            const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
-            const assignedIds = Object.keys(routeState.assignedIndices);
-            const newIds = pendingIds.filter(id => !assignedIds.includes(id));
-            if (newIds.length === 0) return;
-
-            const newId = newIds[0];
-            const newJob = jobs[newId];
-            if (!newJob || !newJob.lat || !newJob.lng) {
-                geocodeJob(newId).then(() => {
-                    autoInsertNewStop(); // retry after geocode
-                }).catch(() => {
-                    // If geocode fails, just append at end
-                    routeState.order.push(newId);
-                    routeState.assignedIndices[newId] = routeState.order.length;
-                    saveRouteState();
-                    updateUI();
-                    updatePolyline();
-                });
-                return;
-            }
-
-            const origin = { lat: 49.8425, lng: -99.9497 };
-            const order = routeState.order;
-            if (order.length === 0) {
-                routeState.order.push(newId);
-                routeState.assignedIndices[newId] = 1;
-                saveRouteState();
-                updateUI();
-                updatePolyline();
-                return;
-            }
-
-            const coords = order.map(id => {
-                const job = jobs[id];
-                return job ? { lat: job.lat, lng: job.lng } : null;
-            }).filter(c => c !== null);
-            const points = [origin, ...coords, origin];
-            let bestIdx = -1, bestExtra = Infinity;
-            for (let i = 1; i < points.length; i++) {
-                const p1 = points[i-1];
-                const p2 = points[i];
-                const d1 = haversineDistance(p1, newJob.lat, newJob.lng);
-                const d2 = haversineDistance(newJob.lat, newJob.lng, p2);
-                const dOrig = haversineDistance(p1, p2);
-                const extra = d1 + d2 - dOrig;
-                if (extra < bestExtra) {
-                    bestExtra = extra;
-                    bestIdx = i;
-                }
-            }
-            let insertIdx = bestIdx - 1;
-            if (insertIdx < 0) insertIdx = 0;
-            if (insertIdx > order.length) insertIdx = order.length;
-            order.splice(insertIdx, 0, newId);
-            const newAssigned = {};
-            order.forEach((id, idx) => { newAssigned[id] = idx + 1; });
-            routeState.assignedIndices = newAssigned;
-            saveRouteState();
-            updateUI();
-            updatePolyline();
-        }
-
-        function haversineDistance(p1, lat2, lng2) {
-            const R = 6371;
-            const lat1 = p1.lat, lng1 = p1.lng;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLng = (lng2 - lng1) * Math.PI / 180;
-            const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        }
+        // ---------- AUTO-INSERTION (removed - no longer used) ----------
+        // function autoInsertNewStop() { ... } // removed
 
         // ---------- DELETE JOB ----------
         function deleteJob(id) {
@@ -1177,19 +1111,34 @@
 
             [createRouteMainBtn, createRouteMapBtn].forEach(btn => {
                 if (!btn) return;
-                const allAssigned = isFinal && pending.every(id => routeState.assignedIndices[id] !== undefined);
-                if (!hasStops || allAssigned) {
-                    btn.disabled = true;
-                    btn.classList.remove('pulse-glow', 'active');
-                } else {
+                // Map button is never disabled (unless no stops? but we allow click)
+                if (btn.id === 'create-route-map') {
                     btn.disabled = false;
-                    if (!isFinal && !isOrdering) {
-                        btn.classList.add('pulse-glow');
-                        btn.classList.remove('active');
-                    } else if (isOrdering) {
-                        btn.classList.add('active', 'pulse-glow');
-                    } else {
+                    // Manage classes for map button
+                    if (!hasStops) {
                         btn.classList.remove('pulse-glow', 'active');
+                    } else {
+                        if (isOrdering) {
+                            btn.classList.add('active', 'pulse-glow');
+                        } else {
+                            btn.classList.remove('pulse-glow', 'active');
+                        }
+                    }
+                } else {
+                    // Main page button: disabled only when no stops
+                    if (!hasStops) {
+                        btn.disabled = true;
+                        btn.classList.remove('pulse-glow', 'active');
+                    } else {
+                        btn.disabled = false;
+                        if (!isFinal && !isOrdering) {
+                            btn.classList.add('pulse-glow');
+                            btn.classList.remove('active');
+                        } else if (isOrdering) {
+                            btn.classList.add('active', 'pulse-glow');
+                        } else {
+                            btn.classList.remove('pulse-glow', 'active');
+                        }
                     }
                 }
             });
