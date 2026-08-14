@@ -573,7 +573,8 @@
                             etaTotalMinutes = saved.etaTotalMinutes;
                             etaTotalKm = saved.etaTotalKm || 0;
                         }
-                        // Do NOT call saveRouteState() here to avoid overwriting loaded data
+                        // Update route_state to keep in sync
+                        saveRouteState();
                         updateUI();
                         updateETADisplay();
                         return;
@@ -601,7 +602,8 @@
                                     etaTotalMinutes = saved.etaTotalMinutes;
                                     etaTotalKm = saved.etaTotalKm || 0;
                                 }
-                                // Do NOT call saveRouteState() here
+                                // Update route_state
+                                saveRouteState();
                                 updateUI();
                                 updateETADisplay();
                                 return;
@@ -621,7 +623,7 @@
                         const newAssigned = {};
                         routeState.order.forEach((id, i) => newAssigned[id] = i+1);
                         routeState.assignedIndices = newAssigned;
-                        // Do NOT call saveRouteState() here
+                        // Do NOT call saveRouteState() here to avoid overwriting loaded data
                     } else {
                         routeState.order = [];
                         routeState.isFinalized = false;
