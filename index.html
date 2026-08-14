@@ -103,8 +103,8 @@
         }
         .create-route-btn.map-modal-btn {
             position: fixed;
-            top: 60px;
-            left: 20px;
+            top: 80px;
+            left: 10px;
             z-index: 3005;
             width: 140px;
             height: 40px;
@@ -619,7 +619,7 @@
             }
         }
 
-        // ---------- RENDER LIST (unchanged) ----------
+        // ---------- RENDER LIST ----------
         function renderList() {
             const container = document.getElementById('job-list');
             const emptyState = document.getElementById('empty-state');
@@ -653,15 +653,14 @@
                 const isPending = !routeState.isFinalized && number === null;
                 const pendingClass = isPending ? 'pending' : '';
                 const numberDisplay = number !== null ? number : '';
-                const pendingBadge = isPending ? '<span class="pending-badge">PENDING</span>' : '';
                 html += `
-                    <div class="job-item ${pendingClass}" data-id="${id}">
+                    <div class="job-item ${pendingClass}" data-id="${id}" onclick="openJobInMaps('${id}')">
                         <span class="job-number">${numberDisplay}</span>
                         <div class="job-info">
-                            <div class="job-name">${job.name || 'No name'} ${pendingBadge}</div>
+                            <div class="job-name">${job.name || 'No name'}</div>
                             <div class="job-address">${job.pickup_location || ''}, ${job.city || ''}</div>
                         </div>
-                        <svg class="delete-icon" viewBox="0 0 24 24" onclick="deleteJob('${id}')">
+                        <svg class="delete-icon" viewBox="0 0 24 24" onclick="deleteJob('${id}'); event.stopPropagation();">
                             <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                         </svg>
                     </div>
@@ -762,23 +761,23 @@
                             center: { lat, lng },
                             radius: 20,
                             fillColor: '#2196F3',
-                            fillOpacity: 0.3,
+                            fillOpacity: 0.4,
                             strokeColor: '#2196F3',
                             strokeWeight: 2,
-                            strokeOpacity: 0.6
+                            strokeOpacity: 0.7
                         });
                         let growing = true;
                         const interval = setInterval(() => {
                             let rad = circle.getRadius();
-                            if (growing) { rad += 2; if (rad > 35) growing = false; }
-                            else { rad -= 2; if (rad < 18) growing = true; }
+                            if (growing) { rad += 3; if (rad > 45) growing = false; }
+                            else { rad -= 3; if (rad < 15) growing = true; }
                             circle.setRadius(rad);
                             let op = circle.getFillOpacity();
-                            if (growing) op = Math.min(op + 0.05, 0.6);
-                            else op = Math.max(op - 0.05, 0.15);
+                            if (growing) op = Math.min(op + 0.05, 0.8);
+                            else op = Math.max(op - 0.05, 0.2);
                             circle.setFillOpacity(op);
                             circle.setStrokeOpacity(op);
-                        }, 80);
+                        }, 60);
                         pulsingMarkers[id] = { marker, circle, interval };
                         marker.addListener('click', () => assignNumber(id));
                     }
@@ -906,7 +905,7 @@
 
                 isOrderingMode = true;
                 if (!document.getElementById('map-modal').style.display || document.getElementById('map-modal').style.display === 'none') {
-                    openMap();
+                    openMap(true);
                 }
                 // Zoom to all waypoints
                 zoomToAllWaypoints();
@@ -1153,6 +1152,22 @@
             }
         }
 
+        // ---------- OPEN JOB IN MAPS ----------
+        function openJobInMaps(jobId) {
+            const job = jobs[jobId];
+            if (!job) return;
+            const address = `${job.pickup_location}, ${job.city}`;
+            const encoded = encodeURIComponent(address);
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            if (/android/i.test(userAgent)) {
+                window.location.href = `intent://maps.google.com/maps?daddr=${encoded}&directionsmode=driving#Intent;scheme=https;package=com.google.android.apps.maps;end`;
+            } else if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+                window.location.href = `comgooglemaps://?daddr=${encoded}&directionsmode=driving`;
+            } else {
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encoded}&travelmode=driving`, '_blank');
+            }
+        }
+
         // ---------- UPDATE CREATE ROUTE BUTTON ----------
         function updateCreateRouteButton() {
             const pending = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
@@ -1162,7 +1177,8 @@
 
             [createRouteMainBtn, createRouteMapBtn].forEach(btn => {
                 if (!btn) return;
-                if (!hasStops) {
+                const allAssigned = isFinal && pending.every(id => routeState.assignedIndices[id] !== undefined);
+                if (!hasStops || allAssigned) {
                     btn.disabled = true;
                     btn.classList.remove('pulse-glow', 'active');
                 } else {
@@ -1196,11 +1212,13 @@
             updateUI();
         }
 
-        function openMap() {
+        function openMap(zoomToAll) {
             document.getElementById('map-modal').style.display = 'block';
             setTimeout(() => {
                 google.maps.event.trigger(map, 'resize');
-                if (routeState.isFinalized && activePolyline) {
+                if (zoomToAll) {
+                    zoomToAllWaypoints();
+                } else if (routeState.isFinalized && activePolyline) {
                     const bounds = new google.maps.LatLngBounds();
                     activePolyline.getPath().forEach(p => bounds.extend(p));
                     map.fitBounds(bounds);
