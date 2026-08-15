@@ -409,6 +409,7 @@
 
         // Global variables
         let currentUser = null;
+        let currentRouteKey = null;
         let jobs = {};
         let addressData = {};
         let map, mainMap, mapMarkers = {}, activePolyline = null;
@@ -460,9 +461,13 @@
                     if (snap.val() === true) {
                         db.ref('developer/route_planner/saved_routes').once('value').then(routesSnap => {
                             const routesData = routesSnap.val() || {};
-                            const existingKey = Object.keys(routesData).find(k => k.toLowerCase() === username.toLowerCase());
-                            currentUser = existingKey || (username.charAt(0).toUpperCase() + username.slice(1));
-                            console.log('Resolved currentUser key for route lookup:', currentUser);
+                            const existingKey = Object.keys(routesData).find(k => {
+                                const r = routesData[k];
+                                return r && r.label && r.label.toLowerCase().trim() === username.toLowerCase().trim();
+                            });
+                            currentUser = username.charAt(0).toUpperCase() + username.slice(1);
+                            currentRouteKey = existingKey || currentUser;
+                            console.log('Resolved currentUser key for route lookup:', currentRouteKey);
                             document.getElementById('login-overlay').style.display = 'none';
                             initApp();
                         });
@@ -532,7 +537,7 @@
         // ---------- ROUTE STATE PERSISTENCE ----------
         function saveRouteState() {
             if (!currentUser) return;
-            const stateRef = db.ref(`developer/route_planner/route_state/${currentUser}`);
+            const stateRef = db.ref(`developer/route_planner/route_state/${currentRouteKey}`);
             stateRef.set({
                 order: routeState.order,
                 isFinalized: routeState.isFinalized,
@@ -550,13 +555,13 @@
                 etaTotalMinutes: etaTotalMinutes,
                 etaTotalKm: etaTotalKm
             };
-            db.ref(`developer/route_planner/saved_routes/${currentUser}`).set(routeData).catch(err => console.warn("Save saved route error:", err));
+            db.ref(`developer/route_planner/saved_routes/${currentRouteKey}`).set(routeData).catch(err => console.warn("Save saved route error:", err));
         }
 
         // ---------- LOAD ROUTE STATE (FIXED) ----------
         function loadRouteState() {
             if (!currentUser) return;
-            const savedRef = db.ref(`developer/route_planner/saved_routes/${currentUser}`);
+            const savedRef = db.ref(`developer/route_planner/saved_routes/${currentRouteKey}`);
             savedRef.once('value').then(snap => {
                 const saved = snap.val();
                 if (saved && (saved.order || saved.stops)) {
@@ -626,7 +631,7 @@
                 }
 
                 // 3) Fallback to route_state
-                db.ref(`developer/route_planner/route_state/${currentUser}`).once('value').then(snap2 => {
+                db.ref(`developer/route_planner/route_state/${currentRouteKey}`).once('value').then(snap2 => {
                     const data = snap2.val();
                     if (data) {
                         let orderArr = data.order ? (Array.isArray(data.order) ? data.order : Object.values(data.order)) : [];
