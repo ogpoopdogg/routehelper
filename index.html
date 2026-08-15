@@ -360,12 +360,12 @@
         }
 
         /* Added animation for checked items moving to bottom */
-        @keyframes slideUpFromBottom {
-            from { transform: translateY(30px); opacity: 0; }
+        @keyframes slideDownToBottom {
+            from { transform: translateY(-50px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
         .checked-slide {
-            animation: slideUpFromBottom 0.4s ease forwards;
+            animation: slideDownToBottom 0.4s ease forwards;
         }
     </style>
 </head>
@@ -1624,7 +1624,8 @@
                     }
                 } else {
                     // Main page button
-                    if (!hasStops || isFinal) {
+                    const unassigned = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup' && !routeState.assignedIndices[id]).length;
+                    if (!hasStops || (isFinal && unassigned === 0)) {
                         btn.disabled = true;
                         btn.classList.remove('pulse-glow', 'active');
                     } else {
