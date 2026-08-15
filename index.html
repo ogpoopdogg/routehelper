@@ -759,8 +759,8 @@
                         "X-Goog-FieldMask": "routes.polyline.encodedPolyline"
                     },
                     body: JSON.stringify({
-                        origin: { latLng: { latitude: originLatLng.lat, longitude: originLatLng.lng } },
-                        destination: { latLng: { latitude: destLatLng.lat, longitude: destLatLng.lng } },
+                        origin: { location: { latLng: { latitude: originLatLng.lat, longitude: originLatLng.lng } } },
+                        destination: { location: { latLng: { latitude: destLatLng.lat, longitude: destLatLng.lng } } },
                         travelMode: "DRIVE"
                     })
                 });
