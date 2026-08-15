@@ -59,7 +59,8 @@
 
         #job-list-container { background: var(--card); border-radius: 12px; padding: 15px; margin: 20px; border: 1px solid var(--border); box-shadow: var(--shadow-soft); }
         #job-list { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
-        .job-item { display: flex; align-items: center; gap: 12px; background: var(--input-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); cursor: default; user-select: none; -webkit-user-select: none; position: relative; }
+        .job-item { display: flex; align-items: center; gap: 12px; background: var(--input-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); cursor: default; user-select: none; -webkit-user-select: none; position: relative; transition: background 0.3s, border-color 0.3s; }
+        .job-item.checked { background: #22c55e33; border-color: #22c55e; }
         .job-number { background: #fff; color: #000; font-weight: 900; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
         .job-info { flex: 1; overflow: hidden; }
         .job-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -272,6 +273,38 @@
         .address-pin-btn svg { width: 22px; height: 22px; fill: var(--accent); stroke: #333; stroke-width: 1; }
         .address-pin-btn:hover { opacity: 0.8; }
 
+        .checkbox-empty {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #888;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            background: transparent;
+            position: relative;
+        }
+        .checkbox-empty.checked {
+            border-color: #22c55e;
+            background: #22c55e;
+            animation: checkPop 0.3s ease;
+        }
+        .checkbox-empty.checked::after {
+            content: "✓";
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        @keyframes checkPop {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
         @media (max-width: 768px) {
             header { padding: 8px 12px; }
             .header-logo { height: 20px; }
@@ -317,28 +350,33 @@
     <!-- Input fields -->
     <div style="padding: 20px;">
         <div style="background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); box-shadow: var(--shadow-soft);">
-            <div class="flex-row">
-                <div class="rel" style="position: relative; width: 100%;">
-                    <input type="text" id="f-name" class="glow-field" placeholder="Contact/Business Name" autocomplete="off" oninput="handleNameInput(this.value)" onblur="setTimeout(()=>document.getElementById('suggestions').style.display='none', 200)" style="padding-right:50px;">
-                    <div id="suggestions" class="suggestions-box"></div>
-                    <div onclick="resetFormFields()" class="suggestion-reset" style="right:36px;">RESET</div>
+            <div id="input-fields-container" style="display:none;">
+                <div class="flex-row">
+                    <div class="rel" style="position: relative; width: 100%;">
+                        <input type="text" id="f-name" class="glow-field" placeholder="Contact/Business Name" autocomplete="off" oninput="handleNameInput(this.value)" onblur="setTimeout(()=>document.getElementById('suggestions').style.display='none', 200)" style="padding-right:50px;">
+                        <div id="suggestions" class="suggestions-box"></div>
+                        <div onclick="resetFormFields()" class="suggestion-reset" style="right:36px;">RESET</div>
+                    </div>
+                </div>
+                <div class="flex-row">
+                    <div class="input-wrap" style="flex: 0.7; position: relative;">
+                        <input type="text" id="f-address" placeholder="Address">
+                        <button class="address-pin-btn" onclick="openAddressPicker()" aria-label="Pick address from map">
+                            <svg viewBox="0 0 24 24" width="22" height="22">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="input-wrap" style="flex: 0.3;">
+                        <input type="text" id="f-city" placeholder="City" oninput="handleCityInput(this.value)">
+                        <div id="city-suggestions" class="suggestions-box"></div>
+                    </div>
                 </div>
             </div>
-            <div class="flex-row">
-                <div class="input-wrap" style="flex: 0.7; position: relative;">
-                    <input type="text" id="f-address" placeholder="Address">
-                    <button class="address-pin-btn" onclick="openAddressPicker()" aria-label="Pick address from map">
-                        <svg viewBox="0 0 24 24" width="22" height="22">
-                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="input-wrap" style="flex: 0.3;">
-                    <input type="text" id="f-city" placeholder="City" oninput="handleCityInput(this.value)">
-                    <div id="city-suggestions" class="suggestions-box"></div>
-                </div>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:10px;">
+                <button id="add-route-toggle-btn" class="btn-add" style="flex:1; margin-top:0;" onclick="toggleInputFields()">ADD TO ROUTE</button>
+                <button id="close-input-btn" style="display:none; background:#b71c1c; color:#fff; border:none; padding:14px 16px; border-radius:8px; font-weight:700; cursor:pointer; font-size:16px;" onclick="collapseInputFields()">✕</button>
             </div>
-            <button class="btn-add" onclick="addJob()" style="width:100%; margin-top:10px;">ADD TO ROUTE</button>
         </div>
 
         <!-- CREATE ROUTE button (main page) -->
@@ -421,6 +459,7 @@
         let returnPath = null; // array of google.maps.LatLng
         let forwardPolyline = null; // google.maps.Polyline
         let returnPolyline = null; // google.maps.Polyline
+        let combinedPath = []; // single combined path for finalized route
 
         // New ordering state
         let routeState = {
@@ -440,6 +479,10 @@
         let selectedLocation = null;
         let arrowMarkers = [];
         let originMarker = null;
+
+        // Checked stops
+        let checkedJobs = {};
+        let checkedListener = null;
 
         // Theme
         if (localStorage.getItem('ec_theme') === 'light') document.body.classList.add('light-mode');
@@ -504,6 +547,17 @@
             createRouteMainBtn = document.getElementById('create-route-main');
             createRouteMapBtn = document.getElementById('create-route-map');
             updateCreateRouteButton();
+
+            // Listen for checked stops for this user
+            if (currentUser) {
+                const checkedRef = db.ref(`developer/route_planner/checked_stops/${currentUser}`);
+                if (checkedListener) checkedListener();
+                checkedListener = checkedRef.on('value', snap => {
+                    checkedJobs = snap.val() || {};
+                    // Update UI to reflect check marks
+                    renderList();
+                });
+            }
         }
 
         // ---------- GEOCODING HELPERS ----------
@@ -558,25 +612,17 @@
             db.ref(`developer/route_planner/saved_routes/${currentRouteKey}`).set(routeData).catch(err => console.warn("Save route state error:", err));
         }
 
-        // ---------- REDRAW ROUTE FROM CURRENT STATE ----------
+        // ---------- REDRAW ROUTE FROM CURRENT STATE (updated to match ref.html) ----------
         function redrawRouteFromCurrentState() {
             if (!map) return;
             // Clear existing polylines
             clearRoutePolylines();
             if (routeState.isFinalized && routeState.order.length > 0) {
-                // Draw forward and return paths
-                updateForwardRoute().then(() => {
-                    fetchReturnRoute().then(() => {
-                        updatePolyline();
-                    });
-                });
-            } else if (isOrderingMode && routeState.order.length > 0) {
-                // Draw forward path only
-                updateForwardRoute().then(() => {
-                    updatePolyline();
-                });
+                // Compute and draw the full route (forward + return) using the same method as ref.html
+                computeAndDrawRoute();
             } else {
-                // Nothing to draw
+                // No route to draw
+                combinedPath = [];
                 updatePolyline();
             }
         }
@@ -596,218 +642,132 @@
             arrowMarkers = [];
         }
 
-        // ---------- UPDATE POLYLINE (NEW) ----------
+        // ---------- UPDATE POLYLINE (new single polyline with arrows) ----------
         function updatePolyline() {
             if (!map) return;
             // Clear old polylines and arrows
             clearRoutePolylines();
 
-            // Combine forward segments into one path
-            let forwardPath = [];
-            forwardSegments.forEach(seg => {
-                forwardPath = forwardPath.concat(seg);
+            // Use combinedPath if available
+            let path = combinedPath;
+            if (!path || path.length < 2) return;
+
+            // Draw forward polyline (blue) - using combined path
+            forwardPolyline = new google.maps.Polyline({
+                path: path,
+                geodesic: true,
+                strokeColor: "#00d4ff",
+                strokeOpacity: 0.8,
+                strokeWeight: 6,
+                map: map,
+                zIndex: 1
             });
 
-            // Draw forward polyline (blue)
-            if (forwardPath.length > 1) {
-                forwardPolyline = new google.maps.Polyline({
-                    path: forwardPath,
-                    geodesic: true,
-                    strokeColor: "#00d4ff",
-                    strokeOpacity: 0.8,
-                    strokeWeight: 6,
+            // Add blue arrows on the path (every segment)
+            const arrowColor = "#00d4ff";
+            const arrowSymbol = {
+                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                fillColor: arrowColor,
+                fillOpacity: 1,
+                strokeColor: '#000000',
+                strokeWeight: 1,
+                scale: 4
+            };
+            // Place arrows at 1/3 and 2/3 of each segment
+            for (let i = 0; i < path.length - 1; i++) {
+                const p1 = path[i];
+                const p2 = path[i+1];
+                const dist = google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
+                if (dist < 10) continue;
+                const heading = google.maps.geometry.spherical.computeHeading(p1, p2);
+                const frac1 = 1/3, frac2 = 2/3;
+                const pos1 = google.maps.geometry.spherical.computeOffset(p1, dist * frac1, heading);
+                const pos2 = google.maps.geometry.spherical.computeOffset(p1, dist * frac2, heading);
+                const arrowMarker1 = new google.maps.Marker({
+                    position: pos1,
                     map: map,
-                    zIndex: 1
+                    icon: { ...arrowSymbol, rotation: heading },
+                    clickable: false,
+                    zIndex: 2
                 });
-
-                // Add blue arrows on forward segments
-                const arrowColor = "#00d4ff";
-                const arrowSymbol = {
-                    path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                    fillColor: arrowColor,
-                    fillOpacity: 1,
-                    strokeColor: '#000000',
-                    strokeWeight: 1,
-                    scale: 4
-                };
-                // Iterate over each segment to place arrows at 1/3 and 2/3
-                let cumulativeIndex = 0;
-                forwardSegments.forEach(seg => {
-                    if (seg.length < 2) return;
-                    for (let i = 0; i < seg.length - 1; i++) {
-                        const p1 = seg[i];
-                        const p2 = seg[i+1];
-                        const dist = google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
-                        if (dist < 10) continue;
-                        const heading = google.maps.geometry.spherical.computeHeading(p1, p2);
-                        const frac1 = 1/3, frac2 = 2/3;
-                        const pos1 = google.maps.geometry.spherical.computeOffset(p1, dist * frac1, heading);
-                        const pos2 = google.maps.geometry.spherical.computeOffset(p1, dist * frac2, heading);
-                        const arrowMarker1 = new google.maps.Marker({
-                            position: pos1,
-                            map: map,
-                            icon: { ...arrowSymbol, rotation: heading },
-                            clickable: false,
-                            zIndex: 2
-                        });
-                        const arrowMarker2 = new google.maps.Marker({
-                            position: pos2,
-                            map: map,
-                            icon: { ...arrowSymbol, rotation: heading },
-                            clickable: false,
-                            zIndex: 2
-                        });
-                        arrowMarkers.push(arrowMarker1, arrowMarker2);
-                    }
-                });
-            }
-
-            // Draw return polyline (red) if exists
-            if (returnPath && returnPath.length > 1) {
-                returnPolyline = new google.maps.Polyline({
-                    path: returnPath,
-                    geodesic: true,
-                    strokeColor: "#ff3333",
-                    strokeOpacity: 1.0,
-                    strokeWeight: 6,
+                const arrowMarker2 = new google.maps.Marker({
+                    position: pos2,
                     map: map,
-                    zIndex: 3 // above forward
+                    icon: { ...arrowSymbol, rotation: heading },
+                    clickable: false,
+                    zIndex: 2
                 });
-
-                // Add red arrows on return path
-                const redArrowSymbol = {
-                    path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                    fillColor: "#ff3333",
-                    fillOpacity: 1,
-                    strokeColor: '#000000',
-                    strokeWeight: 1,
-                    scale: 4
-                };
-                for (let i = 0; i < returnPath.length - 1; i++) {
-                    const p1 = returnPath[i];
-                    const p2 = returnPath[i+1];
-                    const dist = google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
-                    if (dist < 10) continue;
-                    const heading = google.maps.geometry.spherical.computeHeading(p1, p2);
-                    const frac1 = 1/3, frac2 = 2/3;
-                    const pos1 = google.maps.geometry.spherical.computeOffset(p1, dist * frac1, heading);
-                    const pos2 = google.maps.geometry.spherical.computeOffset(p1, dist * frac2, heading);
-                    const arrowMarker1 = new google.maps.Marker({
-                        position: pos1,
-                        map: map,
-                        icon: { ...redArrowSymbol, rotation: heading },
-                        clickable: false,
-                        zIndex: 4
-                    });
-                    const arrowMarker2 = new google.maps.Marker({
-                        position: pos2,
-                        map: map,
-                        icon: { ...redArrowSymbol, rotation: heading },
-                        clickable: false,
-                        zIndex: 4
-                    });
-                    arrowMarkers.push(arrowMarker1, arrowMarker2);
-                }
+                arrowMarkers.push(arrowMarker1, arrowMarker2);
             }
         }
 
-        // ---------- FETCH DRIVING PATH (using Routes API) ----------
-        async function getDrivingPath(originLatLng, destLatLng) {
-            try {
-                const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-Goog-Api-Key": "AIzaSyA6umETP8wBUEV41ugAtiNiChUeLmmwmZI",
-                        "X-Goog-FieldMask": "routes.polyline.encodedPolyline"
-                    },
-                    body: JSON.stringify({
-                        origin: { latLng: { latitude: originLatLng.lat, longitude: originLatLng.lng } },
-                        destination: { latLng: { latitude: destLatLng.lat, longitude: destLatLng.lng } },
-                        travelMode: "DRIVE"
-                    })
-                });
-                if (!response.ok) {
-                    throw new Error("HTTP " + response.status);
-                }
-                const data = await response.json();
-                if (data.routes && data.routes[0] && data.routes[0].polyline) {
-                    const encoded = data.routes[0].polyline.encodedPolyline;
-                    return google.maps.geometry.encoding.decodePath(encoded);
-                } else {
-                    throw new Error("No route found");
-                }
-            } catch (err) {
-                console.warn("Routes API failed, falling back to straight line:", err);
-                // Fallback: straight line
-                return [originLatLng, destLatLng];
-            }
-        }
-
-        // ---------- UPDATE FORWARD ROUTE ----------
-        async function updateForwardRoute() {
+        // ---------- COMPUTE AND DRAW ROUTE (matching ref.html) ----------
+        async function computeAndDrawRoute() {
             if (!map) return;
             const order = routeState.order;
             if (order.length === 0) {
-                forwardSegments = [];
+                combinedPath = [];
                 updatePolyline();
                 return;
             }
 
-            // Build segments: origin -> stop1, stop1->stop2, ...
-            const originLatLng = { lat: 49.8425, lng: -99.9497 };
-            const stopIds = order;
-            const segments = [];
-            let prev = originLatLng;
-            for (let i = 0; i < stopIds.length; i++) {
-                const id = stopIds[i];
+            // Build array of addresses in order (use first job in group? We have individual jobs)
+            const addresses = order.map(id => {
                 const job = jobs[id];
-                if (!job || !job.lat || !job.lng) {
-                    // If missing coordinates, skip or wait for geocode? 
-                    // For now, skip segment (but should ideally handle)
-                    continue;
-                }
-                const dest = { lat: job.lat, lng: job.lng };
-                try {
-                    const path = await getDrivingPath(prev, dest);
-                    segments.push(path);
-                    prev = dest;
-                } catch (err) {
-                    console.warn("Failed to get path for segment", i, err);
-                    // Fallback to straight line
-                    segments.push([prev, dest]);
-                    prev = dest;
-                }
-            }
-            forwardSegments = segments;
-            updatePolyline();
-        }
+                if (!job) return null;
+                return `${job.pickup_location}, ${job.city}`;
+            }).filter(a => a !== null);
 
-        // ---------- FETCH RETURN ROUTE ----------
-        async function fetchReturnRoute() {
-            if (!map) return;
-            const order = routeState.order;
-            if (order.length === 0) {
-                returnPath = null;
+            if (addresses.length === 0) {
+                combinedPath = [];
                 updatePolyline();
                 return;
             }
-            const lastId = order[order.length - 1];
-            const lastJob = jobs[lastId];
-            if (!lastJob || !lastJob.lat || !lastJob.lng) {
-                returnPath = null;
-                updatePolyline();
-                return;
+
+            const depotAddress = "1604 Moreland Ave, Brandon MB";
+            const maxIntermediates = 25;
+            let combined = [];
+
+            // Split into chunks of 25 waypoints
+            let start = 0;
+            while (start < addresses.length) {
+                let end = Math.min(start + maxIntermediates, addresses.length);
+                let chunk = addresses.slice(start, end);
+                let originAddr = (start === 0) ? depotAddress : addresses[start - 1];
+                let destAddr = (end === addresses.length) ? depotAddress : addresses[end - 1];
+                let intermediates = (end === addresses.length) ? chunk : chunk.slice(0, -1);
+
+                try {
+                    const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-Goog-Api-Key": "AIzaSyA6umETP8wBUEV41ugAtiNiChUeLmmwmZI",
+                            "X-Goog-FieldMask": "routes.polyline.encodedPolyline"
+                        },
+                        body: JSON.stringify({
+                            origin: { address: originAddr },
+                            destination: { address: destAddr },
+                            intermediates: intermediates.map(addr => ({ address: addr })),
+                            travelMode: "DRIVE",
+                            optimizeWaypointOrder: false
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.routes && data.routes[0] && data.routes[0].polyline) {
+                        const encoded = data.routes[0].polyline.encodedPolyline;
+                        const path = google.maps.geometry.encoding.decodePath(encoded);
+                        combined = combined.concat(path);
+                    } else {
+                        console.warn("Route chunk failed:", data);
+                    }
+                } catch (e) {
+                    console.warn("Error fetching route chunk:", e);
+                }
+                start = end;
             }
-            const originLatLng = { lat: 49.8425, lng: -99.9497 };
-            const lastLatLng = { lat: lastJob.lat, lng: lastJob.lng };
-            try {
-                const path = await getDrivingPath(lastLatLng, originLatLng);
-                returnPath = path;
-            } catch (err) {
-                console.warn("Failed to get return path", err);
-                returnPath = [lastLatLng, originLatLng]; // fallback straight line
-            }
+
+            combinedPath = combined;
             updatePolyline();
         }
 
@@ -836,7 +796,7 @@
             }
         }
 
-        // ---------- RENDER LIST ----------
+        // ---------- RENDER LIST (with checkboxes) ----------
         function renderList() {
             const container = document.getElementById('job-list');
             const emptyState = document.getElementById('empty-state');
@@ -873,13 +833,16 @@
                 const isPending = number === null;
                 const pendingClass = isPending ? 'pending' : '';
                 const numberDisplay = number !== null ? number : '';
+                const isChecked = checkedJobs[id] === true;
+                const checkedClass = isChecked ? 'checked' : '';
                 html += `
-                    <div class="job-item ${pendingClass}" data-id="${id}" onclick="openJobInMaps('${id}')">
+                    <div class="job-item ${pendingClass} ${checkedClass}" data-id="${id}" onclick="openJobInMaps('${id}')">
                         <span class="job-number">${numberDisplay}</span>
                         <div class="job-info">
                             <div class="job-name">${job.name || 'No name'}</div>
                             <div class="job-address">${job.pickup_location || ''}, ${job.city || ''}</div>
                         </div>
+                        <div class="checkbox-empty ${isChecked ? 'checked' : ''}" onclick="toggleCheck('${id}'); event.stopPropagation();"></div>
                         <svg class="delete-icon" viewBox="0 0 24 24" onclick="deleteJob('${id}'); event.stopPropagation();">
                             <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                         </svg>
@@ -887,6 +850,17 @@
                 `;
             });
             container.innerHTML = html;
+        }
+
+        // ---------- TOGGLE CHECK ----------
+        function toggleCheck(jobId) {
+            if (!currentUser) return;
+            const newVal = !checkedJobs[jobId];
+            // Update Firebase
+            db.ref(`developer/route_planner/checked_stops/${currentUser}/${jobId}`).set(newVal);
+            // Optimistically update UI
+            checkedJobs[jobId] = newVal;
+            renderList();
         }
 
         // ---------- MAP MARKERS ----------
@@ -1066,8 +1040,7 @@
                     routeState.assignedIndices = {};
                     routeState.order = [];
                     // Clear polylines
-                    forwardSegments = [];
-                    returnPath = null;
+                    combinedPath = [];
                     clearRoutePolylines();
                     saveRouteState();
                     updateUI();
@@ -1079,8 +1052,7 @@
                     routeState.order = [];
                     stopPulsingAll();
                     isOrderingMode = false;
-                    forwardSegments = [];
-                    returnPath = null;
+                    combinedPath = [];
                     clearRoutePolylines();
                     saveRouteState();
                     updateUI();
@@ -1158,33 +1130,30 @@
             }
 
             saveRouteState();
-            // Update forward route (fetch segments and draw)
-            updateForwardRoute().then(() => {
-                renderList();
-                updatePolyline();
-                // If all stops assigned, finalize automatically
-                const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
-                const assignedIdsNow = Object.keys(routeState.assignedIndices);
-                if (pendingIds.length === assignedIdsNow.length && pendingIds.length > 0) {
-                    finalizeRoute();
-                }
-            });
+            // Recompute route (only after finalized, but we can update forward path)
+            // We'll just redraw the route after finalization.
+            renderList();
+            // If all stops assigned, finalize automatically
+            const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+            const assignedIdsNow = Object.keys(routeState.assignedIndices);
+            if (pendingIds.length === assignedIdsNow.length && pendingIds.length > 0) {
+                finalizeRoute();
+            }
         }
 
         function finalizeRoute() {
             routeState.isFinalized = true;
             isOrderingMode = false;
             stopPulsingAll();
-            // Fetch return route and redraw
-            fetchReturnRoute().then(() => {
+            // Compute and draw route
+            computeAndDrawRoute().then(() => {
                 updateUI();
                 saveRouteState();
                 if (createRouteMainBtn) createRouteMainBtn.classList.remove('active');
                 if (createRouteMapBtn) createRouteMapBtn.classList.remove('active');
-                if (map && (forwardSegments.length > 0 || returnPath)) {
+                if (map && combinedPath.length > 0) {
                     const bounds = new google.maps.LatLngBounds();
-                    forwardSegments.forEach(seg => seg.forEach(p => bounds.extend(p)));
-                    if (returnPath) returnPath.forEach(p => bounds.extend(p));
+                    combinedPath.forEach(p => bounds.extend(p));
                     map.fitBounds(bounds);
                 }
                 if (etaTotalMinutes > 0) updateETADisplay();
@@ -1257,6 +1226,10 @@
                 db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops/${id}`).remove();
                 // Remove from local jobs
                 delete jobs[id];
+                // Remove checked status
+                if (currentUser) {
+                    db.ref(`developer/route_planner/checked_stops/${currentUser}/${id}`).remove();
+                }
                 // Update state if needed
                 if (routeState.isFinalized) {
                     const idx = routeState.order.indexOf(id);
@@ -1373,10 +1346,9 @@
                 google.maps.event.trigger(map, 'resize');
                 if (zoomToAll) {
                     zoomToAllWaypoints();
-                } else if (routeState.isFinalized && (forwardSegments.length > 0 || returnPath)) {
+                } else if (routeState.isFinalized && combinedPath.length > 0) {
                     const bounds = new google.maps.LatLngBounds();
-                    forwardSegments.forEach(seg => seg.forEach(p => bounds.extend(p)));
-                    if (returnPath) returnPath.forEach(p => bounds.extend(p));
+                    combinedPath.forEach(p => bounds.extend(p));
                     if (bounds.isEmpty()) {
                         map.setCenter({ lat: 49.8425, lng: -99.9497 });
                         map.setZoom(12);
@@ -1396,14 +1368,13 @@
         }
 
         function zoomToAll() {
-            const bounds = new google.maps.LatLngBounds();
-            forwardSegments.forEach(seg => seg.forEach(p => bounds.extend(p)));
-            if (returnPath) returnPath.forEach(p => bounds.extend(p));
-            if (bounds.isEmpty()) {
+            if (combinedPath.length > 0) {
+                const bounds = new google.maps.LatLngBounds();
+                combinedPath.forEach(p => bounds.extend(p));
+                map.fitBounds(bounds);
+            } else {
                 map.setCenter({ lat: 49.8425, lng: -99.9497 });
                 map.setZoom(12);
-            } else {
-                map.fitBounds(bounds);
             }
         }
         function resetMapView() { zoomToAll(); }
@@ -1734,10 +1705,9 @@
             isTracking = false;
             const btn = document.getElementById('bullseye-btn');
             if (btn) btn.classList.remove('active');
-            if (routeState.isFinalized && (forwardSegments.length > 0 || returnPath)) {
+            if (routeState.isFinalized && combinedPath.length > 0) {
                 const bounds = new google.maps.LatLngBounds();
-                forwardSegments.forEach(seg => seg.forEach(p => bounds.extend(p)));
-                if (returnPath) returnPath.forEach(p => bounds.extend(p));
+                combinedPath.forEach(p => bounds.extend(p));
                 map.fitBounds(bounds);
             } else {
                 map.setCenter({ lat: 49.8425, lng: -99.9497 });
@@ -1798,6 +1768,38 @@
                 }
             });
         }
+
+        // ---------- COLLAPSIBLE INPUT FIELDS ----------
+        function toggleInputFields() {
+            const container = document.getElementById('input-fields-container');
+            const toggleBtn = document.getElementById('add-route-toggle-btn');
+            const closeBtn = document.getElementById('close-input-btn');
+            if (container.style.display === 'none') {
+                // Expand
+                container.style.display = 'block';
+                toggleBtn.textContent = 'Add +';
+                toggleBtn.onclick = function() { addJob(); };
+                closeBtn.style.display = 'block';
+            } else {
+                // Collapse - but this is called when clicking Add +, so we actually want to add job.
+                // We'll handle add in the onclick override. So this function will only expand.
+                // But if called directly (e.g., from close), we'll collapse.
+            }
+        }
+
+        function collapseInputFields() {
+            const container = document.getElementById('input-fields-container');
+            const toggleBtn = document.getElementById('add-route-toggle-btn');
+            const closeBtn = document.getElementById('close-input-btn');
+            container.style.display = 'none';
+            toggleBtn.textContent = 'ADD TO ROUTE';
+            toggleBtn.onclick = function() { toggleInputFields(); };
+            closeBtn.style.display = 'none';
+            // Reset fields
+            resetFormFields();
+        }
+
+        // Override addJob to also maybe keep expanded? We'll keep as is.
 
         // ---------- PWA INSTALL ----------
         let deferredPrompt;
