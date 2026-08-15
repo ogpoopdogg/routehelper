@@ -864,7 +864,7 @@
             }
 
             // Build segments: origin -> stop1, stop1->stop2, ...
-            const originLatLng = { lat: 49.8425, lng: -99.9497 };
+            const originLatLng = { lat: 49.881157, lng: -99.959272 };
             const stopIds = order;
             const segments = [];
             let prev = originLatLng;
@@ -908,7 +908,7 @@
                 updatePolyline();
                 return;
             }
-            const originLatLng = { lat: 49.8425, lng: -99.9497 };
+            const originLatLng = { lat: 49.881157, lng: -99.959272 };
             const lastLatLng = { lat: lastJob.lat, lng: lastJob.lng };
             try {
                 const path = await getDrivingPath(lastLatLng, originLatLng);
@@ -1233,7 +1233,7 @@
 
         function zoomToAllWaypoints() {
             const bounds = new google.maps.LatLngBounds();
-            bounds.extend({ lat: 49.8425, lng: -99.9497 });
+            bounds.extend({ lat: 49.881157, lng: -99.959272 });
             let hasJob = false;
             const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
             pendingIds.forEach(id => {
@@ -1247,7 +1247,7 @@
                 if (hasJob) {
                     map.fitBounds(bounds);
                 } else {
-                    map.setCenter({ lat: 49.8425, lng: -99.9497 });
+                    map.setCenter({ lat: 49.881157, lng: -99.959272 });
                     map.setZoom(12);
                 }
             }
@@ -1412,7 +1412,7 @@
             const job = jobs[jobId];
             if (!job || !job.lat || !job.lng) return;
 
-            const originLatLng = { lat: 49.8425, lng: -99.9497 };
+            const originLatLng = { lat: 49.881157, lng: -99.959272 };
             let prevLatLng;
             if (order.length === 1) {
                 // First stop, origin is depot
@@ -1511,6 +1511,7 @@
                     last_edit_by: currentUser
                 });
                 resetFormFields();
+                collapseInput();
                 // Geocode the new job after it's added (listener will trigger)
             }).catch(err => alert("Error adding job: " + err.message));
         }
@@ -1610,7 +1611,7 @@
         function initMap() {
             if (!google.maps) return;
             map = new google.maps.Map(document.getElementById('map'), {
-                center: { lat: 49.8425, lng: -99.9497 },
+                center: { lat: 49.881157, lng: -99.959272 },
                 zoom: 12,
                 gestureHandling: 'greedy',
                 styles: document.body.classList.contains('light-mode') ? [] : mapStyles
@@ -1639,7 +1640,7 @@
                 } else {
                     // Do not auto-fit; keep current view
                     // Optionally center on current route if any, but we leave as is
-                    map.setCenter({ lat: 49.8425, lng: -99.9497 });
+                    map.setCenter({ lat: 49.881157, lng: -99.959272 });
                     map.setZoom(12);
                 }
                 updateUI(); // refresh markers after resize
@@ -1655,7 +1656,7 @@
             forwardSegments.forEach(seg => seg.forEach(p => bounds.extend(p)));
             if (returnPath) returnPath.forEach(p => bounds.extend(p));
             if (bounds.isEmpty()) {
-                map.setCenter({ lat: 49.8425, lng: -99.9497 });
+                map.setCenter({ lat: 49.881157, lng: -99.959272 });
                 map.setZoom(12);
             } else {
                 map.fitBounds(bounds);
@@ -1787,7 +1788,7 @@
             if (pickerInitialized) return;
             const container = document.getElementById('picker-map');
             if (!container || !google.maps) return;
-            const defaultCenter = { lat: 49.8425, lng: -99.9497 };
+            const defaultCenter = { lat: 49.881157, lng: -99.959272 };
             pickerMap = new google.maps.Map(container, {
                 center: defaultCenter,
                 zoom: 12,
