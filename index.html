@@ -59,19 +59,44 @@
 
         #job-list-container { background: var(--card); border-radius: 12px; padding: 15px; margin: 20px; border: 1px solid var(--border); box-shadow: var(--shadow-soft); }
         #job-list { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
-        .job-item { display: flex; align-items: center; gap: 12px; background: var(--input-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); cursor: default; user-select: none; -webkit-user-select: none; position: relative; transition: background 0.4s, border-color 0.4s, box-shadow 0.4s; }
-        .job-item.checked { background: #1b5e20 !important; border-color: #4caf50 !important; box-shadow: 0 0 20px rgba(76, 175, 80, 0.5); }
-        .job-item .checkmark-box { width: 28px; height: 28px; border: 2px solid var(--border); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.3s, border-color 0.3s; background: var(--input-bg); position: relative; }
-        .job-item .checkmark-box.checked { background: #4caf50; border-color: #4caf50; }
-        .job-item .checkmark-box.checked::after { content: "✓"; color: white; font-size: 20px; font-weight: bold; line-height: 1; animation: checkPop 0.3s ease; }
-        @keyframes checkPop { 0% { transform: scale(0); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
-        .job-item .checkmark-box:active { transform: scale(0.85); }
+        .job-item { display: flex; align-items: center; gap: 12px; background: var(--input-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); cursor: default; user-select: none; -webkit-user-select: none; position: relative; transition: background 0.3s, border-color 0.3s, box-shadow 0.3s; }
         .job-number { background: #fff; color: #000; font-weight: 900; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
         .job-info { flex: 1; overflow: hidden; }
         .job-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .job-address { font-size: 12px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .job-item.pending { background: #f9731644; border-left: 4px solid #f97316; }
         .job-item .pending-badge { font-size: 10px; background: #f97316; color: #000; padding: 2px 8px; border-radius: 12px; font-weight: 700; margin-left: 8px; }
+
+        /* Checkbox styling */
+        .custom-checkbox {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+        .custom-checkbox:hover { transform: scale(1.1); }
+        .custom-checkbox svg { width: 28px; height: 28px; display: block; }
+        .custom-checkbox .checkmark-path {
+            stroke-dasharray: 100;
+            stroke-dashoffset: 100;
+            transition: stroke-dashoffset 0.4s ease;
+        }
+        .job-item.checked {
+            background: #22c55e33 !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 12px rgba(34,197,94,0.3);
+        }
+        .job-item.checked .custom-checkbox .checkmark-path {
+            stroke-dashoffset: 0;
+        }
+        .job-item.checked .custom-checkbox svg rect {
+            stroke: #22c55e;
+            fill: #22c55e22;
+        }
 
         .create-route-btn {
             background: #2563eb;
@@ -323,7 +348,8 @@
     <!-- Input fields -->
     <div style="padding: 20px;">
         <div style="background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); box-shadow: var(--shadow-soft);">
-            <div id="input-form" style="display:none;">
+            <!-- Collapsible input fields -->
+            <div id="input-fields-wrapper" style="display: none;">
                 <div class="flex-row">
                     <div class="rel" style="position: relative; width: 100%;">
                         <input type="text" id="f-name" class="glow-field" placeholder="Contact/Business Name" autocomplete="off" oninput="handleNameInput(this.value)" onblur="setTimeout(()=>document.getElementById('suggestions').style.display='none', 200)" style="padding-right:50px;">
@@ -345,11 +371,14 @@
                         <div id="city-suggestions" class="suggestions-box"></div>
                     </div>
                 </div>
+                <!-- Expanded buttons -->
+                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                    <button id="add-btn-expanded" class="btn-add" onclick="addJob()" style="flex: 1;">ADD +</button>
+                    <button id="close-btn-expanded" class="btn-add" onclick="collapseInput()" style="flex: 0 0 auto; background: #b71c1c; color: #fff;">X</button>
+                </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px; margin-top:10px;">
-                <button id="add-toggle-btn" class="btn-add" onclick="toggleInputForm()" style="flex:1; min-width:0;">ADD TO ROUTE</button>
-                <span id="close-form-btn" onclick="closeInputForm()" style="display:none; font-size:24px; font-weight:bold; cursor:pointer; color:var(--text);">✕</span>
-            </div>
+            <!-- Collapsed button -->
+            <button id="add-btn-collapsed" class="btn-add" onclick="expandInput()" style="width:100%; margin-top:10px;">ADD TO ROUTE</button>
         </div>
 
         <!-- CREATE ROUTE button (main page) -->
@@ -432,6 +461,7 @@
         let returnPath = null; // array of google.maps.LatLng
         let forwardPolylines = []; // array of google.maps.Polyline
         let returnPolyline = null; // google.maps.Polyline
+        let arrowMarkers = [];
 
         // New ordering state
         let routeState = {
@@ -450,9 +480,6 @@
         let pickerMap = null, pickerMarker = null, pickerGeocoder = null, pickerAutocomplete = null, pickerInitialized = false;
         let selectedLocation = null;
         let originMarker = null;
-
-        // Checked stops
-        let checkedStops = {};
 
         // Theme
         if (localStorage.getItem('ec_theme') === 'light') document.body.classList.add('light-mode');
@@ -513,15 +540,27 @@
                     redrawRouteFromCurrentState();
                 });
             });
-            // Listen to checked stops for this user
-            db.ref(`developer/route_planner/checked_stops/${currentRouteKey}`).on('value', snap => {
-                checkedStops = snap.val() || {};
-                renderList();
-            });
             initPlaces();
             createRouteMainBtn = document.getElementById('create-route-main');
             createRouteMapBtn = document.getElementById('create-route-map');
             updateCreateRouteButton();
+
+            // Listen for checked stops for the current user
+            if (currentUser) {
+                const checkedRef = db.ref(`developer/route_planner/checked_stops/${currentUser.toLowerCase()}`);
+                checkedRef.on('value', snap => {
+                    const checkedData = snap.val() || {};
+                    // Apply checked states to job items
+                    document.querySelectorAll('.job-item').forEach(item => {
+                        const id = item.dataset.id;
+                        if (id && checkedData[id]) {
+                            item.classList.add('checked');
+                        } else if (id) {
+                            item.classList.remove('checked');
+                        }
+                    });
+                });
+            }
         }
 
         // ---------- GEOCODING HELPERS ----------
@@ -601,37 +640,72 @@
 
         // ---------- CLEAR ROUTE POLYLINES ----------
         function clearRoutePolylines() {
+            // Remove forward polylines
             forwardPolylines.forEach(p => p.setMap(null));
             forwardPolylines = [];
             if (returnPolyline) {
                 returnPolyline.setMap(null);
                 returnPolyline = null;
             }
+            // Remove arrow markers
+            arrowMarkers.forEach(m => m.setMap(null));
+            arrowMarkers = [];
         }
 
-        // ---------- UPDATE POLYLINE (NEW) ----------
+        // ---------- UPDATE POLYLINE (per-segment) ----------
         function updatePolyline() {
             if (!map) return;
-            // Clear old polylines
+            // Clear old polylines and arrows
             clearRoutePolylines();
 
-            // Draw forward polylines (one per segment)
-            if (forwardSegments.length > 0) {
-                forwardPolylines = forwardSegments.map(seg => {
-                    if (seg.length < 2) return null;
-                    return new google.maps.Polyline({
-                        path: seg,
-                        geodesic: true,
-                        strokeColor: "#00d4ff",
-                        strokeOpacity: 0.8,
-                        strokeWeight: 6,
-                        map: map,
-                        zIndex: 1
-                    });
-                }).filter(p => p !== null);
-            }
+            // Draw forward segments
+            forwardSegments.forEach(seg => {
+                if (seg.length < 2) return;
+                const polyline = new google.maps.Polyline({
+                    path: seg,
+                    geodesic: true,
+                    strokeColor: "#00d4ff",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 6,
+                    map: map,
+                    zIndex: 1
+                });
+                forwardPolylines.push(polyline);
 
-            // Draw return polyline
+                // Add arrows on this segment
+                const arrowColor = "#00d4ff";
+                const arrowSymbol = {
+                    path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                    fillColor: arrowColor,
+                    fillOpacity: 1,
+                    strokeColor: '#000000',
+                    strokeWeight: 1,
+                    scale: 4
+                };
+                // Place arrows at 1/3 and 2/3
+                const totalDist = google.maps.geometry.spherical.computeLength(seg);
+                if (totalDist < 10) return;
+                // Use 1/3 and 2/3 along the path
+                const fractions = [1/3, 2/3];
+                fractions.forEach(frac => {
+                    const point = google.maps.geometry.spherical.interpolate(seg[0], seg[seg.length-1], frac);
+                    // Compute heading at that point by looking at nearby segment
+                    const idx = Math.floor(frac * (seg.length-1));
+                    const p1 = seg[idx];
+                    const p2 = seg[Math.min(idx+1, seg.length-1)];
+                    const heading = google.maps.geometry.spherical.computeHeading(p1, p2);
+                    const arrowMarker = new google.maps.Marker({
+                        position: point,
+                        map: map,
+                        icon: { ...arrowSymbol, rotation: heading },
+                        clickable: false,
+                        zIndex: 2
+                    });
+                    arrowMarkers.push(arrowMarker);
+                });
+            });
+
+            // Draw return polyline if exists
             if (returnPath && returnPath.length > 1) {
                 returnPolyline = new google.maps.Polyline({
                     path: returnPath,
@@ -642,6 +716,35 @@
                     map: map,
                     zIndex: 3
                 });
+
+                // Add arrows on return path
+                const redArrowSymbol = {
+                    path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                    fillColor: "#ff3333",
+                    fillOpacity: 1,
+                    strokeColor: '#000000',
+                    strokeWeight: 1,
+                    scale: 4
+                };
+                const totalDist = google.maps.geometry.spherical.computeLength(returnPath);
+                if (totalDist >= 10) {
+                    const fractions = [1/3, 2/3];
+                    fractions.forEach(frac => {
+                        const point = google.maps.geometry.spherical.interpolate(returnPath[0], returnPath[returnPath.length-1], frac);
+                        const idx = Math.floor(frac * (returnPath.length-1));
+                        const p1 = returnPath[idx];
+                        const p2 = returnPath[Math.min(idx+1, returnPath.length-1)];
+                        const heading = google.maps.geometry.spherical.computeHeading(p1, p2);
+                        const arrowMarker = new google.maps.Marker({
+                            position: point,
+                            map: map,
+                            icon: { ...redArrowSymbol, rotation: heading },
+                            clickable: false,
+                            zIndex: 4
+                        });
+                        arrowMarkers.push(arrowMarker);
+                    });
+                }
             }
         }
 
@@ -799,6 +902,13 @@
                 }
             }
 
+            // Get checked states for current user
+            const checkedRef = currentUser ? db.ref(`developer/route_planner/checked_stops/${currentUser.toLowerCase()}`) : null;
+            let checkedData = {};
+            if (checkedRef) {
+                checkedRef.once('value', snap => { checkedData = snap.val() || {}; });
+            }
+
             let html = '';
             displayOrder.forEach(id => {
                 const job = jobs[id];
@@ -807,7 +917,7 @@
                 const isPending = number === null;
                 const pendingClass = isPending ? 'pending' : '';
                 const numberDisplay = number !== null ? number : '';
-                const isChecked = checkedStops[id] || false;
+                const isChecked = checkedData[id] || false;
                 const checkedClass = isChecked ? 'checked' : '';
                 html += `
                     <div class="job-item ${pendingClass} ${checkedClass}" data-id="${id}" onclick="openJobInMaps('${id}')">
@@ -816,7 +926,12 @@
                             <div class="job-name">${job.name || 'No name'}</div>
                             <div class="job-address">${job.pickup_location || ''}, ${job.city || ''}</div>
                         </div>
-                        <div class="checkmark-box ${isChecked ? 'checked' : ''}" onclick="toggleCheckmark('${id}'); event.stopPropagation();"></div>
+                        <div class="custom-checkbox" onclick="event.stopPropagation(); toggleChecked('${id}')">
+                            <svg viewBox="0 0 24 24">
+                                <rect x="4" y="4" width="16" height="16" fill="none" stroke="#888" stroke-width="2"/>
+                                <path class="checkmark-path" d="M8 12l3 3 5-6" fill="none" stroke="#22c55e" stroke-width="3" stroke-dasharray="100" stroke-dashoffset="100"/>
+                            </svg>
+                        </div>
                         <svg class="delete-icon" viewBox="0 0 24 24" onclick="deleteJob('${id}'); event.stopPropagation();">
                             <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                         </svg>
@@ -826,27 +941,16 @@
             container.innerHTML = html;
         }
 
-        // ---------- TOGGLE CHECKMARK ----------
-        function toggleCheckmark(jobId) {
-            const newVal = !checkedStops[jobId];
-            checkedStops[jobId] = newVal;
-            // Update Firebase
-            db.ref(`developer/route_planner/checked_stops/${currentRouteKey}/${jobId}`).set(newVal);
-            // Update UI immediately for feedback
-            const items = document.querySelectorAll('.job-item');
-            items.forEach(item => {
-                if (item.dataset.id === jobId) {
-                    const box = item.querySelector('.checkmark-box');
-                    if (box) {
-                        if (newVal) {
-                            item.classList.add('checked');
-                            box.classList.add('checked');
-                        } else {
-                            item.classList.remove('checked');
-                            box.classList.remove('checked');
-                        }
-                    }
-                }
+        // ---------- TOGGLE CHECKED ----------
+        function toggleChecked(jobId) {
+            if (!currentUser) return;
+            const username = currentUser.toLowerCase();
+            const ref = db.ref(`developer/route_planner/checked_stops/${username}/${jobId}`);
+            ref.once('value', snap => {
+                const current = snap.val() || false;
+                ref.set(!current).then(() => {
+                    // UI will update via listener
+                }).catch(err => console.warn("Error toggling check:", err));
             });
         }
 
@@ -1055,7 +1159,7 @@
                 if (!document.getElementById('map-modal').style.display || document.getElementById('map-modal').style.display === 'none') {
                     openMap(true);
                 }
-                // Zoom to all waypoints
+                // Zoom to all waypoints (only once)
                 zoomToAllWaypoints();
                 updateUI();
                 if (createRouteMainBtn) createRouteMainBtn.classList.add('active');
@@ -1085,16 +1189,26 @@
             }
         }
 
+        // ---------- ASSIGN NUMBER (with per-segment polyline) ----------
         function assignNumber(jobId) {
             if (!isOrderingMode) return;
             if (routeState.assignedIndices[jobId]) return;
             if (!jobs[jobId] || jobs[jobId].status !== 'pending_pickup') return;
+
+            // Ensure job has coordinates
+            if (!jobs[jobId].lat || !jobs[jobId].lng) {
+                geocodeJob(jobId).then(() => {
+                    assignNumber(jobId);
+                }).catch(err => console.warn("Geocode failed, cannot assign:", err));
+                return;
+            }
 
             const assignedIds = Object.keys(routeState.assignedIndices);
             const nextNumber = assignedIds.length + 1;
             routeState.assignedIndices[jobId] = nextNumber;
             routeState.order.push(jobId);
 
+            // Remove pulsing if any
             if (pulsingMarkers[jobId]) {
                 clearInterval(pulsingMarkers[jobId].interval);
                 if (pulsingMarkers[jobId].circle) pulsingMarkers[jobId].circle.setMap(null);
@@ -1118,20 +1232,55 @@
                 delete pulsingMarkers[jobId];
             }
 
-            saveRouteState();
-            // Update forward route (fetch segments and draw)
-            updateForwardRoute().then(() => {
+            // Now add the new segment to the route
+            addSegmentToRoute(jobId).then(() => {
+                saveRouteState();
                 renderList();
                 updatePolyline();
-                // If all stops assigned, finalize automatically
+
+                // Check if all stops assigned
                 const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
                 const assignedIdsNow = Object.keys(routeState.assignedIndices);
                 if (pendingIds.length === assignedIdsNow.length && pendingIds.length > 0) {
                     finalizeRoute();
                 }
-            });
+            }).catch(err => console.warn("Error adding segment:", err));
         }
 
+        // ---------- ADD SEGMENT TO ROUTE (per-segment fetch) ----------
+        async function addSegmentToRoute(jobId) {
+            const order = routeState.order;
+            if (order.length === 0) return;
+            const job = jobs[jobId];
+            if (!job || !job.lat || !job.lng) return;
+
+            const originLatLng = { lat: 49.8425, lng: -99.9497 };
+            let prevLatLng;
+            if (order.length === 1) {
+                // First stop, origin is depot
+                prevLatLng = originLatLng;
+            } else {
+                // Previous stop is the one before this in order
+                const prevId = order[order.length - 2];
+                const prevJob = jobs[prevId];
+                if (!prevJob || !prevJob.lat || !prevJob.lng) {
+                    console.warn("Previous job missing coordinates, using origin");
+                    prevLatLng = originLatLng;
+                } else {
+                    prevLatLng = { lat: prevJob.lat, lng: prevJob.lng };
+                }
+            }
+            const destLatLng = { lat: job.lat, lng: job.lng };
+            try {
+                const path = await getDrivingPath(prevLatLng, destLatLng);
+                forwardSegments.push(path);
+            } catch (err) {
+                console.warn("Failed to get path for new segment, using straight line:", err);
+                forwardSegments.push([prevLatLng, destLatLng]);
+            }
+        }
+
+        // ---------- FINALIZE ROUTE ----------
         function finalizeRoute() {
             routeState.isFinalized = true;
             isOrderingMode = false;
@@ -1142,12 +1291,7 @@
                 saveRouteState();
                 if (createRouteMainBtn) createRouteMainBtn.classList.remove('active');
                 if (createRouteMapBtn) createRouteMapBtn.classList.remove('active');
-                if (map && (forwardSegments.length > 0 || returnPath)) {
-                    const bounds = new google.maps.LatLngBounds();
-                    forwardSegments.forEach(seg => seg.forEach(p => bounds.extend(p)));
-                    if (returnPath) returnPath.forEach(p => bounds.extend(p));
-                    map.fitBounds(bounds);
-                }
+                // Do NOT auto-fit map
                 if (etaTotalMinutes > 0) updateETADisplay();
             });
         }
@@ -1218,6 +1362,10 @@
                 db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops/${id}`).remove();
                 // Remove from local jobs
                 delete jobs[id];
+                // Remove checked state if exists
+                if (currentUser) {
+                    db.ref(`developer/route_planner/checked_stops/${currentUser.toLowerCase()}/${id}`).remove();
+                }
                 // Update state if needed
                 if (routeState.isFinalized) {
                     const idx = routeState.order.indexOf(id);
@@ -1241,8 +1389,6 @@
                     // Redraw route
                     redrawRouteFromCurrentState();
                 }
-                // Also remove from checked stops
-                db.ref(`developer/route_planner/checked_stops/${currentRouteKey}/${id}`).remove();
             }
         }
 
@@ -1336,17 +1482,9 @@
                 google.maps.event.trigger(map, 'resize');
                 if (zoomToAll) {
                     zoomToAllWaypoints();
-                } else if (routeState.isFinalized && (forwardSegments.length > 0 || returnPath)) {
-                    const bounds = new google.maps.LatLngBounds();
-                    forwardSegments.forEach(seg => seg.forEach(p => bounds.extend(p)));
-                    if (returnPath) returnPath.forEach(p => bounds.extend(p));
-                    if (bounds.isEmpty()) {
-                        map.setCenter({ lat: 49.8425, lng: -99.9497 });
-                        map.setZoom(12);
-                    } else {
-                        map.fitBounds(bounds);
-                    }
                 } else {
+                    // Do not auto-fit; keep current view
+                    // Optionally center on current route if any, but we leave as is
                     map.setCenter({ lat: 49.8425, lng: -99.9497 });
                     map.setZoom(12);
                 }
@@ -1762,55 +1900,16 @@
             });
         }
 
-        // ---------- INPUT FORM TOGGLE ----------
-        let isFormOpen = false;
-        function toggleInputForm() {
-            const form = document.getElementById('input-form');
-            const btn = document.getElementById('add-toggle-btn');
-            const closeBtn = document.getElementById('close-form-btn');
-            if (isFormOpen) {
-                // If form is open and button says "Add +", we want to add the job then optionally close?
-                // Actually the button should always add when clicked, so we call addJob and maybe keep open.
-                addJob();
-                // We do not close the form, but we could optionally collapse after adding? Let's keep open.
-                // But the requirement: "When user types in details and hits Add + the stop will be added" – no mention of closing.
-                // So we just add.
-            } else {
-                // Open form
-                form.style.display = 'block';
-                btn.textContent = 'Add +';
-                closeBtn.style.display = 'inline';
-                isFormOpen = true;
-            }
+        // ---------- COLLAPSIBLE INPUT ----------
+        function expandInput() {
+            document.getElementById('input-fields-wrapper').style.display = 'block';
+            document.getElementById('add-btn-collapsed').style.display = 'none';
         }
-
-        function closeInputForm() {
-            const form = document.getElementById('input-form');
-            const btn = document.getElementById('add-toggle-btn');
-            const closeBtn = document.getElementById('close-form-btn');
-            form.style.display = 'none';
-            btn.textContent = 'ADD TO ROUTE';
-            closeBtn.style.display = 'none';
-            isFormOpen = false;
-            // Optionally reset fields? We could, but let's leave as is.
+        function collapseInput() {
+            document.getElementById('input-fields-wrapper').style.display = 'none';
+            document.getElementById('add-btn-collapsed').style.display = 'block';
+            // Optionally clear fields? We'll leave them as is.
         }
-
-        // Override addJob to also possibly close? No, we'll keep as is.
-        // But we need to make sure that when the form is closed, the button text is "ADD TO ROUTE".
-        // We'll call closeInputForm after adding? Maybe not.
-
-        // We'll keep the original addJob function, and we'll modify the button to call toggleInputForm.
-        // But the toggle function will check if form is open; if open, it will call addJob. If closed, it opens form.
-
-        // However, we also need the "ADD TO ROUTE" button to still work when collapsed? Actually when collapsed, clicking it should open the form. That's what we do.
-
-        // So we change the button onclick to toggleInputForm.
-
-        // We also need to ensure that the "Add +" button when clicked calls addJob. We'll do that inside toggleInputForm.
-
-        // But we also need to ensure that when the form is open, pressing Enter on input fields should add the job? That's not required but could be nice. We'll leave as is.
-
-        // So we'll keep the addJob function unchanged.
 
         // ---------- PWA INSTALL ----------
         let deferredPrompt;
