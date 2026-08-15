@@ -358,6 +358,15 @@
             #address-picker-modal .picker-info { bottom: 20px; min-width: auto; width: 90%; }
             .create-route-btn { width: 90%; }
         }
+
+        /* Added animation for checked items moving to bottom */
+        @keyframes slideUpFromBottom {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .checked-slide {
+            animation: slideUpFromBottom 0.4s ease forwards;
+        }
     </style>
 </head>
 <body>
@@ -386,7 +395,9 @@
                     <line x1="12" y1="2" x2="12" y2="4"/>
                     <line x1="12" y1="20" x2="12" y2="22"/>
                     <line x1="2" y1="12" x2="4" y2="12"/>
-                    <line x1="20" y1="12" x2="22" y2="12"/>
+                    <line x1="12" y1="2" x2="12" y2="4"/>
+                    <line x1="12" y1="20" x2="12" y2="22"/>
+                    <line x1="2" y1="12" x2="4" y2="12"/>
                 </svg>
             </button>
             <button id="map-btn" class="map-btn" onclick="openMap()" aria-label="Map" style="background: url('//mt.google.com/vt/lyrs=m&x=235&y=348&z=10') center/cover; border: 1px solid #fff;"></button>
@@ -536,6 +547,10 @@
         let selectedLocation = null;
         let originMarker = null;
 
+        // Added globals for checked items
+        let checkedDataGlobal = {};
+        let justCheckedId = null;
+
         // Theme
         if (localStorage.getItem('ec_theme') === 'light') document.body.classList.add('light-mode');
         function toggleTheme() {
@@ -604,16 +619,9 @@
             if (currentUser) {
                 const checkedRef = db.ref(`developer/route_planner/checked_stops/${currentUser.toLowerCase()}`);
                 checkedRef.on('value', snap => {
-                    const checkedData = snap.val() || {};
-                    // Apply checked states to job items
-                    document.querySelectorAll('.job-item').forEach(item => {
-                        const id = item.dataset.id;
-                        if (id && checkedData[id]) {
-                            item.classList.add('checked');
-                        } else if (id) {
-                            item.classList.remove('checked');
-                        }
-                    });
+                    checkedDataGlobal = snap.val() || {};
+                    // Re-render list to reorder checked items
+                    renderList();
                 });
             }
         }
@@ -975,12 +983,20 @@
                 }
             }
 
-            // Get checked states for current user
-            const checkedRef = currentUser ? db.ref(`developer/route_planner/checked_stops/${currentUser.toLowerCase()}`) : null;
-            let checkedData = {};
-            if (checkedRef) {
-                checkedRef.once('value', snap => { checkedData = snap.val() || {}; });
-            }
+            // Split into unchecked and checked based on global checkedData
+            let unchecked = [];
+            let checked = [];
+            displayOrder.forEach(id => {
+                if (checkedDataGlobal[id]) {
+                    checked.push(id);
+                } else {
+                    unchecked.push(id);
+                }
+            });
+            displayOrder = unchecked.concat(checked);
+
+            // Get checked states for current user (now using global)
+            // Remove the once() call and use checkedDataGlobal directly
 
             let html = '';
             displayOrder.forEach(id => {
@@ -990,7 +1006,7 @@
                 const isPending = number === null;
                 const pendingClass = isPending ? 'pending' : '';
                 const numberDisplay = number !== null ? number : '';
-                const isChecked = checkedData[id] || false;
+                const isChecked = checkedDataGlobal[id] || false;
                 const checkedClass = isChecked ? 'checked' : '';
                 html += `
                     <div class="job-item ${pendingClass} ${checkedClass}" data-id="${id}" onclick="openJobInMaps('${id}')">
@@ -1012,6 +1028,18 @@
                 `;
             });
             container.innerHTML = html;
+
+            // If an item was just checked, animate it
+            if (justCheckedId) {
+                const element = container.querySelector(`.job-item[data-id="${justCheckedId}"]`);
+                if (element) {
+                    element.classList.add('checked-slide');
+                    setTimeout(() => {
+                        element.classList.remove('checked-slide');
+                    }, 500);
+                }
+                justCheckedId = null;
+            }
         }
 
         // ---------- TOGGLE CHECKED ----------
@@ -1021,7 +1049,13 @@
             const ref = db.ref(`developer/route_planner/checked_stops/${username}/${jobId}`);
             ref.once('value', snap => {
                 const current = snap.val() || false;
-                ref.set(!current).then(() => {
+                const newVal = !current;
+                if (newVal) {
+                    justCheckedId = jobId;
+                } else {
+                    justCheckedId = null;
+                }
+                ref.set(newVal).then(() => {
                     // UI will update via listener
                 }).catch(err => console.warn("Error toggling check:", err));
             });
@@ -1590,7 +1624,7 @@
                     }
                 } else {
                     // Main page button
-                    if (!hasStops) {
+                    if (!hasStops || isFinal) {
                         btn.disabled = true;
                         btn.classList.remove('pulse-glow', 'active');
                     } else {
