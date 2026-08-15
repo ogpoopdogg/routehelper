@@ -652,6 +652,26 @@
             arrowMarkers = [];
         }
 
+        // ---------- HELPER: point + heading along a multi-point path at a distance fraction ----------
+        function computePathPointAtFraction(path, fraction) {
+            const totalDist = google.maps.geometry.spherical.computeLength(path);
+            const targetDist = totalDist * fraction;
+            let accumulated = 0;
+            for (let i = 0; i < path.length - 1; i++) {
+                const segDist = google.maps.geometry.spherical.computeDistanceBetween(path[i], path[i + 1]);
+                if (accumulated + segDist >= targetDist) {
+                    const segFrac = segDist === 0 ? 0 : (targetDist - accumulated) / segDist;
+                    const point = google.maps.geometry.spherical.interpolate(path[i], path[i + 1], segFrac);
+                    const heading = google.maps.geometry.spherical.computeHeading(path[i], path[i + 1]);
+                    return { point, heading };
+                }
+                accumulated += segDist;
+            }
+            const last = path.length - 1;
+            const heading = google.maps.geometry.spherical.computeHeading(path[last - 1], path[last]);
+            return { point: path[last], heading };
+        }
+
         // ---------- UPDATE POLYLINE (per-segment) ----------
         function updatePolyline() {
             if (!map) return;
@@ -688,12 +708,7 @@
                 // Use 1/3 and 2/3 along the path
                 const fractions = [1/3, 2/3];
                 fractions.forEach(frac => {
-                    const point = google.maps.geometry.spherical.interpolate(seg[0], seg[seg.length-1], frac);
-                    // Compute heading at that point by looking at nearby segment
-                    const idx = Math.floor(frac * (seg.length-1));
-                    const p1 = seg[idx];
-                    const p2 = seg[Math.min(idx+1, seg.length-1)];
-                    const heading = google.maps.geometry.spherical.computeHeading(p1, p2);
+                    const { point, heading } = computePathPointAtFraction(seg, frac);
                     const arrowMarker = new google.maps.Marker({
                         position: point,
                         map: map,
@@ -730,11 +745,7 @@
                 if (totalDist >= 10) {
                     const fractions = [1/3, 2/3];
                     fractions.forEach(frac => {
-                        const point = google.maps.geometry.spherical.interpolate(returnPath[0], returnPath[returnPath.length-1], frac);
-                        const idx = Math.floor(frac * (returnPath.length-1));
-                        const p1 = returnPath[idx];
-                        const p2 = returnPath[Math.min(idx+1, returnPath.length-1)];
-                        const heading = google.maps.geometry.spherical.computeHeading(p1, p2);
+                        const { point, heading } = computePathPointAtFraction(returnPath, frac);
                         const arrowMarker = new google.maps.Marker({
                             position: point,
                             map: map,
