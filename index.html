@@ -152,7 +152,7 @@
             background: #ff6600;
         }
 
-        .delete-icon { width: 20px; height: 20px; cursor: pointer; fill: #b71c1c; z-index: 2; }
+        .delete-icon { width: 20px; height: 20px; cursor: pointer; fill: #b71c1c; z-index: 2; pointer-events: auto; }
 
         #install-btn { display: none; background: var(--pro-blue); color: #fff; border: none; padding: 14px 16px; font-size: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; text-transform: uppercase; position: fixed; right: 15px; bottom: 15px; z-index: 1002; }
 
@@ -367,6 +367,7 @@
         .checked-slide {
             animation: slideDownToBottom 0.4s ease forwards;
         }
+        .delete-icon { pointer-events: auto; }
     </style>
 </head>
 <body>
@@ -521,6 +522,13 @@
         let map, mainMap, mapMarkers = {}, activePolyline = null;
         let autocompleteAddress;
         let etaTotalMinutes = 0, etaTotalKm = 0;
+        let isAnimating = false;
+        let animationQueue = [];
+        let isProcessingQueue = false;
+        let checkedStops = [];
+        let pendingDeleteId = null;
+        let currentAnimatingJobId = null;
+        let finishing = false;
 
         // New polyline state
         let forwardSegments = []; // array of arrays of google.maps.LatLng
@@ -546,10 +554,6 @@
         let pickerMap = null, pickerMarker = null, pickerGeocoder = null, pickerAutocomplete = null, pickerInitialized = false;
         let selectedLocation = null;
         let originMarker = null;
-
-        // Added globals for checked items
-        let checkedDataGlobal = {};
-        let justCheckedId = null;
 
         // Theme
         if (localStorage.getItem('ec_theme') === 'light') document.body.classList.add('light-mode');
@@ -619,9 +623,11 @@
             if (currentUser) {
                 const checkedRef = db.ref(`developer/route_planner/checked_stops/${currentUser.toLowerCase()}`);
                 checkedRef.on('value', snap => {
-                    checkedDataGlobal = snap.val() || {};
-                    // Re-render list to reorder checked items
-                    renderList();
+                    checkedStops = snap.val() || [];
+                    if (!Array.isArray(checkedStops)) checkedStops = [];
+                    if (!isAnimating) {
+                        renderList();
+                    }
                 });
             }
         }
@@ -983,20 +989,19 @@
                 }
             }
 
-            // Split into unchecked and checked based on global checkedData
+            // Split into unchecked and checked based on checkedStops
             let unchecked = [];
             let checked = [];
             displayOrder.forEach(id => {
-                if (checkedDataGlobal[id]) {
+                if (checkedStops.includes(id)) {
                     checked.push(id);
                 } else {
                     unchecked.push(id);
                 }
             });
+            // Ensure checked order matches checkedStops order (filter out those not in displayOrder)
+            checked = checkedStops.filter(id => displayOrder.includes(id));
             displayOrder = unchecked.concat(checked);
-
-            // Get checked states for current user (now using global)
-            // Remove the once() call and use checkedDataGlobal directly
 
             let html = '';
             displayOrder.forEach(id => {
@@ -1006,7 +1011,7 @@
                 const isPending = number === null;
                 const pendingClass = isPending ? 'pending' : '';
                 const numberDisplay = number !== null ? number : '';
-                const isChecked = checkedDataGlobal[id] || false;
+                const isChecked = checkedStops.includes(id);
                 const checkedClass = isChecked ? 'checked' : '';
                 html += `
                     <div class="job-item ${pendingClass} ${checkedClass}" data-id="${id}" onclick="openJobInMaps('${id}')">
@@ -1018,7 +1023,7 @@
                         <div class="custom-checkbox" onclick="event.stopPropagation(); toggleChecked('${id}')">
                             <svg viewBox="0 0 24 24">
                                 <rect x="4" y="4" width="16" height="16" fill="none" stroke="#888" stroke-width="2"/>
-                                <path class="checkmark-path" d="M8 12l3 3 5-6" fill="none" stroke="#22c55e" stroke-width="3" stroke-dasharray="100" stroke-dashoffset="100"/>
+                                <path class="checkmark-path" d="M8 12l3 3 5-6" fill="none" stroke="#22c55e" stroke-width="3" stroke-dasharray="100" stroke-dashoffset="${isChecked ? '0' : '100'}"/>
                             </svg>
                         </div>
                         <svg class="delete-icon" viewBox="0 0 24 24" onclick="deleteJob('${id}'); event.stopPropagation();">
@@ -1028,37 +1033,224 @@
                 `;
             });
             container.innerHTML = html;
-
-            // If an item was just checked, animate it
-            if (justCheckedId) {
-                const element = container.querySelector(`.job-item[data-id="${justCheckedId}"]`);
-                if (element) {
-                    element.classList.add('checked-slide');
-                    setTimeout(() => {
-                        element.classList.remove('checked-slide');
-                    }, 500);
-                }
-                justCheckedId = null;
-            }
         }
 
         // ---------- TOGGLE CHECKED ----------
         function toggleChecked(jobId) {
             if (!currentUser) return;
-            const username = currentUser.toLowerCase();
-            const ref = db.ref(`developer/route_planner/checked_stops/${username}/${jobId}`);
-            ref.once('value', snap => {
-                const current = snap.val() || false;
-                const newVal = !current;
-                if (newVal) {
-                    justCheckedId = jobId;
-                } else {
-                    justCheckedId = null;
+            if (isAnimating) {
+                // Queue this toggle
+                animationQueue.push({ type: 'toggle', jobId });
+                if (!isProcessingQueue) processQueue();
+                return;
+            }
+            // Toggle locally
+            const idx = checkedStops.indexOf(jobId);
+            const isCurrentlyChecked = idx !== -1;
+            if (isCurrentlyChecked) {
+                checkedStops.splice(idx, 1);
+            } else {
+                checkedStops.push(jobId);
+            }
+            // Update visual immediately
+            updateCardCheckVisual(jobId, !isCurrentlyChecked);
+            // Start animation
+            startCardAnimation(jobId, !isCurrentlyChecked);
+        }
+
+        // ---------- UPDATE CARD CHECK VISUAL ----------
+        function updateCardCheckVisual(jobId, isChecked) {
+            const card = document.querySelector(`.job-item[data-id="${jobId}"]`);
+            if (!card) return;
+            if (isChecked) {
+                card.classList.add('checked');
+                const checkmark = card.querySelector('.checkmark-path');
+                if (checkmark) checkmark.style.strokeDashoffset = '0';
+            } else {
+                card.classList.remove('checked');
+                const checkmark = card.querySelector('.checkmark-path');
+                if (checkmark) checkmark.style.strokeDashoffset = '100';
+            }
+        }
+
+        // ---------- START CARD ANIMATION ----------
+        function startCardAnimation(jobId, isChecked) {
+            const card = document.querySelector(`.job-item[data-id="${jobId}"]`);
+            if (!card) {
+                // Card not in DOM, just finish
+                finishAnimation();
+                return;
+            }
+            isAnimating = true;
+            currentAnimatingJobId = jobId;
+            // Compute current index
+            const container = document.getElementById('job-list');
+            const currentIndex = Array.from(container.children).indexOf(card);
+            if (currentIndex === -1) {
+                finishAnimation();
+                return;
+            }
+            // Compute new order
+            const baseOrder = routeState.isFinalized ? routeState.order : Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup').sort((a,b) => jobs[a].timestamp - jobs[b].timestamp);
+            const unchecked = baseOrder.filter(id => !checkedStops.includes(id) && jobs[id] && jobs[id].status === 'pending_pickup');
+            const checked = checkedStops.filter(id => baseOrder.includes(id) && jobs[id] && jobs[id].status === 'pending_pickup');
+            const newOrder = unchecked.concat(checked);
+            const targetIndex = newOrder.indexOf(jobId);
+            if (targetIndex === -1) {
+                finishAnimation();
+                return;
+            }
+            const deltaY = (targetIndex - currentIndex) * card.offsetHeight;
+            // Set transition and transform
+            card.style.transition = 'transform 1.2s ease-in-out, box-shadow 0.3s';
+            card.style.transform = `translateY(${deltaY}px) scale(1.03)`;
+            card.style.boxShadow = '0 8px 20px rgba(0,0,0,0.4)';
+            card.style.zIndex = '100';
+            // Add event listener for transitionend
+            const onTransitionEnd = () => {
+                card.removeEventListener('transitionend', onTransitionEnd);
+                // Remove transform and box-shadow
+                card.style.transition = 'none';
+                card.style.transform = '';
+                card.style.boxShadow = '';
+                card.style.zIndex = '';
+                finishAnimation();
+            };
+            card.addEventListener('transitionend', onTransitionEnd);
+            // Timeout fallback
+            setTimeout(() => {
+                if (isAnimating && currentAnimatingJobId === jobId) {
+                    card.removeEventListener('transitionend', onTransitionEnd);
+                    card.style.transition = 'none';
+                    card.style.transform = '';
+                    card.style.boxShadow = '';
+                    card.style.zIndex = '';
+                    finishAnimation();
                 }
-                ref.set(newVal).then(() => {
-                    // UI will update via listener
-                }).catch(err => console.warn("Error toggling check:", err));
-            });
+            }, 1500);
+        }
+
+        // ---------- FINISH ANIMATION ----------
+        function finishAnimation() {
+            if (finishing) return;
+            finishing = true;
+            // Save checkedStops to Firebase
+            if (currentUser) {
+                const ref = db.ref(`developer/route_planner/checked_stops/${currentUser.toLowerCase()}`);
+                ref.set(checkedStops).catch(err => console.warn("Error saving checked stops:", err));
+            }
+            renderList();
+            isAnimating = false;
+            currentAnimatingJobId = null;
+            // Check for pending delete
+            if (pendingDeleteId !== null) {
+                const id = pendingDeleteId;
+                pendingDeleteId = null;
+                performDelete(id);
+                setTimeout(() => {
+                    finishing = false;
+                    isProcessingQueue = false;
+                    processQueue();
+                }, 100);
+                return;
+            }
+            // Process next queue item with 0.1s delay
+            setTimeout(() => {
+                finishing = false;
+                isProcessingQueue = false;
+                processQueue();
+            }, 100);
+        }
+
+        // ---------- PROCESS QUEUE ----------
+        function processQueue() {
+            if (isProcessingQueue) return;
+            if (animationQueue.length === 0) {
+                isProcessingQueue = false;
+                // Check for pending delete again
+                if (pendingDeleteId !== null) {
+                    const id = pendingDeleteId;
+                    pendingDeleteId = null;
+                    performDelete(id);
+                }
+                return;
+            }
+            isProcessingQueue = true;
+            const item = animationQueue.shift();
+            if (item.type === 'toggle') {
+                // Check if job still exists
+                if (!jobs[item.jobId] || jobs[item.jobId].status !== 'pending_pickup') {
+                    processQueue();
+                    return;
+                }
+                // If pendingDeleteId is set for this jobId, ignore toggle
+                if (pendingDeleteId === item.jobId) {
+                    processQueue();
+                    return;
+                }
+                // Toggle locally
+                const idx = checkedStops.indexOf(item.jobId);
+                const isCurrentlyChecked = idx !== -1;
+                if (isCurrentlyChecked) {
+                    checkedStops.splice(idx, 1);
+                } else {
+                    checkedStops.push(item.jobId);
+                }
+                updateCardCheckVisual(item.jobId, !isCurrentlyChecked);
+                startCardAnimation(item.jobId, !isCurrentlyChecked);
+            } else {
+                // Unknown type
+                processQueue();
+            }
+        }
+
+        // ---------- DELETE JOB ----------
+        function deleteJob(id) {
+            if (isAnimating) {
+                // Queue delete
+                pendingDeleteId = id;
+                // Remove any queued toggles for this id
+                animationQueue = animationQueue.filter(item => item.jobId !== id);
+                return;
+            }
+            performDelete(id);
+        }
+
+        function performDelete(id) {
+            if (confirm("Remove this stop from route?")) {
+                db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops/${id}`).remove();
+                // Remove from local jobs
+                delete jobs[id];
+                // Remove from checkedStops
+                const idx = checkedStops.indexOf(id);
+                if (idx !== -1) checkedStops.splice(idx, 1);
+                // Update Firebase checked_stops
+                if (currentUser) {
+                    db.ref(`developer/route_planner/checked_stops/${currentUser.toLowerCase()}`).set(checkedStops);
+                }
+                // Update state if needed
+                if (routeState.isFinalized) {
+                    const idx2 = routeState.order.indexOf(id);
+                    if (idx2 !== -1) {
+                        routeState.order.splice(idx2, 1);
+                        const newAssigned = {};
+                        routeState.order.forEach((id2, i) => { newAssigned[id2] = i + 1; });
+                        routeState.assignedIndices = newAssigned;
+                        if (routeState.order.length === 0) routeState.isFinalized = false;
+                        saveRouteState();
+                        updateUI();
+                        redrawRouteFromCurrentState();
+                    }
+                } else {
+                    delete routeState.assignedIndices[id];
+                    const idx3 = routeState.order.indexOf(id);
+                    if (idx3 !== -1) routeState.order.splice(idx3, 1);
+                    saveRouteState();
+                    updateUI();
+                    redrawRouteFromCurrentState();
+                }
+                renderList();
+            }
         }
 
         // ---------- MAP MARKERS ----------
@@ -1551,40 +1743,7 @@
         }
 
         // ---------- DELETE JOB ----------
-        function deleteJob(id) {
-            if (confirm("Remove this stop from route?")) {
-                db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops/${id}`).remove();
-                // Remove from local jobs
-                delete jobs[id];
-                // Remove checked state if exists
-                if (currentUser) {
-                    db.ref(`developer/route_planner/checked_stops/${currentUser.toLowerCase()}/${id}`).remove();
-                }
-                // Update state if needed
-                if (routeState.isFinalized) {
-                    const idx = routeState.order.indexOf(id);
-                    if (idx !== -1) {
-                        routeState.order.splice(idx, 1);
-                        const newAssigned = {};
-                        routeState.order.forEach((id2, i) => { newAssigned[id2] = i + 1; });
-                        routeState.assignedIndices = newAssigned;
-                        if (routeState.order.length === 0) routeState.isFinalized = false;
-                        saveRouteState();
-                        updateUI();
-                        // Redraw route
-                        redrawRouteFromCurrentState();
-                    }
-                } else {
-                    delete routeState.assignedIndices[id];
-                    const idx = routeState.order.indexOf(id);
-                    if (idx !== -1) routeState.order.splice(idx, 1);
-                    saveRouteState();
-                    updateUI();
-                    // Redraw route
-                    redrawRouteFromCurrentState();
-                }
-            }
-        }
+        // (overwritten above)
 
         // ---------- OPEN JOB IN MAPS ----------
         function openJobInMaps(jobId) {
