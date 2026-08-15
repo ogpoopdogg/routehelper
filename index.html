@@ -1134,14 +1134,12 @@
                 return;
             }
 
-            // Ensure all jobs have coordinates before entering ordering mode
             ensureAllJobsGeocoded().then(() => {
                 if (routeState.isFinalized) {
                     if (!confirm("Are you sure you want to clear the current order and restart?")) return;
                     routeState.isFinalized = false;
                     routeState.assignedIndices = {};
                     routeState.order = [];
-                    // Clear polylines
                     forwardSegments = [];
                     returnPath = null;
                     clearRoutePolylines();
@@ -1149,32 +1147,20 @@
                     updateUI();
                 }
 
+                // If already in ordering mode, just open map (or reopen)
                 if (isOrderingMode) {
-                    // Reset: clear all assignments, stop pulsing
-                    routeState.assignedIndices = {};
-                    routeState.order = [];
-                    stopPulsingAll();
-                    isOrderingMode = false;
-                    forwardSegments = [];
-                    returnPath = null;
-                    clearRoutePolylines();
-                    saveRouteState();
-                    updateUI();
-                    // Update button states
-                    if (createRouteMainBtn) createRouteMainBtn.classList.remove('active');
-                    if (createRouteMapBtn) createRouteMapBtn.classList.remove('active');
+                    openMap(true);
+                    zoomToAllWaypoints();
+                    updateCreateRouteButton();
                     return;
                 }
 
+                // Enter ordering mode
                 isOrderingMode = true;
-                if (!document.getElementById('map-modal').style.display || document.getElementById('map-modal').style.display === 'none') {
-                    openMap(true);
-                }
-                // Zoom to all waypoints (only once)
+                openMap(true);
                 zoomToAllWaypoints();
                 updateUI();
-                if (createRouteMainBtn) createRouteMainBtn.classList.add('active');
-                if (createRouteMapBtn) createRouteMapBtn.classList.add('active');
+                updateCreateRouteButton();
             });
         }
 
@@ -1428,10 +1414,8 @@
 
             [createRouteMainBtn, createRouteMapBtn].forEach(btn => {
                 if (!btn) return;
-                // Map button is never disabled (unless no stops? but we allow click)
                 if (btn.id === 'create-route-map') {
                     btn.disabled = false;
-                    // Manage classes for map button
                     if (!hasStops) {
                         btn.classList.remove('pulse-glow', 'active');
                     } else {
@@ -1442,17 +1426,16 @@
                         }
                     }
                 } else {
-                    // Main page button: disabled only when no stops
+                    // Main page button
                     if (!hasStops) {
                         btn.disabled = true;
                         btn.classList.remove('pulse-glow', 'active');
                     } else {
                         btn.disabled = false;
+                        // Only show pulse-glow when not finalized and not ordering
                         if (!isFinal && !isOrdering) {
                             btn.classList.add('pulse-glow');
                             btn.classList.remove('active');
-                        } else if (isOrdering) {
-                            btn.classList.add('active', 'pulse-glow');
                         } else {
                             btn.classList.remove('pulse-glow', 'active');
                         }
