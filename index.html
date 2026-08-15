@@ -180,23 +180,71 @@
 
         .eta-glow { border-color: #00bfff !important; box-shadow: 0 0 15px #00bfff; }
 
-        .bullseye-btn {
-            background: #fff;
-            border: 2px solid #333;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-size: 20px;
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s, border-color 0.2s;
-            outline: none;
-            margin: 0 0 8px 0;
+        #map-stop-counter {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3005;
+            background: rgba(11,17,32,0.75);
+            color: #fff;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 14px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: none;
         }
-        .bullseye-btn.active { border-color: #ff6600; background: #ffcc00; }
+        #undo-assignment-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 3005;
+            background: rgba(17,24,39,0.75);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 24px;
+            padding: 10px 16px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(4px);
+        }
+        #finish-early-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 3005;
+            background: rgba(16,185,129,0.85);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 24px;
+            padding: 10px 16px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            display: none;
+            backdrop-filter: blur(4px);
+        }
+        #calculating-route-indicator {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3005;
+            background: rgba(11,17,32,0.75);
+            color: #F59E0B;
+            padding: 6px 14px;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 12px;
+            backdrop-filter: blur(4px);
+            display: none;
+        }
 
         #address-picker-modal {
             display: none;
@@ -407,6 +455,13 @@
         <!-- CREATE ROUTE button inside map -->
         <button id="create-route-map" class="create-route-btn map-modal-btn" onclick="startCreateRoute()">CREATE ROUTE</button>
         <button id="reset-driver-view-btn" onclick="resetMapView()" style="display:none;">← BACK</button>
+        <div id="map-stop-counter"></div>
+        <div id="calculating-route-indicator">Calculating route...</div>
+        <button id="undo-assignment-btn" onclick="undoLastAssignment()" aria-label="Undo last assignment">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 7"/></svg>
+            Undo
+        </button>
+        <button id="finish-early-btn" onclick="finishRouteEarly()">Finish Early</button>
         <div id="map"></div>
     </div>
 
@@ -475,8 +530,8 @@
 
         // Other globals
         let etaCalculating = false;
-        let isTracking = false;
-        let userMarker = null, userCircle = null, locationWatchId = null;
+        let segmentCache = {};
+        let polylineDebounceTimer = null;
         let pickerMap = null, pickerMarker = null, pickerGeocoder = null, pickerAutocomplete = null, pickerInitialized = false;
         let selectedLocation = null;
         let originMarker = null;
@@ -759,8 +814,12 @@
             }
         }
 
-        // ---------- FETCH DRIVING PATH (using Routes API) ----------
+        // ---------- FETCH DRIVING PATH (using Routes API, cached per segment) ----------
         async function getDrivingPath(originLatLng, destLatLng) {
+            const cacheKey = originLatLng.lat.toFixed(6) + ',' + originLatLng.lng.toFixed(6) + '_' + destLatLng.lat.toFixed(6) + ',' + destLatLng.lng.toFixed(6);
+            if (segmentCache[cacheKey]) {
+                return segmentCache[cacheKey];
+            }
             try {
                 const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
                     method: "POST",
@@ -781,7 +840,9 @@
                 const data = await response.json();
                 if (data.routes && data.routes[0] && data.routes[0].polyline) {
                     const encoded = data.routes[0].polyline.encodedPolyline;
-                    return google.maps.geometry.encoding.decodePath(encoded);
+                    const decoded = google.maps.geometry.encoding.decodePath(encoded);
+                    segmentCache[cacheKey] = decoded;
+                    return decoded;
                 } else {
                     throw new Error("No route found");
                 }
@@ -865,6 +926,7 @@
             if (map) updateMapMarkers();
             // updatePolyline is called separately via redrawRouteFromCurrentState or assignNumber
             updateCreateRouteButton();
+            updateOrderingOverlays();
             // ETA display
             if (etaTotalMinutes > 0 && routeState.isFinalized) {
                 document.getElementById('eta-display').style.display = 'block';
@@ -993,6 +1055,7 @@
                 if (isFinal) {
                     // For unassigned jobs, display with larger gold label
                     let labelOptions;
+                    let finalIconColor;
                     if (number === null) {
                         labelOptions = {
                             text: labelText,
@@ -1001,6 +1064,7 @@
                             fontSize: '16px',
                             className: 'driver-map-label'
                         };
+                        finalIconColor = '#F59E0B';
                     } else {
                         labelOptions = {
                             text: labelText,
@@ -1009,6 +1073,7 @@
                             fontSize: '12px',
                             className: 'driver-map-label'
                         };
+                        finalIconColor = '#10B981';
                     }
                     marker = new google.maps.Marker({
                         position: { lat, lng },
@@ -1017,7 +1082,7 @@
                         icon: {
                             path: google.maps.SymbolPath.CIRCLE,
                             scale: 14,
-                            fillColor: '#ff9800',
+                            fillColor: finalIconColor,
                             fillOpacity: 1,
                             strokeColor: 'white',
                             strokeWeight: 2
@@ -1030,36 +1095,36 @@
                             map: map,
                             label: {
                                 text: labelText,
-                                color: '#00b32d',
+                                color: '#10B981',
                                 fontWeight: 'bold',
                                 fontSize: '12px',
                                 className: 'driver-map-label'
                             },
                             icon: {
                                 path: google.maps.SymbolPath.CIRCLE,
-                                scale: 14,
-                                fillColor: '#ff9800',
+                                scale: 10,
+                                fillColor: '#10B981',
                                 fillOpacity: 1,
                                 strokeColor: 'white',
                                 strokeWeight: 2
                             }
                         });
                     } else {
-                        // Unassigned: pulsing blue with gold label
+                        // Unassigned: pulsing amber/gold with gold label
                         marker = new google.maps.Marker({
                             position: { lat, lng },
                             map: map,
                             label: {
                                 text: labelText,
-                                color: '#ff9800',
+                                color: '#F59E0B',
                                 fontWeight: 'bold',
                                 fontSize: '18px',
                                 className: 'driver-map-label-pending'
                             },
                             icon: {
                                 path: google.maps.SymbolPath.CIRCLE,
-                                scale: 20,
-                                fillColor: '#2196F3',
+                                scale: 10,
+                                fillColor: '#F59E0B',
                                 fillOpacity: 1,
                                 strokeColor: 'white',
                                 strokeWeight: 2
@@ -1068,37 +1133,37 @@
                         const circle = new google.maps.Circle({
                             map: map,
                             center: { lat, lng },
-                            radius: 20,
-                            fillColor: '#2196F3',
+                            radius: 10,
+                            fillColor: '#F59E0B',
                             fillOpacity: 0.4,
-                            strokeColor: '#2196F3',
+                            strokeColor: '#F59E0B',
                             strokeWeight: 2,
                             strokeOpacity: 0.7
                         });
                         let growing = true;
-                        let markerScale = 20;
+                        let markerScale = 10;
                         const interval = setInterval(() => {
                             let rad = circle.getRadius();
-                            if (growing) { rad += 3; if (rad > 45) growing = false; }
-                            else { rad -= 3; if (rad < 15) growing = true; }
+                            if (growing) { rad += 2; if (rad > 24) growing = false; }
+                            else { rad -= 2; if (rad < 8) growing = true; }
                             circle.setRadius(rad);
                             let op = circle.getFillOpacity();
                             if (growing) op = Math.min(op + 0.05, 0.8);
                             else op = Math.max(op - 0.05, 0.2);
                             circle.setFillOpacity(op);
                             circle.setStrokeOpacity(op);
-                            markerScale = growing ? Math.min(markerScale + 0.6, 27) : Math.max(markerScale - 0.6, 20);
+                            markerScale = growing ? Math.min(markerScale + 0.4, 13) : Math.max(markerScale - 0.4, 10);
                             marker.setIcon({
                                 path: google.maps.SymbolPath.CIRCLE,
                                 scale: markerScale,
-                                fillColor: '#2196F3',
+                                fillColor: '#F59E0B',
                                 fillOpacity: 1,
                                 strokeColor: 'white',
                                 strokeWeight: 2
                             });
                         }, 60);
                         pulsingMarkers[id] = { marker, circle, interval };
-                        marker.addListener('click', () => assignNumber(id));
+                        marker.addListener('click', () => handleUnassignedMarkerClick(id, { lat, lng }));
                     }
                 } else {
                     // Not in ordering mode, not finalized: show unnumbered orange
@@ -1152,6 +1217,7 @@
                     openMap(true);
                     zoomToAllWaypoints();
                     updateCreateRouteButton();
+                    updateOrderingOverlays();
                     return;
                 }
 
@@ -1161,6 +1227,7 @@
                 zoomToAllWaypoints();
                 updateUI();
                 updateCreateRouteButton();
+                updateOrderingOverlays();
             });
         }
 
@@ -1213,15 +1280,15 @@
                 const job = jobs[jobId];
                 marker.setLabel({
                     text: `${nextNumber}. ${job.name || ''}`,
-                    color: '#00b32d',
+                    color: '#10B981',
                     fontWeight: 'bold',
                     fontSize: '12px',
                     className: 'driver-map-label'
                 });
                 marker.setIcon({
                     path: google.maps.SymbolPath.CIRCLE,
-                    scale: 14,
-                    fillColor: '#ff9800',
+                    scale: 10,
+                    fillColor: '#10B981',
                     fillOpacity: 1,
                     strokeColor: 'white',
                     strokeWeight: 2
@@ -1229,19 +1296,113 @@
                 delete pulsingMarkers[jobId];
             }
 
-            // Now add the new segment to the route
-            addSegmentToRoute(jobId).then(() => {
-                saveRouteState();
-                renderList();
-                updatePolyline();
+            updateOrderingOverlays();
 
-                // Check if all stops assigned
-                const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
-                const assignedIdsNow = Object.keys(routeState.assignedIndices);
-                if (pendingIds.length === assignedIdsNow.length && pendingIds.length > 0) {
-                    finalizeRoute();
+            // Debounce the segment fetch/draw to avoid UI jank on rapid taps
+            const indicator = document.getElementById('calculating-route-indicator');
+            if (indicator) indicator.style.display = 'block';
+            clearTimeout(polylineDebounceTimer);
+            polylineDebounceTimer = setTimeout(() => {
+                addSegmentToRoute(jobId).then(() => {
+                    if (indicator) indicator.style.display = 'none';
+                    saveRouteState();
+                    renderList();
+                    updatePolyline();
+
+                    // Check if all stops assigned
+                    const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+                    const assignedIdsNow = Object.keys(routeState.assignedIndices);
+                    if (pendingIds.length === assignedIdsNow.length && pendingIds.length > 0) {
+                        finalizeRoute();
+                    } else {
+                        panToClosestUnassigned(jobId);
+                    }
+                }).catch(err => {
+                    if (indicator) indicator.style.display = 'none';
+                    console.warn("Error adding segment:", err);
+                });
+            }, 250);
+        }
+
+        // ---------- AUTO-PAN TO CLOSEST UNASSIGNED PIN (Euclidean, zero-latency) ----------
+        function panToClosestUnassigned(fromJobId) {
+            const fromJob = jobs[fromJobId];
+            if (!fromJob || !map) return;
+            const candidateIds = Object.keys(jobs).filter(id =>
+                jobs[id].status === 'pending_pickup' && !routeState.assignedIndices[id] && jobs[id].lat && jobs[id].lng
+            );
+            if (candidateIds.length === 0) return;
+            let closestId = null, closestDistSq = Infinity;
+            candidateIds.forEach(id => {
+                const j = jobs[id];
+                const dLat = j.lat - fromJob.lat;
+                const dLng = j.lng - fromJob.lng;
+                const distSq = dLat * dLat + dLng * dLng;
+                if (distSq < closestDistSq) { closestDistSq = distSq; closestId = id; }
+            });
+            if (closestId) {
+                map.panTo({ lat: jobs[closestId].lat, lng: jobs[closestId].lng });
+            }
+        }
+
+        // ---------- CLUSTER-TAP HANDLING (zoom in on tight clusters instead of assigning) ----------
+        function handleUnassignedMarkerClick(jobId, position) {
+            if (!map) { assignNumber(jobId); return; }
+            const otherPendingIds = Object.keys(jobs).filter(id =>
+                jobs[id].status === 'pending_pickup' && !routeState.assignedIndices[id] && jobs[id].lat && jobs[id].lng && id !== jobId
+            );
+            const tapPoint = new google.maps.LatLng(position.lat, position.lng);
+            const hasNearbyCluster = otherPendingIds.some(id => {
+                const otherPoint = new google.maps.LatLng(jobs[id].lat, jobs[id].lng);
+                return google.maps.geometry.spherical.computeDistanceBetween(tapPoint, otherPoint) < 30;
+            });
+            const MAX_ZOOM = 20;
+            if (hasNearbyCluster && map.getZoom() < MAX_ZOOM) {
+                map.panTo(position);
+                map.setZoom(Math.min(map.getZoom() + 2, MAX_ZOOM));
+                return;
+            }
+            assignNumber(jobId);
+        }
+
+        // ---------- UNDO LAST ASSIGNMENT ----------
+        function undoLastAssignment() {
+            if (!isOrderingMode || routeState.order.length === 0) return;
+            const lastId = routeState.order.pop();
+            delete routeState.assignedIndices[lastId];
+            if (forwardSegments.length > 0) forwardSegments.pop();
+            saveRouteState();
+            updateUI();
+            updatePolyline();
+            updateOrderingOverlays();
+            zoomToAllWaypoints();
+        }
+
+        // ---------- FINISH EARLY (manual finalisation) ----------
+        function finishRouteEarly() {
+            if (!isOrderingMode || routeState.order.length === 0) return;
+            finalizeRoute();
+        }
+
+        // ---------- ORDERING-MODE OVERLAY UPDATES ----------
+        function updateOrderingOverlays() {
+            const counterEl = document.getElementById('map-stop-counter');
+            const undoBtn = document.getElementById('undo-assignment-btn');
+            const finishBtn = document.getElementById('finish-early-btn');
+            const totalStops = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup').length;
+            const assignedCount = Object.keys(routeState.assignedIndices).length;
+            if (isOrderingMode && !routeState.isFinalized) {
+                if (counterEl) {
+                    counterEl.textContent = `${assignedCount} / ${totalStops} assigned`;
+                    counterEl.style.display = 'block';
                 }
-            }).catch(err => console.warn("Error adding segment:", err));
+                if (undoBtn) undoBtn.style.display = assignedCount > 0 ? 'flex' : 'none';
+                if (finishBtn) finishBtn.style.display = assignedCount > 0 ? 'block' : 'none';
+            } else {
+                if (counterEl) counterEl.style.display = 'none';
+                if (undoBtn) undoBtn.style.display = 'none';
+                if (finishBtn) finishBtn.style.display = 'none';
+            }
         }
 
         // ---------- ADD SEGMENT TO ROUTE (per-segment fetch) ----------
@@ -1282,6 +1443,7 @@
             routeState.isFinalized = true;
             isOrderingMode = false;
             stopPulsingAll();
+            updateOrderingOverlays();
             // Fetch return route and redraw
             fetchReturnRoute().then(() => {
                 updateUI();
@@ -1461,8 +1623,6 @@
                 map: map,
                 title: '1604 Moreland Ave (Origin)'
             });
-
-            // Bullseye button removed as per request
 
             initAddressPickerMap();
             // Draw initial route if any
@@ -1763,81 +1923,6 @@
             if (!addressToUse) { alert("Could not determine address."); return; }
             document.getElementById('f-address').value = addressToUse;
             closeAddressPicker();
-        }
-
-        // ---------- TRACKING (removed bullseye control, but keep functions for safety) ----------
-        function startTracking() {
-            if (!navigator.geolocation) { alert("Geolocation not supported."); return; }
-            const btn = document.getElementById('bullseye-btn');
-            if (btn) btn.classList.add('active');
-            isTracking = true;
-            locationWatchId = navigator.geolocation.watchPosition(
-                function(pos) {
-                    const lat = pos.coords.latitude, lng = pos.coords.longitude;
-                    const loc = new google.maps.LatLng(lat, lng);
-                    if (userMarker) userMarker.setMap(null);
-                    if (userCircle) { if (userCircle._pulseInterval) clearInterval(userCircle._pulseInterval); userCircle.setMap(null); }
-                    userCircle = new google.maps.Circle({
-                        map: map,
-                        center: loc,
-                        radius: 20,
-                        fillColor: '#ff6600',
-                        fillOpacity: 0.5,
-                        strokeColor: '#ff6600',
-                        strokeWeight: 2,
-                        strokeOpacity: 0.8
-                    });
-                    let pulseInterval = setInterval(function() {
-                        if (!userCircle) { clearInterval(pulseInterval); return; }
-                        let rad = userCircle.getRadius();
-                        let newRad = rad + 5;
-                        if (newRad > 40) newRad = 20;
-                        userCircle.setRadius(newRad);
-                        let op = userCircle.getFillOpacity();
-                        let newOp = (op === 0.5) ? 0.8 : 0.5;
-                        userCircle.setFillOpacity(newOp);
-                    }, 500);
-                    userCircle._pulseInterval = pulseInterval;
-                    userMarker = new google.maps.Marker({
-                        position: loc,
-                        map: map,
-                        icon: {
-                            path: google.maps.SymbolPath.CIRCLE,
-                            scale: 8,
-                            fillColor: '#ff6600',
-                            fillOpacity: 1,
-                            strokeColor: '#fff',
-                            strokeWeight: 2
-                        }
-                    });
-                    map.panTo(loc);
-                    map.setZoom(15);
-                },
-                function(err) {
-                    console.error(err);
-                    alert("Unable to get location: " + err.message);
-                    stopTracking();
-                },
-                { enableHighAccuracy: true, maximumAge: 10000 }
-            );
-        }
-
-        function stopTracking() {
-            if (locationWatchId) { navigator.geolocation.clearWatch(locationWatchId); locationWatchId = null; }
-            if (userMarker) { userMarker.setMap(null); userMarker = null; }
-            if (userCircle) { if (userCircle._pulseInterval) clearInterval(userCircle._pulseInterval); userCircle.setMap(null); userCircle = null; }
-            isTracking = false;
-            const btn = document.getElementById('bullseye-btn');
-            if (btn) btn.classList.remove('active');
-            if (routeState.isFinalized && (forwardSegments.length > 0 || returnPath)) {
-                const bounds = new google.maps.LatLngBounds();
-                forwardSegments.forEach(seg => seg.forEach(p => bounds.extend(p)));
-                if (returnPath) returnPath.forEach(p => bounds.extend(p));
-                map.fitBounds(bounds);
-            } else {
-                map.setCenter({ lat: 49.8425, lng: -99.9497 });
-                map.setZoom(12);
-            }
         }
 
         // ---------- ADDRESS AUTOCOMPLETE ----------
