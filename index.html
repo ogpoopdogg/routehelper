@@ -1216,7 +1216,7 @@
                         headers: {
                             "Content-Type": "application/json",
                             "X-Goog-Api-Key": "AIzaSyA6umETP8wBUEV41ugAtiNiChUeLmmwmZI",
-                            "X-Goog-FieldMask": "routes.polyline.encodedPolyline,routes.legs,routes.waypointOrder"
+                            "X-Goog-FieldMask": "routes.polyline.encodedPolyline,routes.legs,routes.optimizedIntermediateWaypointIndex"
                         },
                         body: JSON.stringify({
                             origin: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
@@ -1227,11 +1227,11 @@
                         })
                     });
                     const data = await response.json();
-                    if (data.routes && data.routes[0] && data.routes[0].waypointOrder) {
-                        const waypointOrder = data.routes[0].waypointOrder;
+                    if (data.routes && data.routes[0] && data.routes[0].optimizedIntermediateWaypointIndex) {
+                        const waypointOrder = data.routes[0].optimizedIntermediateWaypointIndex;
                         orderedUnassigned = waypointOrder.map(idx => unassignedIds[idx]);
                     } else {
-                        console.warn("No waypointOrder returned, using original order");
+                        console.warn("No optimizedIntermediateWaypointIndex returned, using original order");
                     }
                 }
 
