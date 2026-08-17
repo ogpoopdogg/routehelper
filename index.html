@@ -624,6 +624,8 @@
         // Dynamic origin / geolocation state
         window.currentUserLocation = { lat: 49.881157, lng: -99.959272 };
         let userLocationMarker = null;
+        let userLocationCircle = null;
+        let userLocationPulseInterval = null;
         let usingDefaultLocation = true;
         let geoWatchId = null;
         let lastOriginForCalc = { lat: 49.881157, lng: -99.959272 };
@@ -1325,19 +1327,51 @@
                 userLocationMarker = new google.maps.Marker({
                     position: pos,
                     map: map,
-                    label: { text: '📍 You are here', color: '#1d4ed8', fontWeight: 'bold', fontSize: '12px' },
                     icon: {
                         path: google.maps.SymbolPath.CIRCLE,
                         scale: 9,
-                        fillColor: '#3b82f6',
+                        fillColor: '#eab308',
                         fillOpacity: 1,
                         strokeColor: '#ffffff',
                         strokeWeight: 2
                     },
                     zIndex: 999
                 });
+                userLocationCircle = new google.maps.Circle({
+                    map: map,
+                    center: pos,
+                    radius: 10,
+                    fillColor: '#eab308',
+                    fillOpacity: 0.4,
+                    strokeColor: '#eab308',
+                    strokeWeight: 2,
+                    strokeOpacity: 0.7
+                });
+                let growing = true;
+                let markerScale = 9;
+                userLocationPulseInterval = setInterval(() => {
+                    let rad = userLocationCircle.getRadius();
+                    if (growing) { rad += 2; if (rad > 24) growing = false; }
+                    else { rad -= 2; if (rad < 8) growing = true; }
+                    userLocationCircle.setRadius(rad);
+                    let op = userLocationCircle.getFillOpacity();
+                    if (growing) op = Math.min(op + 0.05, 0.8);
+                    else op = Math.max(op - 0.05, 0.2);
+                    userLocationCircle.setFillOpacity(op);
+                    userLocationCircle.setStrokeOpacity(op);
+                    markerScale = growing ? Math.min(markerScale + 0.4, 12) : Math.max(markerScale - 0.4, 9);
+                    userLocationMarker.setIcon({
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: markerScale,
+                        fillColor: '#eab308',
+                        fillOpacity: 1,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 2
+                    });
+                }, 60);
             } else {
                 userLocationMarker.setPosition(pos);
+                if (userLocationCircle) userLocationCircle.setCenter(pos);
             }
         }
 
@@ -1907,6 +1941,7 @@
 
         // ---------- ORDERING MODE ----------
         function startCreateRoute() {
+            clearRoutePolylines();
             const pendingJobs = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
             if (pendingJobs.length === 0) {
                 alert("No stops to route.");
@@ -2343,13 +2378,6 @@
                 styles: document.body.classList.contains('light-mode') ? [] : mapStyles
             });
             mainMap = map;
-
-            // Create permanent origin marker
-            originMarker = new google.maps.Marker({
-                position: { lat: 49.881157, lng: -99.959272 },
-                map: map,
-                title: '1604 Moreland Ave (Origin)'
-            });
 
             initAddressPickerMap();
             // Draw initial route if any
