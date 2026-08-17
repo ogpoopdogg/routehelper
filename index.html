@@ -151,6 +151,62 @@
         .create-route-btn.map-modal-btn.active {
             background: #ff6600;
         }
+        #auto-optimize-btn {
+            top: 130px;
+            background: #7C3AED;
+            color: #fff;
+        }
+        #auto-optimize-btn:hover {
+            background: #6D28D9;
+        }
+        #auto-optimize-btn.optimized {
+            background: #10B981;
+            box-shadow: 0 0 15px #10B981;
+        }
+        #gps-fallback-banner {
+            display: none;
+            position: fixed;
+            top: 180px;
+            left: 10px;
+            z-index: 3005;
+            background: rgba(17,24,39,0.85);
+            color: #F59E0B;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            max-width: 220px;
+            backdrop-filter: blur(4px);
+        }
+        #far-route-toast {
+            display: none;
+            position: fixed;
+            top: 130px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3010;
+            background: rgba(17,24,39,0.95);
+            color: #fff;
+            padding: 14px 18px;
+            border-radius: 10px;
+            font-size: 13px;
+            max-width: 320px;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        #far-route-toast button {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            margin: 0 4px;
+        }
+        #far-route-toast .far-route-yes { background: #10B981; color: #fff; }
+        #far-route-toast .far-route-no { background: #4b5563; color: #fff; }
 
         .delete-icon { width: 20px; height: 20px; cursor: pointer; fill: #b71c1c; z-index: 2; pointer-events: auto; }
 
@@ -466,9 +522,18 @@
         <button id="zoom-out-btn" class="close-map" onclick="zoomToAll()" style="top:70px; background:#448800;">ZOOM OUT</button>
         <!-- CREATE ROUTE button inside map -->
         <button id="create-route-map" class="create-route-btn map-modal-btn" onclick="startCreateRoute()">CREATE ROUTE</button>
+        <button id="auto-optimize-btn" class="create-route-btn map-modal-btn" onclick="autoOptimizeRoute()">AUTO-OPTIMIZE</button>
         <button id="reset-driver-view-btn" onclick="resetMapView()" style="display:none;">← BACK</button>
         <div id="map-stop-counter"></div>
         <div id="calculating-route-indicator">Calculating route...</div>
+        <div id="gps-fallback-banner">Using default location – enable GPS for accuracy.</div>
+        <div id="far-route-toast">
+            <span>You are far from your planned route. Would you like to use AUTO-OPTIMIZE to recalculate a new order starting from your current location?</span>
+            <div>
+                <button class="far-route-yes" onclick="acceptFarRouteReoptimize()">Yes</button>
+                <button class="far-route-no" onclick="dismissFarRouteBanner()">No</button>
+            </div>
+        </div>
         <button id="undo-assignment-btn" onclick="undoLastAssignment()" aria-label="Undo last assignment">
             <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 7"/></svg>
             Undo
@@ -541,7 +606,8 @@
         let routeState = {
             order: [],
             isFinalized: false,
-            assignedIndices: {}
+            assignedIndices: {},
+            autoOptimized: false
         };
         let isOrderingMode = false;
         let pulsingMarkers = {};
@@ -554,6 +620,15 @@
         let pickerMap = null, pickerMarker = null, pickerGeocoder = null, pickerAutocomplete = null, pickerInitialized = false;
         let selectedLocation = null;
         let originMarker = null;
+
+        // Dynamic origin / geolocation state
+        window.currentUserLocation = { lat: 49.881157, lng: -99.959272 };
+        let userLocationMarker = null;
+        let usingDefaultLocation = true;
+        let geoWatchId = null;
+        let lastOriginForCalc = { lat: 49.881157, lng: -99.959272 };
+        let lastOriginCalcTime = 0;
+        let userMarkerUpdateThrottle = 0;
 
         // Theme
         if (localStorage.getItem('ec_theme') === 'light') document.body.classList.add('light-mode');
@@ -584,6 +659,7 @@
                         console.log('Resolved currentRouteKey:', currentRouteKey);
                         document.getElementById('login-overlay').style.display = 'none';
                         initApp();
+                        startGeolocationWatch();
                     } else {
                         alert("ACCESS DENIED");
                         auth.signOut();
@@ -605,11 +681,13 @@
                 routeState.order = routeData.order || [];
                 routeState.isFinalized = routeData.isFinalized || false;
                 routeState.assignedIndices = routeData.assignedIndices || {};
+                routeState.autoOptimized = routeData.autoOptimized || false;
                 etaTotalMinutes = routeData.etaTotalMinutes || 0;
                 etaTotalKm = routeData.etaTotalKm || 0;
                 // Ensure all pending jobs have coordinates
                 ensureAllJobsGeocoded().then(() => {
                     updateUI();
+                    updateAutoOptimizeButtonVisual();
                     // Redraw route polylines based on current state
                     redrawRouteFromCurrentState();
                 });
@@ -677,6 +755,7 @@
                 order: routeState.order,
                 assignedIndices: routeState.assignedIndices,
                 isFinalized: routeState.isFinalized,
+                autoOptimized: routeState.autoOptimized || false,
                 stops: jobs,
                 etaTotalMinutes: etaTotalMinutes,
                 etaTotalKm: etaTotalKm
@@ -878,7 +957,7 @@
             }
 
             // Build segments: origin -> stop1, stop1->stop2, ...
-            const originLatLng = { lat: 49.881157, lng: -99.959272 };
+            const originLatLng = getCurrentOrigin();
             const stopIds = order;
             const segments = [];
             let prev = originLatLng;
@@ -922,7 +1001,7 @@
                 updatePolyline();
                 return;
             }
-            const originLatLng = { lat: 49.881157, lng: -99.959272 };
+            const originLatLng = getCurrentOrigin();
             const lastLatLng = { lat: lastJob.lat, lng: lastJob.lng };
             try {
                 const path = await getDrivingPath(lastLatLng, originLatLng);
@@ -932,6 +1011,415 @@
                 returnPath = [lastLatLng, originLatLng]; // fallback straight line
             }
             updatePolyline();
+        }
+
+        // ---------- SHARED HELPERS (insertion / auto-optimize / dynamic origin) ----------
+        function getCurrentOrigin() {
+            return window.currentUserLocation || { lat: 49.881157, lng: -99.959272 };
+        }
+        function pointFor(id) {
+            const j = jobs[id];
+            return { lat: j.lat, lng: j.lng };
+        }
+        function euclidDist(a, b) {
+            const dLat = a.lat - b.lat;
+            const dLng = a.lng - b.lng;
+            return Math.sqrt(dLat * dLat + dLng * dLng);
+        }
+        function haversineDistanceKm(a, b) {
+            const R = 6371;
+            const dLat = (b.lat - a.lat) * Math.PI / 180;
+            const dLng = (b.lng - a.lng) * Math.PI / 180;
+            const lat1 = a.lat * Math.PI / 180;
+            const lat2 = b.lat * Math.PI / 180;
+            const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+        }
+        function showCalculatingIndicator(show) {
+            const indicator = document.getElementById('calculating-route-indicator');
+            if (indicator) indicator.style.display = show ? 'block' : 'none';
+        }
+        function computeEuclideanRouteDistance(order, origin) {
+            let total = 0;
+            let prev = origin;
+            order.forEach(id => {
+                const p = pointFor(id);
+                total += euclidDist(prev, p);
+                prev = p;
+            });
+            total += euclidDist(prev, origin);
+            return total;
+        }
+
+        // ---------- ETA RECALCULATION (silent) ----------
+        async function recalcETAFromSegments() {
+            if (!routeState.isFinalized || routeState.order.length === 0) return;
+            try {
+                const origin = getCurrentOrigin();
+                const waypoints = routeState.order.map(id => ({ location: { latLng: { latitude: jobs[id].lat, longitude: jobs[id].lng } } }));
+                const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Goog-Api-Key": "AIzaSyA6umETP8wBUEV41ugAtiNiChUeLmmwmZI",
+                        "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.legs.duration,routes.legs.distanceMeters"
+                    },
+                    body: JSON.stringify({
+                        origin: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
+                        destination: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
+                        intermediates: waypoints,
+                        travelMode: "DRIVE",
+                        optimizeWaypointOrder: false
+                    })
+                });
+                const data = await response.json();
+                if (data.routes && data.routes[0]) {
+                    const route = data.routes[0];
+                    let totalDurationSeconds = 0, totalDistanceMeters = 0;
+                    if (route.legs) {
+                        route.legs.forEach(leg => {
+                            totalDurationSeconds += parseFloat(leg.duration.replace('s', ''));
+                            totalDistanceMeters += parseFloat(leg.distanceMeters);
+                        });
+                    } else {
+                        totalDurationSeconds = parseFloat(route.duration.replace('s', ''));
+                        totalDistanceMeters = parseFloat(route.distanceMeters);
+                    }
+                    etaTotalMinutes = totalDurationSeconds / 60;
+                    etaTotalKm = totalDistanceMeters / 1000;
+                    updateETADisplay();
+                    document.getElementById('eta-display').style.display = 'block';
+                    document.getElementById('eta-display').classList.add('eta-glow');
+                    saveRouteState();
+                }
+            } catch (err) {
+                console.warn("ETA recalculation failed:", err);
+            }
+        }
+
+        // ---------- AUTOMATIC INSERTION OF A NEW STOP INTO A FINALIZED ROUTE ----------
+        async function insertStopIntoFinalizedRoute(newId) {
+            const origin = getCurrentOrigin();
+            const order = routeState.order;
+            const newJob = jobs[newId];
+            const newPoint = { lat: newJob.lat, lng: newJob.lng };
+
+            if (order.length === 0) {
+                order.push(newId);
+                routeState.assignedIndices = { [newId]: 1 };
+                routeState.autoOptimized = false;
+                showCalculatingIndicator(true);
+                await updateForwardRoute();
+                await fetchReturnRoute();
+                showCalculatingIndicator(false);
+                updateAutoOptimizeButtonVisual();
+                saveRouteState();
+                recalcETAFromSegments();
+                updateUI();
+                return;
+            }
+
+            let bestIndex = 0;
+            let bestDelta = Infinity;
+            for (let i = 0; i <= order.length; i++) {
+                const prevPoint = i === 0 ? origin : pointFor(order[i - 1]);
+                const nextPoint = i === order.length ? origin : pointFor(order[i]);
+                const delta = euclidDist(prevPoint, newPoint) + euclidDist(newPoint, nextPoint) - euclidDist(prevPoint, nextPoint);
+                if (delta < bestDelta) { bestDelta = delta; bestIndex = i; }
+            }
+
+            const insertedAtEnd = bestIndex === order.length;
+            const prevPoint = bestIndex === 0 ? origin : pointFor(order[bestIndex - 1]);
+            const nextPoint = insertedAtEnd ? origin : pointFor(order[bestIndex]);
+            const oldSegments = forwardSegments;
+
+            order.splice(bestIndex, 0, newId);
+            const newAssigned = {};
+            order.forEach((id, idx) => { newAssigned[id] = idx + 1; });
+            routeState.assignedIndices = newAssigned;
+            routeState.autoOptimized = false;
+
+            showCalculatingIndicator(true);
+            try {
+                const segBefore = await getDrivingPath(prevPoint, newPoint);
+                const newSegments = [];
+                for (let k = 0; k < bestIndex; k++) newSegments.push(oldSegments[k]);
+                newSegments.push(segBefore);
+                if (!insertedAtEnd) {
+                    const segAfter = await getDrivingPath(newPoint, nextPoint);
+                    newSegments.push(segAfter);
+                    for (let k = bestIndex + 1; k < oldSegments.length; k++) newSegments.push(oldSegments[k]);
+                    const oldKey = prevPoint.lat.toFixed(6) + ',' + prevPoint.lng.toFixed(6) + '_' + nextPoint.lat.toFixed(6) + ',' + nextPoint.lng.toFixed(6);
+                    delete segmentCache[oldKey];
+                } else {
+                    const retPath = await getDrivingPath(newPoint, origin);
+                    returnPath = retPath;
+                }
+                forwardSegments = newSegments;
+            } catch (err) {
+                console.warn("Segment fetch failed during insertion:", err);
+            }
+
+            if (map) updatePolyline();
+            showCalculatingIndicator(false);
+            updateAutoOptimizeButtonVisual();
+            saveRouteState();
+            recalcETAFromSegments();
+            updateUI();
+        }
+
+        // ---------- AUTO-OPTIMIZE ----------
+        function updateAutoOptimizeButtonVisual() {
+            const btn = document.getElementById('auto-optimize-btn');
+            if (!btn) return;
+            if (routeState.autoOptimized) {
+                btn.classList.add('optimized');
+                btn.textContent = '✅ OPTIMIZED';
+            } else {
+                btn.classList.remove('optimized');
+                btn.textContent = 'AUTO-OPTIMIZE';
+            }
+        }
+
+        async function autoOptimizeRoute() {
+            const optimizeBtn = document.getElementById('auto-optimize-btn');
+            try {
+                if (optimizeBtn) optimizeBtn.disabled = true;
+                if (createRouteMapBtn) createRouteMapBtn.disabled = true;
+                showCalculatingIndicator(true);
+
+                await ensureAllJobsGeocoded();
+                const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+                const missingGeocode = pendingIds.filter(id => !jobs[id].lat || !jobs[id].lng);
+                if (missingGeocode.length > 0) {
+                    alert("Could not locate one or more addresses. Auto-optimize aborted.");
+                    return;
+                }
+                if (pendingIds.length < 2) {
+                    alert("Need at least 2 stops to optimise.");
+                    return;
+                }
+
+                const assignedIds = Object.keys(routeState.assignedIndices);
+                const unassignedIds = pendingIds.filter(id => !routeState.assignedIndices[id]);
+                if (unassignedIds.length === 0) {
+                    alert("No unassigned stops to optimise.");
+                    return;
+                }
+
+                const origin = getCurrentOrigin();
+                let orderedUnassigned = unassignedIds;
+                if (unassignedIds.length > 1) {
+                    const intermediates = unassignedIds.map(id => ({ location: { latLng: { latitude: jobs[id].lat, longitude: jobs[id].lng } } }));
+                    const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-Goog-Api-Key": "AIzaSyA6umETP8wBUEV41ugAtiNiChUeLmmwmZI",
+                            "X-Goog-FieldMask": "routes.polyline.encodedPolyline,routes.legs,routes.waypointOrder"
+                        },
+                        body: JSON.stringify({
+                            origin: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
+                            destination: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
+                            intermediates: intermediates,
+                            travelMode: "DRIVE",
+                            optimizeWaypointOrder: true
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.routes && data.routes[0] && data.routes[0].waypointOrder) {
+                        const waypointOrder = data.routes[0].waypointOrder;
+                        orderedUnassigned = waypointOrder.map(idx => unassignedIds[idx]);
+                    } else {
+                        console.warn("No waypointOrder returned, using original order");
+                    }
+                }
+
+                let bestOrder;
+                if (assignedIds.length === 0) {
+                    bestOrder = orderedUnassigned.slice();
+                } else {
+                    const assignedOrdered = routeState.order.filter(id => routeState.assignedIndices[id]);
+                    let bestDist = Infinity;
+                    bestOrder = assignedOrdered.concat(orderedUnassigned);
+                    for (let i = 0; i <= assignedOrdered.length; i++) {
+                        const candidate = assignedOrdered.slice(0, i).concat(orderedUnassigned, assignedOrdered.slice(i));
+                        const dist = computeEuclideanRouteDistance(candidate, origin);
+                        if (dist < bestDist) { bestDist = dist; bestOrder = candidate; }
+                    }
+                }
+
+                routeState.order = bestOrder;
+                const newAssigned = {};
+                bestOrder.forEach((id, idx) => { newAssigned[id] = idx + 1; });
+                routeState.assignedIndices = newAssigned;
+                routeState.isFinalized = true;
+                routeState.autoOptimized = true;
+                isOrderingMode = false;
+                stopPulsingAll();
+
+                await updateForwardRoute();
+                await fetchReturnRoute();
+                updateUI();
+                updateAutoOptimizeButtonVisual();
+                saveRouteState();
+                recalcETAFromSegments();
+            } catch (err) {
+                console.warn("Auto-optimize failed:", err);
+                alert("Auto-optimize failed. Please try again.");
+            } finally {
+                showCalculatingIndicator(false);
+                if (optimizeBtn) optimizeBtn.disabled = false;
+                updateCreateRouteButton();
+            }
+        }
+
+        // ---------- DYNAMIC ORIGIN / GEOLOCATION ----------
+        function startGeolocationWatch() {
+            if (!navigator.geolocation) {
+                useDefaultLocationFallback();
+                return;
+            }
+            geoWatchId = navigator.geolocation.watchPosition(
+                pos => {
+                    usingDefaultLocation = false;
+                    hideGpsFallbackBanner();
+                    window.currentUserLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    throttledUpdateUserMarker();
+                    maybeRefetchOriginSegments();
+                },
+                err => {
+                    console.warn("Geolocation error:", err);
+                    useDefaultLocationFallback();
+                },
+                { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+            );
+        }
+
+        function useDefaultLocationFallback() {
+            usingDefaultLocation = true;
+            window.currentUserLocation = { lat: 49.881157, lng: -99.959272 };
+            showGpsFallbackBanner();
+        }
+
+        function showGpsFallbackBanner() {
+            const banner = document.getElementById('gps-fallback-banner');
+            if (banner) banner.style.display = 'block';
+        }
+        function hideGpsFallbackBanner() {
+            const banner = document.getElementById('gps-fallback-banner');
+            if (banner) banner.style.display = 'none';
+        }
+
+        function throttledUpdateUserMarker() {
+            const now = Date.now();
+            if (now - userMarkerUpdateThrottle < 1000) return;
+            userMarkerUpdateThrottle = now;
+            updateUserLocationMarker();
+        }
+
+        function updateUserLocationMarker() {
+            if (!map || !window.currentUserLocation || !google.maps) return;
+            const pos = window.currentUserLocation;
+            if (!userLocationMarker) {
+                userLocationMarker = new google.maps.Marker({
+                    position: pos,
+                    map: map,
+                    label: { text: '📍 You are here', color: '#1d4ed8', fontWeight: 'bold', fontSize: '12px' },
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 9,
+                        fillColor: '#3b82f6',
+                        fillOpacity: 1,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 2
+                    },
+                    zIndex: 999
+                });
+            } else {
+                userLocationMarker.setPosition(pos);
+            }
+        }
+
+        function maybeRefetchOriginSegments() {
+            const modal = document.getElementById('map-modal');
+            if (!modal || modal.style.display === 'none') return;
+            if (!routeState.isFinalized || routeState.order.length === 0) return;
+            const now = Date.now();
+            const moved = haversineDistanceKm(lastOriginForCalc, window.currentUserLocation);
+            if (moved > 1 || (now - lastOriginCalcTime) > 30000) {
+                lastOriginForCalc = { lat: window.currentUserLocation.lat, lng: window.currentUserLocation.lng };
+                lastOriginCalcTime = now;
+                segmentCache = {};
+                refetchOriginSegments();
+            }
+        }
+
+        async function refetchOriginSegments() {
+            const order = routeState.order;
+            if (order.length === 0) return;
+            const origin = getCurrentOrigin();
+            const firstPoint = pointFor(order[0]);
+            const lastPoint = pointFor(order[order.length - 1]);
+            try {
+                const forwardFirstSeg = await getDrivingPath(origin, firstPoint);
+                if (forwardSegments.length > 0) forwardSegments[0] = forwardFirstSeg;
+                const newReturn = await getDrivingPath(lastPoint, origin);
+                returnPath = newReturn;
+                updatePolyline();
+                recalcETAFromSegments();
+            } catch (err) {
+                console.warn("Failed to refetch origin segments:", err);
+            }
+        }
+
+        // ---------- PROMPT TO RE-OPTIMISE WHEN MAP OPENS ----------
+        function checkFarFromRoutePrompt() {
+            if (!routeState.isFinalized || routeState.order.length === 0) return;
+            const origin = getCurrentOrigin();
+            const dismissedAtRaw = sessionStorage.getItem('dismissedFarPromptLocation');
+            if (sessionStorage.getItem('dismissedFarPrompt') === 'true' && dismissedAtRaw) {
+                try {
+                    const dLoc = JSON.parse(dismissedAtRaw);
+                    if (haversineDistanceKm(dLoc, origin) > 5) {
+                        sessionStorage.removeItem('dismissedFarPrompt');
+                        sessionStorage.removeItem('dismissedFarPromptLocation');
+                    }
+                } catch (e) { /* ignore malformed session value */ }
+            }
+            if (sessionStorage.getItem('dismissedFarPrompt') === 'true') return;
+
+            const allPoints = [];
+            forwardSegments.forEach(seg => seg.forEach((p, i) => { if (i % 20 === 0) allPoints.push(p); }));
+            if (returnPath) returnPath.forEach((p, i) => { if (i % 20 === 0) allPoints.push(p); });
+            if (allPoints.length === 0) return;
+
+            let minDist = Infinity;
+            allPoints.forEach(p => {
+                const pt = { lat: typeof p.lat === 'function' ? p.lat() : p.lat, lng: typeof p.lng === 'function' ? p.lng() : p.lng };
+                const d = haversineDistanceKm(origin, pt);
+                if (d < minDist) minDist = d;
+            });
+
+            if (minDist > 1) {
+                showFarRouteBanner();
+            }
+        }
+
+        function showFarRouteBanner() {
+            const banner = document.getElementById('far-route-toast');
+            if (banner) banner.style.display = 'flex';
+        }
+        function dismissFarRouteBanner() {
+            const banner = document.getElementById('far-route-toast');
+            if (banner) banner.style.display = 'none';
+            sessionStorage.setItem('dismissedFarPrompt', 'true');
+            sessionStorage.setItem('dismissedFarPromptLocation', JSON.stringify(getCurrentOrigin()));
+        }
+        function acceptFarRouteReoptimize() {
+            const banner = document.getElementById('far-route-toast');
+            if (banner) banner.style.display = 'none';
+            autoOptimizeRoute();
         }
 
         // ---------- UI UPDATE ----------
@@ -1425,17 +1913,22 @@
                 return;
             }
 
+            if (createRouteMainBtn) createRouteMainBtn.disabled = true;
+            if (createRouteMapBtn) createRouteMapBtn.disabled = true;
+
             ensureAllJobsGeocoded().then(() => {
                 if (routeState.isFinalized) {
                     if (!confirm("Are you sure you want to clear the current order and restart?")) return;
                     routeState.isFinalized = false;
                     routeState.assignedIndices = {};
                     routeState.order = [];
+                    routeState.autoOptimized = false;
                     forwardSegments = [];
                     returnPath = null;
                     clearRoutePolylines();
                     saveRouteState();
                     updateUI();
+                    updateAutoOptimizeButtonVisual();
                 }
 
                 // If already in ordering mode, just open map (or reopen)
@@ -1454,6 +1947,8 @@
                 updateUI();
                 updateCreateRouteButton();
                 updateOrderingOverlays();
+            }).finally(() => {
+                updateCreateRouteButton();
             });
         }
 
@@ -1597,6 +2092,8 @@
             const lastId = routeState.order.pop();
             delete routeState.assignedIndices[lastId];
             if (forwardSegments.length > 0) forwardSegments.pop();
+            routeState.autoOptimized = false;
+            updateAutoOptimizeButtonVisual();
             saveRouteState();
             updateUI();
             updatePolyline();
@@ -1638,7 +2135,7 @@
             const job = jobs[jobId];
             if (!job || !job.lat || !job.lng) return;
 
-            const originLatLng = { lat: 49.881157, lng: -99.959272 };
+            const originLatLng = getCurrentOrigin();
             let prevLatLng;
             if (order.length === 1) {
                 // First stop, origin is depot
@@ -1725,6 +2222,41 @@
                 created_by: currentUser,
                 box_qty: 0, piece_qty: 0, envelope_qty: 0, skid_qty: 0, weight_lbs: 0, other_details: ''
             };
+
+            if (routeState.isFinalized) {
+                const addBtn = document.getElementById('add-btn-expanded');
+                const addBtnOriginalText = addBtn ? addBtn.textContent : 'ADD +';
+                if (addBtn) { addBtn.disabled = true; addBtn.textContent = 'Geocoding…'; }
+                const geocoder = new google.maps.Geocoder();
+                geocoder.geocode({ address: address + ', ' + city, region: 'ca' }, (results, status) => {
+                    if (addBtn) { addBtn.disabled = false; addBtn.textContent = addBtnOriginalText; }
+                    if (status !== 'OK' || results.length === 0) {
+                        alert("Could not locate address – stop not added.");
+                        return;
+                    }
+                    const loc = results[0].geometry.location;
+                    newJob.lat = loc.lat();
+                    newJob.lng = loc.lng();
+                    const newJobRef = db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops`).push();
+                    newJobRef.set(newJob).then(() => {
+                        const newId = newJobRef.key;
+                        jobs[newId] = newJob; // add to local jobs
+                        insertStopIntoFinalizedRoute(newId).then(() => {
+                            saveRouteState();
+                            const sanitizedKey = name.replace(/[.#$\[\]\/]/g, "").trim();
+                            db.ref("address_lookup").child(sanitizedKey).update({
+                                address: address,
+                                city: city,
+                                last_edit_by: currentUser
+                            });
+                            resetFormFields();
+                            collapseInput();
+                        });
+                    }).catch(err => alert("Error adding job: " + err.message));
+                });
+                return;
+            }
+
             const newJobRef = db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops`).push();
             newJobRef.set(newJob).then(() => {
                 const newId = newJobRef.key;
@@ -1823,6 +2355,7 @@
             // Draw initial route if any
             redrawRouteFromCurrentState();
             updateUI();
+            updateUserLocationMarker();
         }
 
         function openMap(zoomToAll) {
@@ -1838,6 +2371,10 @@
                     map.setZoom(12);
                 }
                 updateUI(); // refresh markers after resize
+                updateUserLocationMarker();
+                lastOriginForCalc = { lat: getCurrentOrigin().lat, lng: getCurrentOrigin().lng };
+                lastOriginCalcTime = Date.now();
+                checkFarFromRoutePrompt();
             }, 100);
         }
 
