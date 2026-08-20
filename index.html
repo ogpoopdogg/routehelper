@@ -6,7 +6,2808 @@
     <title>E&C ROUTE PLANNER</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="gold">
+    <link href="//fonts.googlea<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>E&C ROUTE PLANNER</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="gold">
     <link href="//fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* All CSS remains unchanged from the previous version */
+        :root {
+            --accent: #facc15; --bg: #111827; --card: #1f2937; --text: #f9fafb; --card-text: #e5e7eb;
+            --active-green: #22c55e; --archive-orange: #f97316; --note-blue: #3b82f6; --pro-blue: #2563eb;
+            --header-bg: #030712; --input-bg: #374151; --border: #4b5563; --modal-bg: #111827;
+            --shadow-soft: 0 10px 15px -3px rgba(0,0,0,0.3), 0 4px 6px -4px rgba(0,0,0,0.3);
+        }
+        body.light-mode {
+            --bg: #f3f4f6; --card: #ffffff; --text: #111827; --card-text: #374151; --header-bg: #ffffff;
+            --input-bg: #f9fafb; --border: #e5e7eb; --modal-bg: #ffffff; --accent: #2563eb; --active-green: #16a34a;
+        }
+        body.light-mode * { color: #000 !important; }
+        body.light-mode button { background: #fff !important; color: #000 !important; border: 1px solid #ccc !important; }
+        body.light-mode .primary { background: #fff !important; border: 2px solid #00b32d !important; }
+        body.light-mode .map-btn svg { stroke: #000 !important; }
+        body.light-mode #map-btn { background: #fff !important; border: 1px solid #333 !important; font-size: 12px !important; color: #000 !important; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+        body.light-mode #map-btn::after { content: "MAP"; }
+        /* Preserve state-indicating button colors and the shiny logo text in light mode */
+        body.light-mode .shiny-text { color: transparent !important; }
+        body.light-mode .create-route-btn.active { background: #ff6600 !important; color: #fff !important; border-color: #ff6600 !important; }
+        body.light-mode #auto-optimize-btn.optimized { background: #10B981 !important; color: #fff !important; border-color: #10B981 !important; }
+        body.light-mode #far-route-toast .far-route-yes { background: #10B981 !important; color: #fff !important; border-color: #10B981 !important; }
+        body.light-mode #far-route-toast .far-route-no { background: #4b5563 !important; color: #fff !important; border-color: #4b5563 !important; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
+        header { padding: 16px 24px; background: var(--header-bg); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-soft); }
+        .header-logo { height: 24px; width: auto; margin-right: 12px; vertical-align: middle; filter: drop-shadow(0 0 3px var(--accent)); cursor: pointer; }
+        .shiny-text { background: linear-gradient(to right, var(--accent) 20%, #ccc 50%, var(--accent) 80%); background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text; animation: text-shine 3s linear infinite; }
+        @keyframes text-shine { to { background-position: 200% center; } }
+
+        #login-overlay { position: fixed; inset: 0; background: #050505; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .login-box { width: 100%; max-width: 350px; background: #111; padding: 40px; border-radius: 12px; border: 1px solid #222; text-align: center; }
+        .login-input { width: 100%; padding: 14px; margin: 12px 0; background: #0a0a0a; border: 1px solid #333; color: #fff; border-radius: 6px; font-size: 16px; outline: none; }
+        .login-submit { width: 100%; padding: 14px; margin-top: 20px; background: var(--accent); border: none; color: #000; font-weight: 700; border-radius: 6px; cursor: pointer; text-transform: uppercase; }
+
+        .flex-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        .input-wrap { position: relative; flex: 1; }
+        input, select, textarea { width: 100%; padding: 12px 16px; background: var(--input-bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+        input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(250,204,21,0.2); }
+        .glow-field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(250,204,21,0.35), 0 0 12px rgba(250,204,21,0.25); }
+        .suggestions-box { position: absolute; top: 100%; left: 0; right: 0; background: var(--card); border: 1px solid var(--border); z-index: 5000; max-height: 200px; overflow-y: auto; display: none; }
+        .suggestion-item { padding: 14px; border-bottom: 1px solid var(--border); cursor: pointer; color: var(--text); }
+        .suggestion-item:hover { background: var(--accent); color: #000; }
+        .suggestion-reset { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 9px; font-weight: 700; cursor: pointer; color: #666; text-transform: uppercase; z-index: 10; }
+
+        #map-modal { display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; background: #000; }
+        #map { width: 100%; height: 100%; }
+        .close-map { position: fixed; top: 20px; right: 20px; z-index: 3005; background: #b71c1c; color: #fff; border: none; width: 140px; height: 40px; font-weight: 700; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        #zoom-out-btn { top: 70px; background: #448800; }
+        #reset-driver-view-btn { position: absolute; bottom: 20px; left: 20px; z-index: 3005; background: #222; color: #fff; border: 1px solid #fff; border-radius: 6px; padding: 8px 12px; font-weight: 700; cursor: pointer; display: none; }
+
+        .primary { padding: 14px 16px; background: var(--btn-bg, #374151); color: var(--text); font-weight: 700; border: 1px solid var(--border); border-bottom: 3px solid var(--accent); cursor: pointer; border-radius: 8px; text-transform: uppercase; }
+        .btn-add { background: var(--active-green); color: #000; border: none; padding: 14px 24px; font-weight: 700; border-radius: 8px; cursor: pointer; text-transform: uppercase; }
+        .btn-clear { background: #b71c1c; color: #fff; border: none; padding: 8px 16px; font-weight: 700; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        .btn-save { background: #2563eb; color: #fff; border: none; padding: 8px 16px; font-weight: 700; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        .btn-delete-all-saved { background: #f97316; color: #fff; border: none; padding: 8px 16px; font-weight: 700; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+
+        #job-list-container { background: var(--card); border-radius: 12px; padding: 15px; margin: 20px; border: 1px solid var(--border); box-shadow: var(--shadow-soft); }
+        #job-list { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
+        .job-item { display: flex; align-items: center; gap: 12px; background: var(--input-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); cursor: default; user-select: none; -webkit-user-select: none; position: relative; transition: background 0.3s, border-color 0.3s, box-shadow 0.3s; }
+        .job-number { background: #fff; color: #000; font-weight: 900; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+        .job-info { flex: 1; overflow: hidden; }
+        .job-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .job-address { font-size: 12px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .job-item.pending { background: #f9731644; border-left: 4px solid #f97316; }
+        .job-item .pending-badge { font-size: 10px; background: #f97316; color: #000; padding: 2px 8px; border-radius: 12px; font-weight: 700; margin-left: 8px; }
+
+        /* Checkbox styling */
+        .custom-checkbox {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+        .custom-checkbox:hover { transform: scale(1.1); }
+        .custom-checkbox svg { width: 28px; height: 28px; display: block; }
+        .custom-checkbox .checkmark-path {
+            stroke-dasharray: 100;
+            stroke-dashoffset: 100;
+            transition: stroke-dashoffset 0.4s ease;
+        }
+        .job-item.checked {
+            background: #22c55e33 !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 12px rgba(34,197,94,0.3);
+        }
+        .job-item.checked .custom-checkbox .checkmark-path {
+            stroke-dashoffset: 0;
+        }
+        .job-item.checked .custom-checkbox svg rect {
+            stroke: #22c55e;
+            fill: #22c55e22;
+        }
+
+        .create-route-btn {
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            text-transform: uppercase;
+            transition: box-shadow 0.3s, background 0.2s;
+            display: block;
+            margin: 0 auto 10px auto;
+            width: fit-content;
+            min-width: 200px;
+        }
+        .create-route-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.5;
+            box-shadow: none !important;
+        }
+        .create-route-btn.active {
+            background: #ff6600;
+            box-shadow: 0 0 20px #ff6600;
+        }
+        .create-route-btn.pulse-glow {
+            animation: pulseGlow 1.5s infinite;
+        }
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 5px #2563eb; }
+            50% { box-shadow: 0 0 25px #3b82f6, 0 0 40px #2563eb; }
+            100% { box-shadow: 0 0 5px #2563eb; }
+        }
+        .create-route-btn.map-modal-btn {
+            position: fixed;
+            top: 80px;
+            left: 10px;
+            z-index: 3005;
+            width: 140px;
+            height: 40px;
+            padding: 0;
+            font-size: 14px;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .create-route-btn.map-modal-btn.active {
+            background: #ff6600;
+        }
+        #auto-optimize-btn {
+            top: 130px;
+            background: #7C3AED;
+            color: #fff;
+        }
+        #auto-optimize-btn:hover {
+            background: #6D28D9;
+        }
+        #auto-optimize-btn.optimized {
+            background: #10B981;
+            box-shadow: 0 0 15px #10B981;
+        }
+        #gps-fallback-banner {
+            display: none;
+            position: fixed;
+            top: 180px;
+            left: 10px;
+            z-index: 3005;
+            background: rgba(17,24,39,0.85);
+            color: #F59E0B;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            max-width: 220px;
+            backdrop-filter: blur(4px);
+        }
+        #far-route-toast {
+            display: none;
+            position: fixed;
+            top: 130px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3010;
+            background: rgba(17,24,39,0.95);
+            color: #fff;
+            padding: 14px 18px;
+            border-radius: 10px;
+            font-size: 13px;
+            max-width: 320px;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        #far-route-toast button {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            margin: 0 4px;
+        }
+        #far-route-toast .far-route-yes { background: #10B981; color: #fff; }
+        #far-route-toast .far-route-no { background: #4b5563; color: #fff; }
+
+        .delete-icon { width: 20px; height: 20px; cursor: pointer; fill: #b71c1c; z-index: 2; pointer-events: auto; }
+
+        #install-btn { display: none; background: var(--pro-blue); color: #fff; border: none; padding: 14px 16px; font-size: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; text-transform: uppercase; position: fixed; right: 15px; bottom: 15px; z-index: 1002; }
+
+        .map-btn {
+            background: repeating-linear-gradient(45deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 4px, transparent 4px, transparent 8px), #2c3e50;
+            color: white;
+            border: 1px solid #fff;
+            padding: 6px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0;
+            line-height: 1;
+            min-width: 36px;
+            min-height: 36px;
+        }
+        .map-btn-glow { box-shadow: 0 0 15px var(--accent); }
+        @keyframes eta-spin-anim { to { transform: rotate(360deg); } }
+        #eta-btn.eta-spin svg { animation: eta-spin-anim 0.8s linear infinite; }
+
+        .driver-map-label { color: #00ff00 !important; font-weight: 700; text-shadow: 0 0 2px #000; }
+        .driver-map-label-pending { color: #ff9800 !important; font-weight: 700; text-shadow: 0 0 2px #000; }
+
+        .eta-glow { border-color: #00bfff !important; box-shadow: 0 0 15px #00bfff; }
+
+        #map-stop-counter {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3005;
+            background: rgba(11,17,32,0.75);
+            color: #fff;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 14px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: none;
+        }
+        #undo-assignment-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 3005;
+            background: rgba(17,24,39,0.75);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 24px;
+            padding: 10px 16px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(4px);
+        }
+        #finish-early-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 3005;
+            background: rgba(16,185,129,0.85);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 24px;
+            padding: 10px 16px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            display: none;
+            backdrop-filter: blur(4px);
+        }
+        #calculating-route-indicator {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3005;
+            background: rgba(11,17,32,0.75);
+            color: #F59E0B;
+            padding: 6px 14px;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 12px;
+            backdrop-filter: blur(4px);
+            display: none;
+        }
+
+        #address-picker-modal {
+            display: none;
+            position: fixed;
+            z-index: 4000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: #111;
+        }
+        #address-picker-modal .picker-header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 10;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 16px;
+            border-radius: 8px;
+            backdrop-filter: blur(4px);
+        }
+        #address-picker-modal .picker-header input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 6px;
+            border: 1px solid #555;
+            background: #222;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+        }
+        #address-picker-modal .picker-header input:focus { border-color: var(--accent); }
+        #address-picker-modal .picker-close {
+            background: #b71c1c;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        #address-picker-modal .picker-map { width: 100%; height: 100%; }
+        #address-picker-modal .picker-info {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            color: #fff;
+            padding: 16px 24px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 90%;
+            backdrop-filter: blur(4px);
+            border: 1px solid #444;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            z-index: 10;
+            min-width: 200px;
+        }
+        #address-picker-modal .picker-info .addr-detail { font-size: 14px; word-break: break-word; }
+        #address-picker-modal .picker-info .plus-code {
+            font-size: 12px;
+            color: #aaa;
+            background: #222;
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid #555;
+        }
+        #address-picker-modal .picker-info .picker-confirm {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        .address-pin-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            font-size: 20px;
+            line-height: 1;
+        }
+        .address-pin-btn svg { width: 22px; height: 22px; fill: var(--accent); stroke: #333; stroke-width: 1; }
+        .address-pin-btn:hover { opacity: 0.8; }
+
+        @media (max-width: 768px) {
+            header { padding: 8px 12px; }
+            .header-logo { height: 20px; }
+            #address-picker-modal .picker-header { flex-wrap: wrap; }
+            #address-picker-modal .picker-info { bottom: 20px; min-width: auto; width: 90%; }
+            .create-route-btn { width: 90%; }
+        }
+
+        /* Added animation for checked items moving to bottom */
+        @keyframes slideDownToBottom {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .checked-slide {
+            animation: slideDownToBottom 0.4s ease forwards;
+        }
+        .delete-icon { pointer-events: auto; }
+    </style>
+</head>
+<body>
+    <!-- Login Overlay -->
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2 style="color:var(--accent);">ROUTE PLANNER LOGIN</h2>
+            <input type="email" id="login-user" class="login-input" placeholder="Email" autofocus>
+            <input type="password" id="login-pin" class="login-input" placeholder="Password">
+            <button class="login-submit" onclick="attemptLogin()">Authorize</button>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <div style="display: flex; align-items: center; gap: 10px; flex-shrink:0;">
+            <img src="icon2.png" class="header-logo" alt="Logo" onclick="toggleTheme()">
+            <span class="shiny-text" style="font-size:16px; font-weight:700;">E&C ROUTE PLANNER</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
+            <button id="route-btn" class="map-btn" onclick="openExternalRoute()" aria-label="Route"><svg viewBox="0 0 24 24" width="20" height="20" stroke="white" fill="none" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button>
+            <button id="eta-btn" class="map-btn" onclick="calculateETAOnDemand()" aria-label="Calculate ETA" title="Calculate ETA and distance">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="white" fill="none" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                    <line x1="12" y1="2" x2="12" y2="4"/>
+                    <line x1="12" y1="20" x2="12" y2="22"/>
+                    <line x1="2" y1="12" x2="4" y2="12"/>
+                    <line x1="12" y1="2" x2="12" y2="4"/>
+                    <line x1="12" y1="20" x2="12" y2="22"/>
+                    <line x1="2" y1="12" x2="4" y2="12"/>
+                </svg>
+            </button>
+            <button id="map-btn" class="map-btn" onclick="openMap()" aria-label="Map" style="background: url('//mt.google.com/vt/lyrs=m&x=235&y=348&z=10') center/cover; border: 1px solid #fff;"></button>
+        </div>
+    </header>
+
+    <!-- Input fields -->
+    <div style="padding: 20px;">
+        <div style="background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); box-shadow: var(--shadow-soft);">
+            <!-- Collapsible input fields -->
+            <div id="input-fields-wrapper" style="display: none;">
+                <div class="flex-row">
+                    <div class="rel" style="position: relative; width: 100%;">
+                        <input type="text" id="f-name" class="glow-field" placeholder="Contact/Business Name" autocomplete="off" oninput="handleNameInput(this.value)" onblur="setTimeout(()=>document.getElementById('suggestions').style.display='none', 200)" style="padding-right:50px;">
+                        <div id="suggestions" class="suggestions-box"></div>
+                        <div onclick="resetFormFields()" class="suggestion-reset" style="right:36px;">RESET</div>
+                    </div>
+                </div>
+                <div class="flex-row">
+                    <div class="input-wrap" style="flex: 0.7; position: relative;">
+                        <input type="text" id="f-address" placeholder="Address">
+                        <button class="address-pin-btn" onclick="openAddressPicker()" aria-label="Pick address from map">
+                            <svg viewBox="0 0 24 24" width="22" height="22">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="input-wrap" style="flex: 0.3;">
+                        <input type="text" id="f-city" placeholder="City" oninput="handleCityInput(this.value)">
+                        <div id="city-suggestions" class="suggestions-box"></div>
+                    </div>
+                </div>
+                <!-- Expanded buttons -->
+                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                    <button id="add-btn-expanded" class="btn-add" onclick="addJob()" style="flex: 1;">ADD +</button>
+                    <button id="close-btn-expanded" class="btn-add" onclick="collapseInput()" style="flex: 0 0 auto; background: #b71c1c; color: #fff;">X</button>
+                </div>
+            </div>
+            <!-- Collapsed button -->
+            <button id="add-btn-collapsed" class="btn-add" onclick="expandInput()" style="width:100%; margin-top:10px;">ADD TO ROUTE</button>
+        </div>
+
+        <!-- CREATE ROUTE button (main page) -->
+        <button id="create-route-main" class="create-route-btn" style="margin-top: 15px;" onclick="startCreateRoute()">CREATE ROUTE</button>
+
+        <!-- ETA Display -->
+        <div id="eta-display" style="margin-top:15px; background:var(--card); border-radius:12px; padding:12px; border:1px solid var(--border); display:none; color:var(--text);">
+            <span>Total ETA: <span id="eta-time">0</span> <span id="eta-adjusted" style="color:#ff8c00; display:none;">(<span id="eta-adjusted-time">0</span>)</span> <span id="eta-distance-display" style="display:inline;">| <span id="eta-distance">0</span> km</span></span>
+        </div>
+
+        <!-- Job List Container -->
+        <div id="job-list-container">
+            <h3 style="margin-top:0; color:var(--accent); display: flex; align-items: center; gap: 8px;">
+                ROUTE STOPS
+                <span id="stop-counter" style="display:none; border:2px solid white; color:#ff8c00; font-weight:bold; padding:0 8px; border-radius:12px; font-size:14px;"></span>
+            </h3>
+            <div id="job-list"></div>
+            <div id="empty-state" style="text-align:center; color:#666; padding:20px;">No jobs added. Use the form above to add stops.</div>
+        </div>
+    </div>
+
+    <!-- Map Modal -->
+    <div id="map-modal">
+        <button id="close-map-btn" class="close-map" onclick="closeMap()">CLOSE MAP</button>
+        <button id="zoom-out-btn" class="close-map" onclick="zoomToAll()" style="top:70px; background:#448800;">ZOOM OUT</button>
+        <!-- CREATE ROUTE button inside map -->
+        <button id="create-route-map" class="create-route-btn map-modal-btn" onclick="startCreateRoute()">CREATE ROUTE</button>
+        <button id="auto-optimize-btn" class="create-route-btn map-modal-btn" onclick="autoOptimizeRoute()">AUTO-OPTIMIZE</button>
+        <button id="reset-driver-view-btn" onclick="resetMapView()" style="display:none;">← BACK</button>
+        <div id="map-stop-counter"></div>
+        <div id="calculating-route-indicator">Calculating route...</div>
+        <div id="gps-fallback-banner">Using default location – enable GPS for accuracy.</div>
+        <div id="far-route-toast">
+            <span>You are far from your planned route. Would you like to use AUTO-OPTIMIZE to recalculate a new order starting from your current location?</span>
+            <div>
+                <button class="far-route-yes" onclick="acceptFarRouteReoptimize()">Yes</button>
+                <button class="far-route-no" onclick="dismissFarRouteBanner()">No</button>
+            </div>
+        </div>
+        <button id="undo-assignment-btn" onclick="undoLastAssignment()" aria-label="Undo last assignment">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 7"/></svg>
+            Undo
+        </button>
+        <button id="finish-early-btn" onclick="finishRouteEarly()">Finish Early</button>
+        <div id="map"></div>
+    </div>
+
+    <!-- Address Picker Modal -->
+    <div id="address-picker-modal">
+        <div class="picker-header">
+            <input type="text" id="picker-search" placeholder="Search for a town, city, or area..." autocomplete="off" style="flex:1;">
+            <button id="picker-go-btn" style="background:#22c55e; color:#000; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="searchAddressPicker()">Go</button>
+            <button class="picker-close" onclick="closeAddressPicker()">✕</button>
+        </div>
+        <div id="picker-map" class="picker-map"></div>
+        <div class="picker-info" id="picker-info">
+            <div class="addr-detail" id="picker-address-display">Select a location on the map</div>
+            <div class="plus-code" id="picker-pluscode-display">Plus Code: —</div>
+            <button class="picker-confirm" id="picker-confirm-btn" onclick="confirmAddress()">Use this address</button>
+        </div>
+    </div>
+
+    <!-- Install App Button -->
+    <button id="install-btn">Install App</button>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA6umETP8wBUEV41ugAtiNiChUeLmmwmZI&libraries=geometry,drawing,places&callback=initMap" async defer></script>
+
+    <script>
+        // Firebase config
+        firebase.initializeApp({
+            apiKey: "AIzaSyAKmgoXA4m3cRTmxJq4aUyva5SVvFbTNqg",
+            authDomain: "eandccourier-36fcc.firebaseapp.com",
+            databaseURL: "https://eandccourier-36fcc-default-rtdb.firebaseio.com",
+            projectId: "eandccourier-36fcc",
+            messagingSenderId: "1067680083511",
+            appId: "1:1067680083511:android:22d1eb3757302492bd19b2"
+        });
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        // Global variables
+        let currentUser = null;
+        let currentRouteKey = null;
+        let jobs = {};
+        let addressData = {};
+        let map, mainMap, mapMarkers = {}, activePolyline = null;
+        let autocompleteAddress;
+        let etaTotalMinutes = 0, etaTotalKm = 0;
+        let isAnimating = false;
+        let animationQueue = [];
+        let isProcessingQueue = false;
+        let checkedStops = [];
+        let pendingDeleteId = null;
+        let currentAnimatingJobId = null;
+        let finishing = false;
+
+        // New polyline state
+        let forwardSegments = []; // array of arrays of google.maps.LatLng
+        let returnPath = null; // array of google.maps.LatLng
+        let forwardPolylines = []; // array of google.maps.Polyline
+        let returnPolyline = null; // google.maps.Polyline
+        let arrowMarkers = [];
+
+        // New ordering state
+        let routeState = {
+            order: [],
+            isFinalized: false,
+            assignedIndices: {},
+            autoOptimized: false
+        };
+        let isOrderingMode = false;
+        let pulsingMarkers = {};
+        let createRouteMainBtn, createRouteMapBtn;
+
+        // Other globals
+        let etaCalculating = false;
+        let segmentCache = {};
+        let polylineDebounceTimer = null;
+        let pickerMap = null, pickerMarker = null, pickerGeocoder = null, pickerAutocomplete = null, pickerInitialized = false;
+        let selectedLocation = null;
+        let originMarker = null;
+
+        // Dynamic origin / geolocation state
+        window.currentUserLocation = { lat: 49.881157, lng: -99.959272 };
+        let userLocationMarker = null;
+        let userLocationCircle = null;
+        let userLocationPulseInterval = null;
+        let usingDefaultLocation = true;
+        let geoWatchId = null;
+        let lastOriginForCalc = { lat: 49.881157, lng: -99.959272 };
+        let lastOriginCalcTime = 0;
+        let userMarkerUpdateThrottle = 0;
+
+        // Theme
+        if (localStorage.getItem('ec_theme') === 'light') document.body.classList.add('light-mode');
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            localStorage.setItem('ec_theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+            if (map) map.setOptions({ styles: document.body.classList.contains('light-mode') ? [] : mapStyles });
+        }
+        const mapStyles = [{"featureType":"all","elementType":"all","stylers":[{"invert_lightness":!0},{"saturation":10},{"lightness":30},{"gamma":0.5},{"hue":"#435158"}]}];
+
+        // ---------- LOGIN ----------
+        function attemptLogin() {
+            const email = document.getElementById('login-user').value.trim();
+            const pass = document.getElementById('login-pin').value.trim();
+            if (!email || !pass) return;
+            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+                .then(() => auth.signInWithEmailAndPassword(email, pass))
+                .catch(err => alert("Login Failed: " + err.message));
+        }
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                const email = user.email;
+                const username = email.split('@')[0].toLowerCase();
+                db.ref(`roles/${username}/command`).once('value').then(snap => {
+                    if (snap.val() === true) {
+                        currentUser = username.charAt(0).toUpperCase() + username.slice(1);
+                        currentRouteKey = username;
+                        console.log('Resolved currentRouteKey:', currentRouteKey);
+                        document.getElementById('login-overlay').style.display = 'none';
+                        initApp();
+                        startGeolocationWatch();
+                    } else {
+                        alert("ACCESS DENIED");
+                        auth.signOut();
+                        document.getElementById('login-overlay').style.display = 'flex';
+                    }
+                });
+            } else {
+                document.getElementById('login-overlay').style.display = 'flex';
+            }
+        });
+
+        // ---------- DATA LISTENERS ----------
+        function initApp() {
+            db.ref('address_lookup').on('value', snap => { addressData = snap.val() || {}; });
+            // Listen to this driver's own route
+            db.ref(`developer/route_planner/saved_routes/${currentRouteKey}`).on('value', snap => {
+                const routeData = snap.val() || {};
+                jobs = routeData.stops || {};
+                routeState.order = routeData.order || [];
+                routeState.isFinalized = routeData.isFinalized || false;
+                routeState.assignedIndices = routeData.assignedIndices || {};
+                routeState.autoOptimized = routeData.autoOptimized || false;
+                etaTotalMinutes = routeData.etaTotalMinutes || 0;
+                etaTotalKm = routeData.etaTotalKm || 0;
+                // Ensure all pending jobs have coordinates
+                ensureAllJobsGeocoded().then(() => {
+                    updateUI();
+                    updateAutoOptimizeButtonVisual();
+                    // Redraw route polylines based on current state
+                    redrawRouteFromCurrentState();
+                });
+            });
+            initPlaces();
+            createRouteMainBtn = document.getElementById('create-route-main');
+            createRouteMapBtn = document.getElementById('create-route-map');
+            updateCreateRouteButton();
+
+            // Listen for checked stops for the current user
+            if (currentUser) {
+                const checkedRef = db.ref(`developer/route_planner/checked_stops/${currentUser.toLowerCase()}`);
+                checkedRef.on('value', snap => {
+                    // While a local check/uncheck animation is in progress, the in-memory
+                    // checkedStops array holds an optimistic edit that hasn't been written
+                    // to Firebase yet. Applying a remote snapshot now would silently discard
+                    // that pending toggle. Skip updating until the animation (and the write
+                    // it performs in finishAnimation) has completed.
+                    if (isAnimating) return;
+                    checkedStops = snap.val() || [];
+                    if (!Array.isArray(checkedStops)) checkedStops = [];
+                    renderList();
+                });
+            }
+        }
+
+        // ---------- GEOCODING HELPERS ----------
+        function geocodeJob(jobId) {
+            const job = jobs[jobId];
+            if (!job) return Promise.reject("Job not found");
+            if (job.lat && job.lng) return Promise.resolve({ lat: job.lat, lng: job.lng });
+            const address = job.pickup_location + ', ' + job.city;
+            const geocoder = new google.maps.Geocoder();
+            return new Promise((resolve, reject) => {
+                geocoder.geocode({ address: address, region: 'ca' }, (results, status) => {
+                    if (status === 'OK' && results.length > 0) {
+                        const loc = results[0].geometry.location;
+                        const lat = loc.lat();
+                        const lng = loc.lng();
+                        db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops/${jobId}/lat`).set(lat);
+                        db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops/${jobId}/lng`).set(lng);
+                        // Update local copy
+                        job.lat = lat;
+                        job.lng = lng;
+                        resolve({ lat, lng });
+                    } else {
+                        reject("Geocode failed for " + address);
+                    }
+                });
+            });
+        }
+
+        function ensureAllJobsGeocoded() {
+            const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+            const needsGeocode = pendingIds.filter(id => !jobs[id].lat || !jobs[id].lng);
+            if (needsGeocode.length === 0) return Promise.resolve();
+            // Geocode in parallel
+            const promises = needsGeocode.map(id => geocodeJob(id).catch(err => console.warn(err)));
+            return Promise.all(promises);
+        }
+
+        // ---------- ROUTE STATE PERSISTENCE ----------
+        function saveRouteState() {
+            if (!currentUser) return;
+            // Write full route data to saved_routes
+            const routeData = {
+                label: currentUser,
+                timestamp: Date.now(),
+                order: routeState.order,
+                assignedIndices: routeState.assignedIndices,
+                isFinalized: routeState.isFinalized,
+                autoOptimized: routeState.autoOptimized || false,
+                stops: jobs,
+                etaTotalMinutes: etaTotalMinutes,
+                etaTotalKm: etaTotalKm
+            };
+            db.ref(`developer/route_planner/saved_routes/${currentRouteKey}`).set(routeData).catch(err => console.warn("Save route state error:", err));
+        }
+
+        // ---------- REDRAW ROUTE FROM CURRENT STATE ----------
+        function redrawRouteFromCurrentState() {
+            if (!map) return;
+            // Clear existing polylines
+            clearRoutePolylines();
+            if (routeState.isFinalized && routeState.order.length > 0) {
+                // Draw forward and return paths
+                updateForwardRoute().then(() => {
+                    fetchReturnRoute().then(() => {
+                        updatePolyline();
+                    });
+                });
+            } else if (isOrderingMode && routeState.order.length > 0) {
+                // Draw forward path only
+                updateForwardRoute().then(() => {
+                    updatePolyline();
+                });
+            } else {
+                // Nothing to draw
+                updatePolyline();
+            }
+        }
+
+        // ---------- CLEAR ROUTE POLYLINES ----------
+        function clearRoutePolylines() {
+            // Remove forward polylines
+            forwardPolylines.forEach(p => p.setMap(null));
+            forwardPolylines = [];
+            if (returnPolyline) {
+                returnPolyline.setMap(null);
+                returnPolyline = null;
+            }
+            // Remove arrow markers
+            arrowMarkers.forEach(m => m.setMap(null));
+            arrowMarkers = [];
+        }
+
+        // ---------- HELPER: point + heading along a multi-point path at a distance fraction ----------
+        function computePathPointAtFraction(path, fraction) {
+            const totalDist = google.maps.geometry.spherical.computeLength(path);
+            const targetDist = totalDist * fraction;
+            let accumulated = 0;
+            for (let i = 0; i < path.length - 1; i++) {
+                const segDist = google.maps.geometry.spherical.computeDistanceBetween(path[i], path[i + 1]);
+                if (accumulated + segDist >= targetDist) {
+                    const segFrac = segDist === 0 ? 0 : (targetDist - accumulated) / segDist;
+                    const point = google.maps.geometry.spherical.interpolate(path[i], path[i + 1], segFrac);
+                    const heading = google.maps.geometry.spherical.computeHeading(path[i], path[i + 1]);
+                    return { point, heading };
+                }
+                accumulated += segDist;
+            }
+            const last = path.length - 1;
+            const heading = google.maps.geometry.spherical.computeHeading(path[last - 1], path[last]);
+            return { point: path[last], heading };
+        }
+
+        // ---------- UPDATE POLYLINE (per-segment) ----------
+        function updatePolyline() {
+            if (!map) return;
+            // Clear old polylines and arrows
+            clearRoutePolylines();
+
+            // Draw forward segments
+            forwardSegments.forEach(seg => {
+                if (seg.length < 2) return;
+                const polyline = new google.maps.Polyline({
+                    path: seg,
+                    geodesic: true,
+                    strokeColor: "#00d4ff",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 6,
+                    map: map,
+                    zIndex: 1
+                });
+                forwardPolylines.push(polyline);
+
+                // Add arrows on this segment
+                const arrowColor = "#00d4ff";
+                const arrowSymbol = {
+                    path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                    fillColor: arrowColor,
+                    fillOpacity: 1,
+                    strokeColor: '#000000',
+                    strokeWeight: 1,
+                    scale: 4
+                };
+                // Place arrows at 1/3 and 2/3
+                const totalDist = google.maps.geometry.spherical.computeLength(seg);
+                if (totalDist < 10) return;
+                // Use 1/3 and 2/3 along the path
+                const fractions = [1/3, 2/3];
+                fractions.forEach(frac => {
+                    const { point, heading } = computePathPointAtFraction(seg, frac);
+                    const arrowMarker = new google.maps.Marker({
+                        position: point,
+                        map: map,
+                        icon: { ...arrowSymbol, rotation: heading },
+                        clickable: false,
+                        zIndex: 2
+                    });
+                    arrowMarkers.push(arrowMarker);
+                });
+            });
+
+            // Draw return polyline if exists
+            if (returnPath && returnPath.length > 1) {
+                returnPolyline = new google.maps.Polyline({
+                    path: returnPath,
+                    geodesic: true,
+                    strokeColor: "#ff3333",
+                    strokeOpacity: 1.0,
+                    strokeWeight: 6,
+                    map: map,
+                    zIndex: 3
+                });
+
+                // Add arrows on return path
+                const redArrowSymbol = {
+                    path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                    fillColor: "#ff3333",
+                    fillOpacity: 1,
+                    strokeColor: '#000000',
+                    strokeWeight: 1,
+                    scale: 4
+                };
+                const totalDist = google.maps.geometry.spherical.computeLength(returnPath);
+                if (totalDist >= 10) {
+                    const fractions = [1/3, 2/3];
+                    fractions.forEach(frac => {
+                        const { point, heading } = computePathPointAtFraction(returnPath, frac);
+                        const arrowMarker = new google.maps.Marker({
+                            position: point,
+                            map: map,
+                            icon: { ...redArrowSymbol, rotation: heading },
+                            clickable: false,
+                            zIndex: 4
+                        });
+                        arrowMarkers.push(arrowMarker);
+                    });
+                }
+            }
+        }
+
+        // ---------- FETCH DRIVING PATH (using Routes API, cached per segment) ----------
+        async function getDrivingPath(originLatLng, destLatLng) {
+            const cacheKey = originLatLng.lat.toFixed(6) + ',' + originLatLng.lng.toFixed(6) + '_' + destLatLng.lat.toFixed(6) + ',' + destLatLng.lng.toFixed(6);
+            if (segmentCache[cacheKey]) {
+                return segmentCache[cacheKey];
+            }
+            try {
+                const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Goog-Api-Key": "AIzaSyA6umETP8wBUEV41ugAtiNiChUeLmmwmZI",
+                        "X-Goog-FieldMask": "routes.polyline.encodedPolyline"
+                    },
+                    body: JSON.stringify({
+                        origin: { location: { latLng: { latitude: originLatLng.lat, longitude: originLatLng.lng } } },
+                        destination: { location: { latLng: { latitude: destLatLng.lat, longitude: destLatLng.lng } } },
+                        travelMode: "DRIVE"
+                    })
+                });
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status);
+                }
+                const data = await response.json();
+                if (data.routes && data.routes[0] && data.routes[0].polyline) {
+                    const encoded = data.routes[0].polyline.encodedPolyline;
+                    const decoded = google.maps.geometry.encoding.decodePath(encoded);
+                    segmentCache[cacheKey] = decoded;
+                    return decoded;
+                } else {
+                    throw new Error("No route found");
+                }
+            } catch (err) {
+                console.warn("Routes API failed, falling back to straight line:", err);
+                // Fallback: straight line
+                return [originLatLng, destLatLng];
+            }
+        }
+
+        // ---------- UPDATE FORWARD ROUTE ----------
+        async function updateForwardRoute() {
+            if (!map) return;
+            const order = routeState.order;
+            if (order.length === 0) {
+                forwardSegments = [];
+                updatePolyline();
+                return;
+            }
+
+            // Build segments: origin -> stop1, stop1->stop2, ...
+            const originLatLng = getCurrentOrigin();
+            const stopIds = order;
+            const segments = [];
+            let prev = originLatLng;
+            for (let i = 0; i < stopIds.length; i++) {
+                const id = stopIds[i];
+                const job = jobs[id];
+                if (!job || !job.lat || !job.lng) {
+                    // If missing coordinates, skip or wait for geocode? 
+                    // For now, skip segment (but should ideally handle)
+                    continue;
+                }
+                const dest = { lat: job.lat, lng: job.lng };
+                try {
+                    const path = await getDrivingPath(prev, dest);
+                    segments.push(path);
+                    prev = dest;
+                } catch (err) {
+                    console.warn("Failed to get path for segment", i, err);
+                    // Fallback to straight line
+                    segments.push([prev, dest]);
+                    prev = dest;
+                }
+            }
+            forwardSegments = segments;
+            updatePolyline();
+        }
+
+        // ---------- FETCH RETURN ROUTE ----------
+        async function fetchReturnRoute() {
+            if (!map) return;
+            const order = routeState.order;
+            if (order.length === 0) {
+                returnPath = null;
+                updatePolyline();
+                return;
+            }
+            const lastId = order[order.length - 1];
+            const lastJob = jobs[lastId];
+            if (!lastJob || !lastJob.lat || !lastJob.lng) {
+                returnPath = null;
+                updatePolyline();
+                return;
+            }
+            const originLatLng = getCurrentOrigin();
+            const lastLatLng = { lat: lastJob.lat, lng: lastJob.lng };
+            try {
+                const path = await getDrivingPath(lastLatLng, originLatLng);
+                returnPath = path;
+            } catch (err) {
+                console.warn("Failed to get return path", err);
+                returnPath = [lastLatLng, originLatLng]; // fallback straight line
+            }
+            updatePolyline();
+        }
+
+        // ---------- SHARED HELPERS (insertion / auto-optimize / dynamic origin) ----------
+        function getCurrentOrigin() {
+            return window.currentUserLocation || { lat: 49.881157, lng: -99.959272 };
+        }
+        function pointFor(id) {
+            const j = jobs[id];
+            return { lat: j.lat, lng: j.lng };
+        }
+        function euclidDist(a, b) {
+            const dLat = a.lat - b.lat;
+            const dLng = a.lng - b.lng;
+            return Math.sqrt(dLat * dLat + dLng * dLng);
+        }
+        function haversineDistanceKm(a, b) {
+            const R = 6371;
+            const dLat = (b.lat - a.lat) * Math.PI / 180;
+            const dLng = (b.lng - a.lng) * Math.PI / 180;
+            const lat1 = a.lat * Math.PI / 180;
+            const lat2 = b.lat * Math.PI / 180;
+            const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+        }
+        function showCalculatingIndicator(show) {
+            const indicator = document.getElementById('calculating-route-indicator');
+            if (indicator) indicator.style.display = show ? 'block' : 'none';
+        }
+        function computeEuclideanRouteDistance(order, origin) {
+            let total = 0;
+            let prev = origin;
+            order.forEach(id => {
+                const p = pointFor(id);
+                total += euclidDist(prev, p);
+                prev = p;
+            });
+            total += euclidDist(prev, origin);
+            return total;
+        }
+
+        // ---------- ETA RECALCULATION (silent) ----------
+        async function recalcETAFromSegments() {
+            if (!routeState.isFinalized || routeState.order.length === 0) return;
+            try {
+                const origin = getCurrentOrigin();
+                const waypoints = routeState.order.map(id => ({ location: { latLng: { latitude: jobs[id].lat, longitude: jobs[id].lng } } }));
+                const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Goog-Api-Key": "AIzaSyA6umETP8wBUEV41ugAtiNiChUeLmmwmZI",
+                        "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.legs.duration,routes.legs.distanceMeters"
+                    },
+                    body: JSON.stringify({
+                        origin: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
+                        destination: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
+                        intermediates: waypoints,
+                        travelMode: "DRIVE",
+                        optimizeWaypointOrder: false
+                    })
+                });
+                const data = await response.json();
+                if (data.routes && data.routes[0]) {
+                    const route = data.routes[0];
+                    let totalDurationSeconds = 0, totalDistanceMeters = 0;
+                    if (route.legs) {
+                        route.legs.forEach(leg => {
+                            totalDurationSeconds += parseFloat(leg.duration.replace('s', ''));
+                            totalDistanceMeters += parseFloat(leg.distanceMeters);
+                        });
+                    } else {
+                        totalDurationSeconds = parseFloat(route.duration.replace('s', ''));
+                        totalDistanceMeters = parseFloat(route.distanceMeters);
+                    }
+                    etaTotalMinutes = totalDurationSeconds / 60;
+                    etaTotalKm = totalDistanceMeters / 1000;
+                    updateETADisplay();
+                    document.getElementById('eta-display').style.display = 'block';
+                    document.getElementById('eta-display').classList.add('eta-glow');
+                    saveRouteState();
+                }
+            } catch (err) {
+                console.warn("ETA recalculation failed:", err);
+            }
+        }
+
+        // ---------- AUTOMATIC INSERTION OF A NEW STOP INTO A FINALIZED ROUTE ----------
+        async function insertStopIntoFinalizedRoute(newId) {
+            const origin = getCurrentOrigin();
+            const order = routeState.order;
+            const newJob = jobs[newId];
+            const newPoint = { lat: newJob.lat, lng: newJob.lng };
+
+            if (order.length === 0) {
+                order.push(newId);
+                routeState.assignedIndices = { [newId]: 1 };
+                routeState.autoOptimized = false;
+                showCalculatingIndicator(true);
+                await updateForwardRoute();
+                await fetchReturnRoute();
+                showCalculatingIndicator(false);
+                updateAutoOptimizeButtonVisual();
+                saveRouteState();
+                recalcETAFromSegments();
+                updateUI();
+                return;
+            }
+
+            let bestIndex = 0;
+            let bestDelta = Infinity;
+            for (let i = 0; i <= order.length; i++) {
+                const prevPoint = i === 0 ? origin : pointFor(order[i - 1]);
+                const nextPoint = i === order.length ? origin : pointFor(order[i]);
+                const delta = euclidDist(prevPoint, newPoint) + euclidDist(newPoint, nextPoint) - euclidDist(prevPoint, nextPoint);
+                if (delta < bestDelta) { bestDelta = delta; bestIndex = i; }
+            }
+
+            const insertedAtEnd = bestIndex === order.length;
+            const prevPoint = bestIndex === 0 ? origin : pointFor(order[bestIndex - 1]);
+            const nextPoint = insertedAtEnd ? origin : pointFor(order[bestIndex]);
+            const oldSegments = forwardSegments;
+
+            order.splice(bestIndex, 0, newId);
+            const newAssigned = {};
+            order.forEach((id, idx) => { newAssigned[id] = idx + 1; });
+            routeState.assignedIndices = newAssigned;
+            routeState.autoOptimized = false;
+
+            showCalculatingIndicator(true);
+            try {
+                const segBefore = await getDrivingPath(prevPoint, newPoint);
+                const newSegments = [];
+                for (let k = 0; k < bestIndex; k++) newSegments.push(oldSegments[k]);
+                newSegments.push(segBefore);
+                if (!insertedAtEnd) {
+                    const segAfter = await getDrivingPath(newPoint, nextPoint);
+                    newSegments.push(segAfter);
+                    for (let k = bestIndex + 1; k < oldSegments.length; k++) newSegments.push(oldSegments[k]);
+                    const oldKey = prevPoint.lat.toFixed(6) + ',' + prevPoint.lng.toFixed(6) + '_' + nextPoint.lat.toFixed(6) + ',' + nextPoint.lng.toFixed(6);
+                    delete segmentCache[oldKey];
+                } else {
+                    const retPath = await getDrivingPath(newPoint, origin);
+                    returnPath = retPath;
+                }
+                forwardSegments = newSegments;
+            } catch (err) {
+                console.warn("Segment fetch failed during insertion:", err);
+            }
+
+            if (map) updatePolyline();
+            showCalculatingIndicator(false);
+            updateAutoOptimizeButtonVisual();
+            saveRouteState();
+            recalcETAFromSegments();
+            updateUI();
+        }
+
+        // ---------- AUTO-OPTIMIZE ----------
+        function updateAutoOptimizeButtonVisual() {
+            const btn = document.getElementById('auto-optimize-btn');
+            if (!btn) return;
+            if (routeState.autoOptimized) {
+                btn.classList.add('optimized');
+                btn.textContent = '✅ OPTIMIZED';
+            } else {
+                btn.classList.remove('optimized');
+                btn.textContent = 'AUTO-OPTIMIZE';
+            }
+        }
+
+        async function autoOptimizeRoute() {
+            const optimizeBtn = document.getElementById('auto-optimize-btn');
+            try {
+                if (optimizeBtn) optimizeBtn.disabled = true;
+                if (createRouteMapBtn) createRouteMapBtn.disabled = true;
+                showCalculatingIndicator(true);
+
+                await ensureAllJobsGeocoded();
+                const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+                const missingGeocode = pendingIds.filter(id => !jobs[id].lat || !jobs[id].lng);
+                if (missingGeocode.length > 0) {
+                    alert("Could not locate one or more addresses. Auto-optimize aborted.");
+                    return;
+                }
+                if (pendingIds.length < 2) {
+                    alert("Need at least 2 stops to optimise.");
+                    return;
+                }
+
+                const assignedIds = Object.keys(routeState.assignedIndices);
+                const unassignedIds = pendingIds.filter(id => !routeState.assignedIndices[id]);
+                if (unassignedIds.length === 0) {
+                    alert("No unassigned stops to optimise.");
+                    return;
+                }
+
+                const origin = getCurrentOrigin();
+                let orderedUnassigned = unassignedIds;
+                if (unassignedIds.length > 1) {
+                    const intermediates = unassignedIds.map(id => ({ location: { latLng: { latitude: jobs[id].lat, longitude: jobs[id].lng } } }));
+                    const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-Goog-Api-Key": "AIzaSyA6umETP8wBUEV41ugAtiNiChUeLmmwmZI",
+                            "X-Goog-FieldMask": "routes.polyline.encodedPolyline,routes.legs,routes.optimizedIntermediateWaypointIndex"
+                        },
+                        body: JSON.stringify({
+                            origin: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
+                            destination: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
+                            intermediates: intermediates,
+                            travelMode: "DRIVE",
+                            optimizeWaypointOrder: true
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.routes && data.routes[0] && data.routes[0].optimizedIntermediateWaypointIndex) {
+                        const waypointOrder = data.routes[0].optimizedIntermediateWaypointIndex;
+                        orderedUnassigned = waypointOrder.map(idx => unassignedIds[idx]);
+                    } else {
+                        console.warn("No optimizedIntermediateWaypointIndex returned, using original order");
+                    }
+                }
+
+                let bestOrder;
+                if (assignedIds.length === 0) {
+                    bestOrder = orderedUnassigned.slice();
+                } else {
+                    const assignedOrdered = routeState.order.filter(id => routeState.assignedIndices[id]);
+                    let bestDist = Infinity;
+                    bestOrder = assignedOrdered.concat(orderedUnassigned);
+                    for (let i = 0; i <= assignedOrdered.length; i++) {
+                        const candidate = assignedOrdered.slice(0, i).concat(orderedUnassigned, assignedOrdered.slice(i));
+                        const dist = computeEuclideanRouteDistance(candidate, origin);
+                        if (dist < bestDist) { bestDist = dist; bestOrder = candidate; }
+                    }
+                }
+
+                routeState.order = bestOrder;
+                const newAssigned = {};
+                bestOrder.forEach((id, idx) => { newAssigned[id] = idx + 1; });
+                routeState.assignedIndices = newAssigned;
+                routeState.isFinalized = true;
+                routeState.autoOptimized = true;
+                isOrderingMode = false;
+                stopPulsingAll();
+
+                await updateForwardRoute();
+                await fetchReturnRoute();
+                updateUI();
+                updateAutoOptimizeButtonVisual();
+                saveRouteState();
+                recalcETAFromSegments();
+            } catch (err) {
+                console.warn("Auto-optimize failed:", err);
+                alert("Auto-optimize failed. Please try again.");
+            } finally {
+                showCalculatingIndicator(false);
+                if (optimizeBtn) optimizeBtn.disabled = false;
+                updateCreateRouteButton();
+            }
+        }
+
+        // ---------- DYNAMIC ORIGIN / GEOLOCATION ----------
+        function startGeolocationWatch() {
+            if (!navigator.geolocation) {
+                useDefaultLocationFallback();
+                return;
+            }
+            geoWatchId = navigator.geolocation.watchPosition(
+                pos => {
+                    usingDefaultLocation = false;
+                    hideGpsFallbackBanner();
+                    window.currentUserLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    throttledUpdateUserMarker();
+                    maybeRefetchOriginSegments();
+                },
+                err => {
+                    console.warn("Geolocation error:", err);
+                    useDefaultLocationFallback();
+                },
+                { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+            );
+        }
+
+        function useDefaultLocationFallback() {
+            usingDefaultLocation = true;
+            window.currentUserLocation = { lat: 49.881157, lng: -99.959272 };
+            showGpsFallbackBanner();
+        }
+
+        function showGpsFallbackBanner() {
+            const banner = document.getElementById('gps-fallback-banner');
+            if (banner) banner.style.display = 'block';
+        }
+        function hideGpsFallbackBanner() {
+            const banner = document.getElementById('gps-fallback-banner');
+            if (banner) banner.style.display = 'none';
+        }
+
+        function throttledUpdateUserMarker() {
+            const now = Date.now();
+            if (now - userMarkerUpdateThrottle < 1000) return;
+            userMarkerUpdateThrottle = now;
+            updateUserLocationMarker();
+        }
+
+        function updateUserLocationMarker() {
+            if (!map || !window.currentUserLocation || !google.maps) return;
+            const pos = window.currentUserLocation;
+            if (!userLocationMarker) {
+                userLocationMarker = new google.maps.Marker({
+                    position: pos,
+                    map: map,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 9,
+                        fillColor: '#eab308',
+                        fillOpacity: 1,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 2
+                    },
+                    zIndex: 999
+                });
+                userLocationCircle = new google.maps.Circle({
+                    map: map,
+                    center: pos,
+                    radius: 10,
+                    fillColor: '#eab308',
+                    fillOpacity: 0.4,
+                    strokeColor: '#eab308',
+                    strokeWeight: 2,
+                    strokeOpacity: 0.7
+                });
+                let growing = true;
+                let markerScale = 9;
+                userLocationPulseInterval = setInterval(() => {
+                    let rad = userLocationCircle.getRadius();
+                    if (growing) { rad += 2; if (rad > 24) growing = false; }
+                    else { rad -= 2; if (rad < 8) growing = true; }
+                    userLocationCircle.setRadius(rad);
+                    let op = userLocationCircle.getFillOpacity();
+                    if (growing) op = Math.min(op + 0.05, 0.8);
+                    else op = Math.max(op - 0.05, 0.2);
+                    userLocationCircle.setFillOpacity(op);
+                    userLocationCircle.setStrokeOpacity(op);
+                    markerScale = growing ? Math.min(markerScale + 0.4, 12) : Math.max(markerScale - 0.4, 9);
+                    userLocationMarker.setIcon({
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: markerScale,
+                        fillColor: '#eab308',
+                        fillOpacity: 1,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 2
+                    });
+                }, 60);
+            } else {
+                userLocationMarker.setPosition(pos);
+                if (userLocationCircle) userLocationCircle.setCenter(pos);
+            }
+        }
+
+        function maybeRefetchOriginSegments() {
+            const modal = document.getElementById('map-modal');
+            if (!modal || modal.style.display === 'none') return;
+            if (!routeState.isFinalized || routeState.order.length === 0) return;
+            const now = Date.now();
+            const moved = haversineDistanceKm(lastOriginForCalc, window.currentUserLocation);
+            if (moved > 1 || (now - lastOriginCalcTime) > 30000) {
+                lastOriginForCalc = { lat: window.currentUserLocation.lat, lng: window.currentUserLocation.lng };
+                lastOriginCalcTime = now;
+                segmentCache = {};
+                refetchOriginSegments();
+            }
+        }
+
+        async function refetchOriginSegments() {
+            const order = routeState.order;
+            if (order.length === 0) return;
+            const origin = getCurrentOrigin();
+            const firstPoint = pointFor(order[0]);
+            const lastPoint = pointFor(order[order.length - 1]);
+            try {
+                const forwardFirstSeg = await getDrivingPath(origin, firstPoint);
+                if (forwardSegments.length > 0) forwardSegments[0] = forwardFirstSeg;
+                const newReturn = await getDrivingPath(lastPoint, origin);
+                returnPath = newReturn;
+                updatePolyline();
+                recalcETAFromSegments();
+            } catch (err) {
+                console.warn("Failed to refetch origin segments:", err);
+            }
+        }
+
+        // ---------- PROMPT TO RE-OPTIMISE WHEN MAP OPENS ----------
+        function checkFarFromRoutePrompt() {
+            if (!routeState.isFinalized || routeState.order.length === 0) return;
+            const origin = getCurrentOrigin();
+            const dismissedAtRaw = sessionStorage.getItem('dismissedFarPromptLocation');
+            if (sessionStorage.getItem('dismissedFarPrompt') === 'true' && dismissedAtRaw) {
+                try {
+                    const dLoc = JSON.parse(dismissedAtRaw);
+                    if (haversineDistanceKm(dLoc, origin) > 5) {
+                        sessionStorage.removeItem('dismissedFarPrompt');
+                        sessionStorage.removeItem('dismissedFarPromptLocation');
+                    }
+                } catch (e) { /* ignore malformed session value */ }
+            }
+            if (sessionStorage.getItem('dismissedFarPrompt') === 'true') return;
+
+            const allPoints = [];
+            forwardSegments.forEach(seg => seg.forEach((p, i) => { if (i % 20 === 0) allPoints.push(p); }));
+            if (returnPath) returnPath.forEach((p, i) => { if (i % 20 === 0) allPoints.push(p); });
+            if (allPoints.length === 0) return;
+
+            let minDist = Infinity;
+            allPoints.forEach(p => {
+                const pt = { lat: typeof p.lat === 'function' ? p.lat() : p.lat, lng: typeof p.lng === 'function' ? p.lng() : p.lng };
+                const d = haversineDistanceKm(origin, pt);
+                if (d < minDist) minDist = d;
+            });
+
+            if (minDist > 1) {
+                showFarRouteBanner();
+            }
+        }
+
+        function showFarRouteBanner() {
+            const banner = document.getElementById('far-route-toast');
+            if (banner) banner.style.display = 'flex';
+        }
+        function dismissFarRouteBanner() {
+            const banner = document.getElementById('far-route-toast');
+            if (banner) banner.style.display = 'none';
+            sessionStorage.setItem('dismissedFarPrompt', 'true');
+            sessionStorage.setItem('dismissedFarPromptLocation', JSON.stringify(getCurrentOrigin()));
+        }
+        function acceptFarRouteReoptimize() {
+            const banner = document.getElementById('far-route-toast');
+            if (banner) banner.style.display = 'none';
+            autoOptimizeRoute();
+        }
+
+        // ---------- UI UPDATE ----------
+        function updateUI() {
+            renderList();
+            if (map) updateMapMarkers();
+            // updatePolyline is called separately via redrawRouteFromCurrentState or assignNumber
+            updateCreateRouteButton();
+            updateOrderingOverlays();
+            // ETA display
+            if (etaTotalMinutes > 0 && routeState.isFinalized) {
+                document.getElementById('eta-display').style.display = 'block';
+                document.getElementById('eta-display').classList.add('eta-glow');
+                updateETADisplay();
+            } else {
+                document.getElementById('eta-display').style.display = 'none';
+                document.getElementById('eta-display').classList.remove('eta-glow');
+            }
+            const counter = document.getElementById('stop-counter');
+            const totalStops = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup').length;
+            if (totalStops > 0) {
+                counter.textContent = totalStops;
+                counter.style.display = 'inline-block';
+            } else {
+                counter.style.display = 'none';
+            }
+        }
+
+        // ---------- SHARED: BASE DISPLAY ORDER (used by renderList and startCardAnimation) ----------
+        // Both the rendered list and the drag/animation target index must agree on ordering,
+        // otherwise cards animate to the wrong position and then visibly snap when re-rendered.
+        function computeBaseDisplayOrder() {
+            const pendingJobs = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+            let displayOrder = [];
+            if (routeState.order.length > 0) {
+                displayOrder = routeState.order.filter(id => jobs[id] && jobs[id].status === 'pending_pickup');
+                const existing = new Set(displayOrder);
+                const extra = pendingJobs.filter(id => !existing.has(id));
+                displayOrder = displayOrder.concat(extra);
+            } else {
+                displayOrder = pendingJobs.slice().sort((a, b) => jobs[a].timestamp - jobs[b].timestamp);
+            }
+            return displayOrder;
+        }
+
+        // ---------- RENDER LIST ----------
+        function renderList() {
+            const container = document.getElementById('job-list');
+            const emptyState = document.getElementById('empty-state');
+            const pendingJobs = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+            if (pendingJobs.length === 0) {
+                container.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+            emptyState.style.display = 'none';
+
+            let displayOrder = computeBaseDisplayOrder();
+
+            // Split into unchecked and checked based on checkedStops
+            let unchecked = [];
+            let checked = [];
+            displayOrder.forEach(id => {
+                if (checkedStops.includes(id)) {
+                    checked.push(id);
+                } else {
+                    unchecked.push(id);
+                }
+            });
+            // Ensure checked order matches checkedStops order (filter out those not in displayOrder)
+            checked = checkedStops.filter(id => displayOrder.includes(id));
+            displayOrder = unchecked.concat(checked);
+
+            let html = '';
+            displayOrder.forEach(id => {
+                const job = jobs[id];
+                if (!job) return;
+                const number = routeState.assignedIndices[id] || null;
+                const isPending = number === null;
+                const pendingClass = isPending ? 'pending' : '';
+                const numberDisplay = number !== null ? number : '';
+                const isChecked = checkedStops.includes(id);
+                const checkedClass = isChecked ? 'checked' : '';
+                html += `
+                    <div class="job-item ${pendingClass} ${checkedClass}" data-id="${id}" onclick="openJobInMaps('${id}')">
+                        <span class="job-number">${numberDisplay}</span>
+                        <div class="job-info">
+                            <div class="job-name">${job.name || 'No name'}</div>
+                            <div class="job-address">${job.pickup_location || ''}, ${job.city || ''}</div>
+                        </div>
+                        <div class="custom-checkbox" onclick="event.stopPropagation(); toggleChecked('${id}')">
+                            <svg viewBox="0 0 24 24">
+                                <rect x="4" y="4" width="16" height="16" fill="none" stroke="#888" stroke-width="2"/>
+                                <path class="checkmark-path" d="M8 12l3 3 5-6" fill="none" stroke="#22c55e" stroke-width="3" stroke-dasharray="100" stroke-dashoffset="${isChecked ? '0' : '100'}"/>
+                            </svg>
+                        </div>
+                        <svg class="delete-icon" viewBox="0 0 24 24" onclick="deleteJob('${id}'); event.stopPropagation();">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // ---------- TOGGLE CHECKED ----------
+        function toggleChecked(jobId) {
+            if (!currentUser) return;
+            if (isAnimating) {
+                // Queue this toggle
+                animationQueue.push({ type: 'toggle', jobId });
+                if (!isProcessingQueue) processQueue();
+                return;
+            }
+            // Toggle locally
+            const idx = checkedStops.indexOf(jobId);
+            const isCurrentlyChecked = idx !== -1;
+            if (isCurrentlyChecked) {
+                checkedStops.splice(idx, 1);
+            } else {
+                checkedStops.push(jobId);
+            }
+            // Update visual immediately
+            updateCardCheckVisual(jobId, !isCurrentlyChecked);
+            // Start animation
+            startCardAnimation(jobId, !isCurrentlyChecked);
+        }
+
+        // ---------- UPDATE CARD CHECK VISUAL ----------
+        function updateCardCheckVisual(jobId, isChecked) {
+            const card = document.querySelector(`.job-item[data-id="${jobId}"]`);
+            if (!card) return;
+            if (isChecked) {
+                card.classList.add('checked');
+                const checkmark = card.querySelector('.checkmark-path');
+                if (checkmark) checkmark.style.strokeDashoffset = '0';
+            } else {
+                card.classList.remove('checked');
+                const checkmark = card.querySelector('.checkmark-path');
+                if (checkmark) checkmark.style.strokeDashoffset = '100';
+            }
+        }
+
+        // ---------- START CARD ANIMATION ----------
+        function startCardAnimation(jobId, isChecked) {
+            const card = document.querySelector(`.job-item[data-id="${jobId}"]`);
+            if (!card) {
+                // Card not in DOM, just finish
+                finishAnimation();
+                return;
+            }
+            isAnimating = true;
+            currentAnimatingJobId = jobId;
+            // Compute current index
+            const container = document.getElementById('job-list');
+            const currentIndex = Array.from(container.children).indexOf(card);
+            if (currentIndex === -1) {
+                finishAnimation();
+                return;
+            }
+            // Compute new order (must match renderList's ordering exactly, or the card
+            // animates to the wrong vertical offset and snaps into place afterward)
+            const baseOrder = computeBaseDisplayOrder();
+            const unchecked = baseOrder.filter(id => !checkedStops.includes(id) && jobs[id] && jobs[id].status === 'pending_pickup');
+            const checked = checkedStops.filter(id => baseOrder.includes(id) && jobs[id] && jobs[id].status === 'pending_pickup');
+            const newOrder = unchecked.concat(checked);
+            const targetIndex = newOrder.indexOf(jobId);
+            if (targetIndex === -1) {
+                finishAnimation();
+                return;
+            }
+            const deltaY = (targetIndex - currentIndex) * card.offsetHeight;
+            // Set transition and transform
+            card.style.transition = 'transform 1.2s ease-in-out, box-shadow 0.3s';
+            card.style.transform = `translateY(${deltaY}px) scale(1.03)`;
+            card.style.boxShadow = '0 8px 20px rgba(0,0,0,0.4)';
+            card.style.zIndex = '100';
+            // Add event listener for transitionend
+            const onTransitionEnd = () => {
+                card.removeEventListener('transitionend', onTransitionEnd);
+                // Remove transform and box-shadow
+                card.style.transition = 'none';
+                card.style.transform = '';
+                card.style.boxShadow = '';
+                card.style.zIndex = '';
+                finishAnimation();
+            };
+            card.addEventListener('transitionend', onTransitionEnd);
+            // Timeout fallback
+            setTimeout(() => {
+                if (isAnimating && currentAnimatingJobId === jobId) {
+                    card.removeEventListener('transitionend', onTransitionEnd);
+                    card.style.transition = 'none';
+                    card.style.transform = '';
+                    card.style.boxShadow = '';
+                    card.style.zIndex = '';
+                    finishAnimation();
+                }
+            }, 1500);
+        }
+
+        // ---------- FINISH ANIMATION ----------
+        function finishAnimation() {
+            if (finishing) return;
+            finishing = true;
+            // Save checkedStops to Firebase
+            if (currentUser) {
+                const ref = db.ref(`developer/route_planner/checked_stops/${currentUser.toLowerCase()}`);
+                ref.set(checkedStops).catch(err => console.warn("Error saving checked stops:", err));
+            }
+            renderList();
+            isAnimating = false;
+            currentAnimatingJobId = null;
+            // Check for pending delete
+            if (pendingDeleteId !== null) {
+                const id = pendingDeleteId;
+                pendingDeleteId = null;
+                performDelete(id);
+                setTimeout(() => {
+                    finishing = false;
+                    isProcessingQueue = false;
+                    processQueue();
+                }, 100);
+                return;
+            }
+            // Process next queue item with 0.1s delay
+            setTimeout(() => {
+                finishing = false;
+                isProcessingQueue = false;
+                processQueue();
+            }, 100);
+        }
+
+        // ---------- PROCESS QUEUE ----------
+        function processQueue() {
+            if (isProcessingQueue) return;
+            if (animationQueue.length === 0) {
+                isProcessingQueue = false;
+                // Check for pending delete again
+                if (pendingDeleteId !== null) {
+                    const id = pendingDeleteId;
+                    pendingDeleteId = null;
+                    performDelete(id);
+                }
+                return;
+            }
+            isProcessingQueue = true;
+            const item = animationQueue.shift();
+            if (item.type === 'toggle') {
+                // Check if job still exists
+                if (!jobs[item.jobId] || jobs[item.jobId].status !== 'pending_pickup') {
+                    processQueue();
+                    return;
+                }
+                // If pendingDeleteId is set for this jobId, ignore toggle
+                if (pendingDeleteId === item.jobId) {
+                    processQueue();
+                    return;
+                }
+                // Toggle locally
+                const idx = checkedStops.indexOf(item.jobId);
+                const isCurrentlyChecked = idx !== -1;
+                if (isCurrentlyChecked) {
+                    checkedStops.splice(idx, 1);
+                } else {
+                    checkedStops.push(item.jobId);
+                }
+                updateCardCheckVisual(item.jobId, !isCurrentlyChecked);
+                startCardAnimation(item.jobId, !isCurrentlyChecked);
+            } else {
+                // Unknown type
+                processQueue();
+            }
+        }
+
+        // ---------- DELETE JOB ----------
+        function deleteJob(id) {
+            if (isAnimating) {
+                // Queue delete
+                pendingDeleteId = id;
+                // Remove any queued toggles for this id
+                animationQueue = animationQueue.filter(item => item.jobId !== id);
+                return;
+            }
+            performDelete(id);
+        }
+
+        function performDelete(id) {
+            if (confirm("Remove this stop from route?")) {
+                db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops/${id}`).remove();
+                // Remove from local jobs
+                delete jobs[id];
+                // Remove from checkedStops
+                const idx = checkedStops.indexOf(id);
+                if (idx !== -1) checkedStops.splice(idx, 1);
+                // Update Firebase checked_stops
+                if (currentUser) {
+                    db.ref(`developer/route_planner/checked_stops/${currentUser.toLowerCase()}`).set(checkedStops);
+                }
+                // Update state if needed
+                if (routeState.isFinalized) {
+                    const idx2 = routeState.order.indexOf(id);
+                    if (idx2 !== -1) {
+                        routeState.order.splice(idx2, 1);
+                        const newAssigned = {};
+                        routeState.order.forEach((id2, i) => { newAssigned[id2] = i + 1; });
+                        routeState.assignedIndices = newAssigned;
+                        if (routeState.order.length === 0) routeState.isFinalized = false;
+                        saveRouteState();
+                        updateUI();
+                        redrawRouteFromCurrentState();
+                    }
+                } else {
+                    delete routeState.assignedIndices[id];
+                    const idx3 = routeState.order.indexOf(id);
+                    if (idx3 !== -1) routeState.order.splice(idx3, 1);
+                    saveRouteState();
+                    updateUI();
+                    redrawRouteFromCurrentState();
+                }
+                renderList();
+            }
+        }
+
+        // ---------- MAP MARKERS ----------
+        function updateMapMarkers() {
+            if (!map) return;
+            // Clear existing markers
+            Object.values(mapMarkers).forEach(m => m.setMap(null));
+            mapMarkers = {};
+            stopPulsingAll();
+
+            const pendingJobs = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+            if (pendingJobs.length === 0) return;
+
+            const isOrdering = isOrderingMode;
+            const isFinal = routeState.isFinalized;
+
+            pendingJobs.forEach(id => {
+                const job = jobs[id];
+                const lat = job.lat;
+                const lng = job.lng;
+                if (!lat || !lng) return; // skip if not geocoded yet
+
+                const number = routeState.assignedIndices[id] || null;
+                const isAssigned = number !== null;
+                let labelText = isAssigned ? `${number}. ${job.name || ''}` : job.name || '';
+
+                let marker;
+                if (isFinal) {
+                    // For unassigned jobs, display with larger gold label
+                    let labelOptions;
+                    let finalIconColor;
+                    if (number === null) {
+                        labelOptions = {
+                            text: labelText,
+                            color: '#FFD700',
+                            fontWeight: 'bold',
+                            fontSize: '16px',
+                            className: 'driver-map-label'
+                        };
+                        finalIconColor = '#F59E0B';
+                    } else {
+                        labelOptions = {
+                            text: labelText,
+                            color: '#00b32d',
+                            fontWeight: 'bold',
+                            fontSize: '12px',
+                            className: 'driver-map-label'
+                        };
+                        finalIconColor = '#10B981';
+                    }
+                    marker = new google.maps.Marker({
+                        position: { lat, lng },
+                        map: map,
+                        label: labelOptions,
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 14,
+                            fillColor: finalIconColor,
+                            fillOpacity: 1,
+                            strokeColor: 'white',
+                            strokeWeight: 2
+                        }
+                    });
+                } else if (isOrdering) {
+                    if (isAssigned) {
+                        marker = new google.maps.Marker({
+                            position: { lat, lng },
+                            map: map,
+                            label: {
+                                text: labelText,
+                                color: '#10B981',
+                                fontWeight: 'bold',
+                                fontSize: '12px',
+                                className: 'driver-map-label'
+                            },
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: 10,
+                                fillColor: '#10B981',
+                                fillOpacity: 1,
+                                strokeColor: 'white',
+                                strokeWeight: 2
+                            }
+                        });
+                    } else {
+                        // Unassigned: pulsing amber/gold with gold label
+                        marker = new google.maps.Marker({
+                            position: { lat, lng },
+                            map: map,
+                            label: {
+                                text: labelText,
+                                color: '#F59E0B',
+                                fontWeight: 'bold',
+                                fontSize: '18px',
+                                className: 'driver-map-label-pending'
+                            },
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: 10,
+                                fillColor: '#F59E0B',
+                                fillOpacity: 1,
+                                strokeColor: 'white',
+                                strokeWeight: 2
+                            }
+                        });
+                        const circle = new google.maps.Circle({
+                            map: map,
+                            center: { lat, lng },
+                            radius: 10,
+                            fillColor: '#F59E0B',
+                            fillOpacity: 0.4,
+                            strokeColor: '#F59E0B',
+                            strokeWeight: 2,
+                            strokeOpacity: 0.7
+                        });
+                        let growing = true;
+                        let markerScale = 10;
+                        const interval = setInterval(() => {
+                            let rad = circle.getRadius();
+                            if (growing) { rad += 2; if (rad > 24) growing = false; }
+                            else { rad -= 2; if (rad < 8) growing = true; }
+                            circle.setRadius(rad);
+                            let op = circle.getFillOpacity();
+                            if (growing) op = Math.min(op + 0.05, 0.8);
+                            else op = Math.max(op - 0.05, 0.2);
+                            circle.setFillOpacity(op);
+                            circle.setStrokeOpacity(op);
+                            markerScale = growing ? Math.min(markerScale + 0.4, 13) : Math.max(markerScale - 0.4, 10);
+                            marker.setIcon({
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: markerScale,
+                                fillColor: '#F59E0B',
+                                fillOpacity: 1,
+                                strokeColor: 'white',
+                                strokeWeight: 2
+                            });
+                        }, 60);
+                        pulsingMarkers[id] = { marker, circle, interval };
+                        marker.addListener('click', () => handleUnassignedMarkerClick(id, { lat, lng }));
+                    }
+                } else {
+                    // Not in ordering mode, not finalized: show unnumbered orange
+                    marker = new google.maps.Marker({
+                        position: { lat, lng },
+                        map: map,
+                        label: {
+                            text: labelText,
+                            color: '#00b32d',
+                            fontWeight: 'bold',
+                            fontSize: '12px',
+                            className: 'driver-map-label'
+                        },
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 14,
+                            fillColor: '#ff9800',
+                            fillOpacity: 1,
+                            strokeColor: 'white',
+                            strokeWeight: 2
+                        }
+                    });
+                }
+                mapMarkers[id] = marker;
+            });
+        }
+
+        // ---------- ORDERING MODE ----------
+        function startCreateRoute() {
+            clearRoutePolylines();
+            const pendingJobs = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+            if (pendingJobs.length === 0) {
+                alert("No stops to route.");
+                return;
+            }
+
+            if (createRouteMainBtn) createRouteMainBtn.disabled = true;
+            if (createRouteMapBtn) createRouteMapBtn.disabled = true;
+
+            ensureAllJobsGeocoded().then(() => {
+                if (routeState.isFinalized) {
+                    if (!confirm("Are you sure you want to clear the current order and restart?")) return;
+                    routeState.isFinalized = false;
+                    routeState.assignedIndices = {};
+                    routeState.order = [];
+                    routeState.autoOptimized = false;
+                    forwardSegments = [];
+                    returnPath = null;
+                    clearRoutePolylines();
+                    saveRouteState();
+                    updateUI();
+                    updateAutoOptimizeButtonVisual();
+                }
+
+                // If already in ordering mode, just open map (or reopen)
+                if (isOrderingMode) {
+                    openMap(true);
+                    zoomToAllWaypoints();
+                    updateCreateRouteButton();
+                    updateOrderingOverlays();
+                    return;
+                }
+
+                // Enter ordering mode
+                isOrderingMode = true;
+                openMap(true);
+                zoomToAllWaypoints();
+                updateUI();
+                updateCreateRouteButton();
+                updateOrderingOverlays();
+            }).finally(() => {
+                updateCreateRouteButton();
+            });
+        }
+
+        function zoomToAllWaypoints() {
+            const origin = getCurrentOrigin();
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend(origin);
+            let hasJob = false;
+            const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+            pendingIds.forEach(id => {
+                const job = jobs[id];
+                if (job.lat && job.lng) {
+                    bounds.extend({ lat: job.lat, lng: job.lng });
+                    hasJob = true;
+                }
+            });
+            if (map) {
+                if (hasJob) {
+                    map.fitBounds(bounds);
+                } else {
+                    map.setCenter(origin);
+                    map.setZoom(12);
+                }
+            }
+        }
+
+        // ---------- ASSIGN NUMBER (with per-segment polyline) ----------
+        function assignNumber(jobId) {
+            if (!isOrderingMode) return;
+            if (routeState.assignedIndices[jobId]) return;
+            if (!jobs[jobId] || jobs[jobId].status !== 'pending_pickup') return;
+
+            // Ensure job has coordinates
+            if (!jobs[jobId].lat || !jobs[jobId].lng) {
+                geocodeJob(jobId).then(() => {
+                    assignNumber(jobId);
+                }).catch(err => console.warn("Geocode failed, cannot assign:", err));
+                return;
+            }
+
+            const assignedIds = Object.keys(routeState.assignedIndices);
+            const nextNumber = assignedIds.length + 1;
+            routeState.assignedIndices[jobId] = nextNumber;
+            routeState.order.push(jobId);
+
+            // Remove pulsing if any
+            if (pulsingMarkers[jobId]) {
+                clearInterval(pulsingMarkers[jobId].interval);
+                if (pulsingMarkers[jobId].circle) pulsingMarkers[jobId].circle.setMap(null);
+                const marker = pulsingMarkers[jobId].marker;
+                const job = jobs[jobId];
+                marker.setLabel({
+                    text: `${nextNumber}. ${job.name || ''}`,
+                    color: '#10B981',
+                    fontWeight: 'bold',
+                    fontSize: '12px',
+                    className: 'driver-map-label'
+                });
+                marker.setIcon({
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 10,
+                    fillColor: '#10B981',
+                    fillOpacity: 1,
+                    strokeColor: 'white',
+                    strokeWeight: 2
+                });
+                delete pulsingMarkers[jobId];
+            }
+
+            updateOrderingOverlays();
+
+            // Debounce the segment fetch/draw to avoid UI jank on rapid taps
+            const indicator = document.getElementById('calculating-route-indicator');
+            if (indicator) indicator.style.display = 'block';
+            clearTimeout(polylineDebounceTimer);
+            polylineDebounceTimer = setTimeout(() => {
+                addSegmentToRoute(jobId).then(() => {
+                    if (indicator) indicator.style.display = 'none';
+                    saveRouteState();
+                    renderList();
+                    updatePolyline();
+
+                    // Check if all stops assigned
+                    const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+                    const assignedIdsNow = Object.keys(routeState.assignedIndices);
+                    if (pendingIds.length === assignedIdsNow.length && pendingIds.length > 0) {
+                        finalizeRoute();
+                    } else {
+                        panToClosestUnassigned(jobId);
+                    }
+                }).catch(err => {
+                    if (indicator) indicator.style.display = 'none';
+                    console.warn("Error adding segment:", err);
+                });
+            }, 250);
+        }
+
+        // ---------- AUTO-PAN TO CLOSEST UNASSIGNED PIN (Euclidean, zero-latency) ----------
+        function panToClosestUnassigned(fromJobId) {
+            const fromJob = jobs[fromJobId];
+            if (!fromJob || !map) return;
+            const candidateIds = Object.keys(jobs).filter(id =>
+                jobs[id].status === 'pending_pickup' && !routeState.assignedIndices[id] && jobs[id].lat && jobs[id].lng
+            );
+            if (candidateIds.length === 0) return;
+            let closestId = null, closestDistSq = Infinity;
+            candidateIds.forEach(id => {
+                const j = jobs[id];
+                const dLat = j.lat - fromJob.lat;
+                const dLng = j.lng - fromJob.lng;
+                const distSq = dLat * dLat + dLng * dLng;
+                if (distSq < closestDistSq) { closestDistSq = distSq; closestId = id; }
+            });
+            if (closestId) {
+                map.panTo({ lat: jobs[closestId].lat, lng: jobs[closestId].lng });
+            }
+        }
+
+        // ---------- CLUSTER-TAP HANDLING (zoom in on tight clusters instead of assigning) ----------
+        function handleUnassignedMarkerClick(jobId, position) {
+            if (!map) { assignNumber(jobId); return; }
+            const otherPendingIds = Object.keys(jobs).filter(id =>
+                jobs[id].status === 'pending_pickup' && !routeState.assignedIndices[id] && jobs[id].lat && jobs[id].lng && id !== jobId
+            );
+            const tapPoint = new google.maps.LatLng(position.lat, position.lng);
+            const hasNearbyCluster = otherPendingIds.some(id => {
+                const otherPoint = new google.maps.LatLng(jobs[id].lat, jobs[id].lng);
+                return google.maps.geometry.spherical.computeDistanceBetween(tapPoint, otherPoint) < 30;
+            });
+            const MAX_ZOOM = 20;
+            if (hasNearbyCluster && map.getZoom() < MAX_ZOOM) {
+                map.panTo(position);
+                map.setZoom(Math.min(map.getZoom() + 2, MAX_ZOOM));
+                return;
+            }
+            assignNumber(jobId);
+        }
+
+        // ---------- UNDO LAST ASSIGNMENT ----------
+        function undoLastAssignment() {
+            if (!isOrderingMode || routeState.order.length === 0) return;
+            const lastId = routeState.order.pop();
+            delete routeState.assignedIndices[lastId];
+            if (forwardSegments.length > 0) forwardSegments.pop();
+            routeState.autoOptimized = false;
+            updateAutoOptimizeButtonVisual();
+            saveRouteState();
+            updateUI();
+            updatePolyline();
+            updateOrderingOverlays();
+            zoomToAllWaypoints();
+        }
+
+        // ---------- FINISH EARLY (manual finalisation) ----------
+        function finishRouteEarly() {
+            if (!isOrderingMode || routeState.order.length === 0) return;
+            finalizeRoute();
+        }
+
+        // ---------- ORDERING-MODE OVERLAY UPDATES ----------
+        function updateOrderingOverlays() {
+            const counterEl = document.getElementById('map-stop-counter');
+            const undoBtn = document.getElementById('undo-assignment-btn');
+            const finishBtn = document.getElementById('finish-early-btn');
+            const totalStops = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup').length;
+            const assignedCount = Object.keys(routeState.assignedIndices).length;
+            if (isOrderingMode && !routeState.isFinalized) {
+                if (counterEl) {
+                    counterEl.textContent = `${assignedCount} / ${totalStops} assigned`;
+                    counterEl.style.display = 'block';
+                }
+                if (undoBtn) undoBtn.style.display = assignedCount > 0 ? 'flex' : 'none';
+                if (finishBtn) finishBtn.style.display = assignedCount > 0 ? 'block' : 'none';
+            } else {
+                if (counterEl) counterEl.style.display = 'none';
+                if (undoBtn) undoBtn.style.display = 'none';
+                if (finishBtn) finishBtn.style.display = 'none';
+            }
+        }
+
+        // ---------- ADD SEGMENT TO ROUTE (per-segment fetch) ----------
+        async function addSegmentToRoute(jobId) {
+            const order = routeState.order;
+            if (order.length === 0) return;
+            const job = jobs[jobId];
+            if (!job || !job.lat || !job.lng) return;
+
+            const originLatLng = getCurrentOrigin();
+            let prevLatLng;
+            if (order.length === 1) {
+                // First stop, origin is depot
+                prevLatLng = originLatLng;
+            } else {
+                // Previous stop is the one before this in order
+                const prevId = order[order.length - 2];
+                const prevJob = jobs[prevId];
+                if (!prevJob || !prevJob.lat || !prevJob.lng) {
+                    console.warn("Previous job missing coordinates, using origin");
+                    prevLatLng = originLatLng;
+                } else {
+                    prevLatLng = { lat: prevJob.lat, lng: prevJob.lng };
+                }
+            }
+            const destLatLng = { lat: job.lat, lng: job.lng };
+            try {
+                const path = await getDrivingPath(prevLatLng, destLatLng);
+                forwardSegments.push(path);
+            } catch (err) {
+                console.warn("Failed to get path for new segment, using straight line:", err);
+                forwardSegments.push([prevLatLng, destLatLng]);
+            }
+        }
+
+        // ---------- FINALIZE ROUTE ----------
+        function finalizeRoute() {
+            routeState.isFinalized = true;
+            isOrderingMode = false;
+            stopPulsingAll();
+            updateOrderingOverlays();
+            // Fetch return route and redraw
+            fetchReturnRoute().then(() => {
+                updateUI();
+                saveRouteState();
+                if (createRouteMainBtn) createRouteMainBtn.classList.remove('active');
+                if (createRouteMapBtn) createRouteMapBtn.classList.remove('active');
+                // Do NOT auto-fit map
+                if (etaTotalMinutes > 0) updateETADisplay();
+            });
+        }
+
+        function stopPulsingAll() {
+            Object.values(pulsingMarkers).forEach(p => {
+                if (p.interval) clearInterval(p.interval);
+                if (p.circle) p.circle.setMap(null);
+                if (p.marker) {
+                    // Reset to default (orange)
+                    p.marker.setIcon({
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 14,
+                        fillColor: '#ff9800',
+                        fillOpacity: 1,
+                        strokeColor: 'white',
+                        strokeWeight: 2
+                    });
+                    const job = jobs[Object.keys(pulsingMarkers).find(k => pulsingMarkers[k] === p)];
+                    if (job) {
+                        p.marker.setLabel({
+                            text: job.name || '',
+                            color: '#00b32d',
+                            fontWeight: 'bold',
+                            fontSize: '12px',
+                            className: 'driver-map-label'
+                        });
+                    }
+                }
+            });
+            pulsingMarkers = {};
+        }
+
+        // ---------- ADD JOB ----------
+        function addJob() {
+            const name = document.getElementById('f-name').value.trim();
+            const address = document.getElementById('f-address').value.trim();
+            const city = document.getElementById('f-city').value.trim();
+            if (!name || !address || !city) { alert("Please fill in all fields."); return; }
+            const newJob = {
+                name: name,
+                pickup_location: address,
+                city: city,
+                status: 'pending_pickup',
+                timestamp: Date.now(),
+                created_by: currentUser,
+                box_qty: 0, piece_qty: 0, envelope_qty: 0, skid_qty: 0, weight_lbs: 0, other_details: ''
+            };
+
+            if (routeState.isFinalized) {
+                const addBtn = document.getElementById('add-btn-expanded');
+                const addBtnOriginalText = addBtn ? addBtn.textContent : 'ADD +';
+                if (addBtn) { addBtn.disabled = true; addBtn.textContent = 'Geocoding…'; }
+                const geocoder = new google.maps.Geocoder();
+                geocoder.geocode({ address: address + ', ' + city, region: 'ca' }, (results, status) => {
+                    if (addBtn) { addBtn.disabled = false; addBtn.textContent = addBtnOriginalText; }
+                    if (status !== 'OK' || results.length === 0) {
+                        alert("Could not locate address – stop not added.");
+                        return;
+                    }
+                    const loc = results[0].geometry.location;
+                    newJob.lat = loc.lat();
+                    newJob.lng = loc.lng();
+                    const newJobRef = db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops`).push();
+                    newJobRef.set(newJob).then(() => {
+                        const newId = newJobRef.key;
+                        jobs[newId] = newJob; // add to local jobs
+                        insertStopIntoFinalizedRoute(newId).then(() => {
+                            saveRouteState();
+                            const sanitizedKey = name.replace(/[.#$\[\]\/]/g, "").trim();
+                            db.ref("address_lookup").child(sanitizedKey).update({
+                                address: address,
+                                city: city,
+                                last_edit_by: currentUser
+                            });
+                            resetFormFields();
+                            collapseInput();
+                        });
+                    }).catch(err => alert("Error adding job: " + err.message));
+                });
+                return;
+            }
+
+            const newJobRef = db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops`).push();
+            newJobRef.set(newJob).then(() => {
+                const newId = newJobRef.key;
+                jobs[newId] = newJob; // add to local jobs
+                saveRouteState(); // update route record with new stop
+                const sanitizedKey = name.replace(/[.#$\[\]\/]/g, "").trim();
+                db.ref("address_lookup").child(sanitizedKey).update({
+                    address: address,
+                    city: city,
+                    last_edit_by: currentUser
+                });
+                resetFormFields();
+                collapseInput();
+                // Geocode the new job after it's added (listener will trigger)
+            }).catch(err => alert("Error adding job: " + err.message));
+        }
+
+        // ---------- DELETE JOB ----------
+        // (overwritten above)
+
+        // ---------- OPEN JOB IN MAPS ----------
+        function openJobInMaps(jobId) {
+            const job = jobs[jobId];
+            if (!job) return;
+            const address = `${job.pickup_location}, ${job.city}`;
+            const encoded = encodeURIComponent(address);
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            if (/android/i.test(userAgent)) {
+                window.location.href = `intent://maps.google.com/maps?daddr=${encoded}&directionsmode=driving#Intent;scheme=https;package=com.google.android.apps.maps;end`;
+            } else if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+                window.location.href = `comgooglemaps://?daddr=${encoded}&directionsmode=driving`;
+            } else {
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encoded}&travelmode=driving`, '_blank');
+            }
+        }
+
+        // ---------- UPDATE CREATE ROUTE BUTTON ----------
+        function updateCreateRouteButton() {
+            const pending = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+            const hasStops = pending.length > 0;
+            const isFinal = routeState.isFinalized;
+            const isOrdering = isOrderingMode;
+
+            [createRouteMainBtn, createRouteMapBtn].forEach(btn => {
+                if (!btn) return;
+                if (btn.id === 'create-route-map') {
+                    btn.disabled = false;
+                    if (!hasStops) {
+                        btn.classList.remove('pulse-glow', 'active');
+                    } else {
+                        if (isOrdering) {
+                            btn.classList.add('active', 'pulse-glow');
+                        } else {
+                            btn.classList.remove('pulse-glow', 'active');
+                        }
+                    }
+                } else {
+                    // Main page button
+                    const unassigned = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup' && !routeState.assignedIndices[id]).length;
+                    if (!hasStops || (isFinal && unassigned === 0)) {
+                        btn.disabled = true;
+                        btn.classList.remove('pulse-glow', 'active');
+                    } else {
+                        btn.disabled = false;
+                        // Only show pulse-glow when not finalized and not ordering
+                        if (!isFinal && !isOrdering) {
+                            btn.classList.add('pulse-glow');
+                            btn.classList.remove('active');
+                        } else {
+                            btn.classList.remove('pulse-glow', 'active');
+                        }
+                    }
+                }
+            });
+        }
+
+        // ---------- MAP FUNCTIONS ----------
+        function initMap() {
+            if (!google.maps) return;
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 49.881157, lng: -99.959272 },
+                zoom: 12,
+                gestureHandling: 'greedy',
+                styles: document.body.classList.contains('light-mode') ? [] : mapStyles
+            });
+            mainMap = map;
+
+            initAddressPickerMap();
+            // Draw initial route if any
+            redrawRouteFromCurrentState();
+            updateUI();
+            updateUserLocationMarker();
+        }
+
+        function openMap(shouldZoomToAll) {
+            document.getElementById('map-modal').style.display = 'block';
+            setTimeout(() => {
+                google.maps.event.trigger(map, 'resize');
+                if (shouldZoomToAll) {
+                    zoomToAllWaypoints();
+                }
+                // else: keep whatever view the map already has (no forced recenter)
+                updateUI(); // refresh markers after resize
+                updateUserLocationMarker();
+                lastOriginForCalc = { lat: getCurrentOrigin().lat, lng: getCurrentOrigin().lng };
+                lastOriginCalcTime = Date.now();
+                checkFarFromRoutePrompt();
+            }, 100);
+        }
+
+        function closeMap() {
+            document.getElementById('map-modal').style.display = 'none';
+        }
+
+        function zoomToAll() {
+            const bounds = new google.maps.LatLngBounds();
+            forwardSegments.forEach(seg => seg.forEach(p => bounds.extend(p)));
+            if (returnPath) returnPath.forEach(p => bounds.extend(p));
+            if (bounds.isEmpty()) {
+                map.setCenter({ lat: 49.881157, lng: -99.959272 });
+                map.setZoom(12);
+            } else {
+                map.fitBounds(bounds);
+            }
+        }
+        function resetMapView() { zoomToAll(); }
+
+        // ---------- ETA ----------
+        async function calculateETAOnDemand() {
+            let order = [];
+            if (routeState.isFinalized && routeState.order.length > 0) {
+                order = routeState.order;
+            } else {
+                order = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup').sort((a,b) => jobs[a].timestamp - jobs[b].timestamp);
+            }
+            if (order.length === 0) { alert("No stops."); return; }
+
+            const etaBtn = document.getElementById('eta-btn');
+            etaBtn.disabled = true;
+            etaBtn.classList.add('eta-spin');
+            etaCalculating = true;
+            try {
+                const origin = getCurrentOrigin();
+                const waypoints = order.map(id => ({ address: `${jobs[id].pickup_location}, ${jobs[id].city}` }));
+                const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Goog-Api-Key": "AIzaSyA6umETP8wBUEV41ugAtiNiChUeLmmwmZI",
+                        "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.legs.duration,routes.legs.distanceMeters"
+                    },
+                    body: JSON.stringify({
+                        origin: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
+                        destination: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
+                        intermediates: waypoints,
+                        travelMode: "DRIVE",
+                        optimizeWaypointOrder: false
+                    })
+                });
+                const data = await response.json();
+                if (data.routes && data.routes[0]) {
+                    const route = data.routes[0];
+                    let totalDurationSeconds = 0, totalDistanceMeters = 0;
+                    if (route.legs) {
+                        route.legs.forEach(leg => {
+                            totalDurationSeconds += parseFloat(leg.duration.replace('s', ''));
+                            totalDistanceMeters += parseFloat(leg.distanceMeters);
+                        });
+                    } else {
+                        totalDurationSeconds = parseFloat(route.duration.replace('s', ''));
+                        totalDistanceMeters = parseFloat(route.distanceMeters);
+                    }
+                    etaTotalMinutes = totalDurationSeconds / 60;
+                    etaTotalKm = totalDistanceMeters / 1000;
+                    updateETADisplay();
+                    document.getElementById('eta-display').style.display = 'block';
+                    document.getElementById('eta-display').classList.add('eta-glow');
+                    saveRouteState(); // Save updated ETA
+                } else {
+                    alert("Could not calculate ETA.");
+                }
+            } catch(e) { console.error(e); alert("Error calculating ETA."); }
+            finally {
+                etaCalculating = false;
+                etaBtn.disabled = false;
+                etaBtn.classList.remove('eta-spin');
+            }
+        }
+
+        function updateETADisplay() {
+            const etaTime = document.getElementById('eta-time');
+            const etaAdjusted = document.getElementById('eta-adjusted');
+            const etaAdjustedTime = document.getElementById('eta-adjusted-time');
+            const etaDistance = document.getElementById('eta-distance');
+            const totalMinutes = etaTotalMinutes;
+            const hours = Math.floor(totalMinutes / 60);
+            const mins = Math.round(totalMinutes % 60);
+            let timeStr = '';
+            if (hours > 0) timeStr += hours + 'h ';
+            timeStr += mins + 'm';
+            etaTime.textContent = timeStr;
+            const stops = routeState.order.length || Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup').length;
+            const adjustedMinutes = totalMinutes + 3 * stops;
+            const adjHours = Math.floor(adjustedMinutes / 60);
+            const adjMins = Math.round(adjustedMinutes % 60);
+            let adjStr = '';
+            if (adjHours > 0) adjStr += adjHours + 'h ';
+            adjStr += adjMins + 'm';
+            etaAdjustedTime.textContent = adjStr;
+            etaAdjusted.style.display = 'inline';
+            etaDistance.textContent = etaTotalKm.toFixed(1);
+        }
+
+        // ---------- EXTERNAL ROUTE ----------
+        function openExternalRoute() {
+            if (routeState.order.length === 0) {
+                alert("No stops to route.");
+                return;
+            }
+            if (!confirm("Note: This will route only the first 10 stops.\nProceed?")) return;
+            const currentOrigin = getCurrentOrigin();
+            const origin = `${currentOrigin.lat},${currentOrigin.lng}`;
+            const destination = `${currentOrigin.lat},${currentOrigin.lng}`;
+            const seenLocs = new Set();
+            const maxStops = 10;
+            let stopsAdded = 0;
+            const waypoints = routeState.order.map(id => {
+                if (stopsAdded >= maxStops) return "";
+                const job = jobs[id];
+                if (!job) return "";
+                const key = `${job.pickup_location}, ${job.city}`;
+                if (seenLocs.has(key)) return "";
+                seenLocs.add(key);
+                stopsAdded++;
+                return encodeURIComponent(key);
+            }).filter(w => w !== "").join("|");
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            if (/android/i.test(userAgent)) {
+                window.location.href = `intent://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${waypoints}&travelmode=driving#Intent;scheme=https;package=com.google.android.apps.maps;end`;
+            } else if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+                window.location.href = `comgooglemaps://?saddr=${encodeURIComponent(origin)}&daddr=${encodeURIComponent(destination)}&waypoints=${waypoints}&directionsmode=driving`;
+            } else {
+                window.open(`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${waypoints}&travelmode=driving`, '_blank');
+            }
+        }
+
+        // ---------- ADDRESS PICKER (unchanged) ----------
+        function initAddressPickerMap() {
+            if (pickerInitialized) return;
+            const container = document.getElementById('picker-map');
+            if (!container || !google.maps) return;
+            const defaultCenter = { lat: 49.881157, lng: -99.959272 };
+            pickerMap = new google.maps.Map(container, {
+                center: defaultCenter,
+                zoom: 12,
+                mapTypeId: 'roadmap',
+                styles: mapStyles,
+                gestureHandling: 'greedy'
+            });
+            pickerGeocoder = new google.maps.Geocoder();
+            pickerMarker = new google.maps.Marker({
+                position: defaultCenter,
+                map: pickerMap,
+                draggable: true,
+                animation: google.maps.Animation.DROP,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 8,
+                    fillColor: '#ff9800',
+                    fillOpacity: 1,
+                    strokeColor: '#ffffff',
+                    strokeWeight: 2
+                }
+            });
+            pickerMarker.addListener('dragend', function() {
+                const pos = pickerMarker.getPosition();
+                updatePickerInfo(pos.lat(), pos.lng());
+            });
+            pickerMap.addListener('click', function(e) {
+                const lat = e.latLng.lat();
+                const lng = e.latLng.lng();
+                pickerMarker.setPosition({ lat, lng });
+                updatePickerInfo(lat, lng);
+            });
+            const searchInput = document.getElementById('picker-search');
+            if (searchInput) {
+                pickerAutocomplete = new google.maps.places.Autocomplete(searchInput, {
+                    types: ['geocode'],
+                    componentRestrictions: { country: 'ca' }
+                });
+                pickerAutocomplete.addListener('place_changed', function() {
+                    const place = pickerAutocomplete.getPlace();
+                    if (!place.geometry) return;
+                    const location = place.geometry.location;
+                    const lat = location.lat();
+                    const lng = location.lng();
+                    pickerMap.panTo({ lat, lng });
+                    pickerMap.setZoom(14);
+                    pickerMarker.setPosition({ lat, lng });
+                    updatePickerInfo(lat, lng);
+                });
+            }
+            updatePickerInfo(defaultCenter.lat, defaultCenter.lng);
+            pickerInitialized = true;
+        }
+
+        function openAddressPicker() {
+            document.getElementById('address-picker-modal').style.display = 'block';
+            if (!pickerInitialized) initAddressPickerMap();
+            setTimeout(() => {
+                if (pickerMap) {
+                    google.maps.event.trigger(pickerMap, 'resize');
+                    const pos = pickerMarker.getPosition();
+                    if (pos) pickerMap.setCenter(pos);
+                }
+            }, 100);
+            document.getElementById('picker-search').value = '';
+            if (pickerMarker) {
+                const pos = pickerMarker.getPosition();
+                if (pos) updatePickerInfo(pos.lat(), pos.lng());
+            }
+        }
+
+        function closeAddressPicker() {
+            document.getElementById('address-picker-modal').style.display = 'none';
+        }
+
+        function updatePickerInfo(lat, lng) {
+            const latLng = { lat, lng };
+            pickerGeocoder.geocode({ location: latLng }, function(results, status) {
+                let address = '', plusCode = '';
+                if (status === 'OK' && results.length > 0) {
+                    address = results[0].formatted_address || '';
+                    for (let result of results) {
+                        if (result.plus_code) {
+                            plusCode = result.plus_code.compound_code || result.plus_code.global_code || '';
+                            break;
+                        }
+                    }
+                } else {
+                    address = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+                }
+                if (!plusCode) {
+                    for (let result of results) {
+                        if (result.address_components) {
+                            for (let comp of result.address_components) {
+                                if (comp.types && comp.types.includes('plus_code')) {
+                                    plusCode = comp.long_name || comp.short_name || '';
+                                    break;
+                                }
+                            }
+                        }
+                        if (plusCode) break;
+                    }
+                }
+                selectedLocation = { lat, lng, address, plusCode: plusCode || '' };
+                document.getElementById('picker-address-display').textContent = address || 'Address not found';
+                document.getElementById('picker-pluscode-display').textContent = plusCode ? `Plus Code: ${plusCode}` : 'Plus Code: —';
+            });
+        }
+
+        function searchAddressPicker() {
+            const input = document.getElementById('picker-search');
+            const query = input.value.trim();
+            if (!query) return;
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ address: query, region: 'ca' }, function(results, status) {
+                if (status === 'OK' && results.length > 0) {
+                    const location = results[0].geometry.location;
+                    const lat = location.lat();
+                    const lng = location.lng();
+                    pickerMap.panTo({ lat, lng });
+                    pickerMap.setZoom(14);
+                    pickerMarker.setPosition({ lat, lng });
+                    updatePickerInfo(lat, lng);
+                } else {
+                    alert('Location not found.');
+                }
+            });
+        }
+
+        function confirmAddress() {
+            if (!selectedLocation) { alert("No location selected."); return; }
+            let addressToUse = selectedLocation.address || selectedLocation.plusCode;
+            if (!addressToUse) { alert("Could not determine address."); return; }
+            document.getElementById('f-address').value = addressToUse;
+            closeAddressPicker();
+        }
+
+        // ---------- ADDRESS AUTOCOMPLETE ----------
+        function handleNameInput(val) {
+            const candidates = Object.keys(addressData);
+            showSuggestions(val, 'suggestions', candidates, name => `<div class="suggestion-item" onclick="selectClient('${name.replace(/'/g, "\\'")}')">${name}</div>`);
+        }
+        function getUniqueCities() {
+            const cities = new Set();
+            Object.values(addressData).forEach(entry => {
+                if (entry && entry.city) cities.add(entry.city);
+            });
+            return Array.from(cities).sort();
+        }
+        function handleCityInput(val) {
+            const candidates = getUniqueCities();
+            showSuggestions(val, 'city-suggestions', candidates, city => `<div class="suggestion-item" onclick="selectCity('${city.replace(/'/g, "\\'")}')">${city}</div>`);
+        }
+        function showSuggestions(val, elementId, candidates, htmlCallback) {
+            const box = document.getElementById(elementId);
+            if (val.length < 1) { box.style.display = 'none'; return; }
+            const matches = candidates.filter(key => key.toLowerCase().startsWith(val.toLowerCase().trim()));
+            if (matches.length === 0) { box.style.display = 'none'; return; }
+            box.innerHTML = matches.map(htmlCallback).join('');
+            box.style.display = 'block';
+        }
+        function selectClient(name) {
+            const data = addressData[name];
+            if (!data) return;
+            document.getElementById('f-name').value = name;
+            document.getElementById('f-address').value = data.address || '';
+            document.getElementById('f-city').value = data.city || '';
+            document.getElementById('suggestions').style.display = 'none';
+        }
+        function selectCity(city) {
+            document.getElementById('f-city').value = city;
+            document.getElementById('city-suggestions').style.display = 'none';
+        }
+        function resetFormFields() {
+            document.getElementById('f-name').value = '';
+            document.getElementById('f-address').value = '';
+            document.getElementById('f-city').value = '';
+        }
+
+        function initPlaces() {
+            const addressInput = document.getElementById('f-address');
+            if (!addressInput) return;
+            const options = {
+                componentRestrictions: { country: 'ca' },
+                bounds: new google.maps.Circle({ center: new google.maps.LatLng(49.848, -99.950), radius: 50000 }).getBounds(),
+                strictBounds: false
+            };
+            autocompleteAddress = new google.maps.places.Autocomplete(addressInput, options);
+            autocompleteAddress.addListener('place_changed', () => {
+                const place = autocompleteAddress.getPlace();
+                if (!place.address_components) return;
+                for (let comp of place.address_components) {
+                    if (comp.types.includes('locality')) {
+                        document.getElementById('f-city').value = comp.long_name;
+                        break;
+                    }
+                }
+            });
+        }
+
+        // ---------- COLLAPSIBLE INPUT ----------
+        function expandInput() {
+            document.getElementById('input-fields-wrapper').style.display = 'block';
+            document.getElementById('add-btn-collapsed').style.display = 'none';
+        }
+        function collapseInput() {
+            document.getElementById('input-fields-wrapper').style.display = 'none';
+            document.getElementById('add-btn-collapsed').style.display = 'block';
+            // Optionally clear fields? We'll leave them as is.
+        }
+
+        // ---------- PWA INSTALL ----------
+        // Most browsers require an active service worker before they'll ever fire
+        // beforeinstallprompt, so register one alongside the manifest.
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => {
+                    console.warn('Service worker registration failed:', err);
+                });
+            });
+        }
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-btn').style.display = 'block';
+        });
+        document.getElementById('install-btn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') deferredPrompt = null;
+                document.getElementById('install-btn').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
+pis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         /* All CSS remains unchanged from the previous version */
         :root {
