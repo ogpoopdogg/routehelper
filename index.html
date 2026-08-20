@@ -643,6 +643,13 @@
         let pulsingMarkers = {};
         let createRouteMainBtn, createRouteMapBtn;
 
+        // Guard flag: true while a local route mutation (insert/auto-optimize/assign/undo)
+        // is in-flight and hasn't been saved to Firebase yet. While true, the route 'value'
+        // listener skips applying incoming snapshots so it can't clobber the in-progress
+        // optimistic state with stale data (this was the cause of new stops sitting
+        // "unassigned" for a while after being added to a finalized route).
+        let isApplyingLocalRouteChange = false;
+
         // Other globals
         let etaCalculating = false;
         let segmentCache = {};
@@ -708,6 +715,12 @@
             db.ref('address_lookup').on('value', snap => { addressData = snap.val() || {}; });
             // Listen to this driver's own route
             db.ref(`developer/route_planner/saved_routes/${currentRouteKey}`).on('value', snap => {
+                // While a local route mutation (new stop insertion, auto-optimize, manual
+                // assignment, undo) is in-flight, its optimistic in-memory state hasn't been
+                // written to Firebase yet. Applying a remote snapshot now would overwrite
+                // that in-progress state with stale data. Skip until the operation finishes
+                // and saves (see isApplyingLocalRouteChange).
+                if (isApplyingLocalRouteChange) return;
                 const routeData = snap.val() || {};
                 jobs = routeData.stops || {};
                 routeState.order = routeData.order || [];
@@ -761,8 +774,10 @@
                         const loc = results[0].geometry.location;
                         const lat = loc.lat();
                         const lng = loc.lng();
-                        db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops/${jobId}/lat`).set(lat);
-                        db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops/${jobId}/lng`).set(lng);
+                        // Write lat/lng together as a single atomic update instead of two
+                        // separate .set() calls, so the whole-route 'value' listener only
+                        // fires once per geocode instead of twice.
+                        db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops/${jobId}`).update({ lat, lng });
                         // Update local copy
                         job.lat = lat;
                         job.lng = lng;
@@ -1138,73 +1153,80 @@
 
         // ---------- AUTOMATIC INSERTION OF A NEW STOP INTO A FINALIZED ROUTE ----------
         async function insertStopIntoFinalizedRoute(newId) {
-            const origin = getCurrentOrigin();
-            const order = routeState.order;
-            const newJob = jobs[newId];
-            const newPoint = { lat: newJob.lat, lng: newJob.lng };
+            // Block the route listener from applying stale remote snapshots while we
+            // compute/save this insertion (prevents the "sits unassigned" race).
+            isApplyingLocalRouteChange = true;
+            try {
+                const origin = getCurrentOrigin();
+                const order = routeState.order;
+                const newJob = jobs[newId];
+                const newPoint = { lat: newJob.lat, lng: newJob.lng };
 
-            if (order.length === 0) {
-                order.push(newId);
-                routeState.assignedIndices = { [newId]: 1 };
+                if (order.length === 0) {
+                    order.push(newId);
+                    routeState.assignedIndices = { [newId]: 1 };
+                    routeState.autoOptimized = false;
+                    showCalculatingIndicator(true);
+                    await updateForwardRoute();
+                    await fetchReturnRoute();
+                    showCalculatingIndicator(false);
+                    updateAutoOptimizeButtonVisual();
+                    saveRouteState();
+                    recalcETAFromSegments();
+                    updateUI();
+                    return;
+                }
+
+                let bestIndex = 0;
+                let bestDelta = Infinity;
+                for (let i = 0; i <= order.length; i++) {
+                    const prevPoint = i === 0 ? origin : pointFor(order[i - 1]);
+                    const nextPoint = i === order.length ? origin : pointFor(order[i]);
+                    const delta = euclidDist(prevPoint, newPoint) + euclidDist(newPoint, nextPoint) - euclidDist(prevPoint, nextPoint);
+                    if (delta < bestDelta) { bestDelta = delta; bestIndex = i; }
+                }
+
+                const insertedAtEnd = bestIndex === order.length;
+                const prevPoint = bestIndex === 0 ? origin : pointFor(order[bestIndex - 1]);
+                const nextPoint = insertedAtEnd ? origin : pointFor(order[bestIndex]);
+                const oldSegments = forwardSegments;
+
+                order.splice(bestIndex, 0, newId);
+                const newAssigned = {};
+                order.forEach((id, idx) => { newAssigned[id] = idx + 1; });
+                routeState.assignedIndices = newAssigned;
                 routeState.autoOptimized = false;
+
                 showCalculatingIndicator(true);
-                await updateForwardRoute();
-                await fetchReturnRoute();
+                try {
+                    const segBefore = await getDrivingPath(prevPoint, newPoint);
+                    const newSegments = [];
+                    for (let k = 0; k < bestIndex; k++) newSegments.push(oldSegments[k]);
+                    newSegments.push(segBefore);
+                    if (!insertedAtEnd) {
+                        const segAfter = await getDrivingPath(newPoint, nextPoint);
+                        newSegments.push(segAfter);
+                        for (let k = bestIndex + 1; k < oldSegments.length; k++) newSegments.push(oldSegments[k]);
+                        const oldKey = prevPoint.lat.toFixed(6) + ',' + prevPoint.lng.toFixed(6) + '_' + nextPoint.lat.toFixed(6) + ',' + nextPoint.lng.toFixed(6);
+                        delete segmentCache[oldKey];
+                    } else {
+                        const retPath = await getDrivingPath(newPoint, origin);
+                        returnPath = retPath;
+                    }
+                    forwardSegments = newSegments;
+                } catch (err) {
+                    console.warn("Segment fetch failed during insertion:", err);
+                }
+
+                if (map) updatePolyline();
                 showCalculatingIndicator(false);
                 updateAutoOptimizeButtonVisual();
                 saveRouteState();
                 recalcETAFromSegments();
                 updateUI();
-                return;
+            } finally {
+                isApplyingLocalRouteChange = false;
             }
-
-            let bestIndex = 0;
-            let bestDelta = Infinity;
-            for (let i = 0; i <= order.length; i++) {
-                const prevPoint = i === 0 ? origin : pointFor(order[i - 1]);
-                const nextPoint = i === order.length ? origin : pointFor(order[i]);
-                const delta = euclidDist(prevPoint, newPoint) + euclidDist(newPoint, nextPoint) - euclidDist(prevPoint, nextPoint);
-                if (delta < bestDelta) { bestDelta = delta; bestIndex = i; }
-            }
-
-            const insertedAtEnd = bestIndex === order.length;
-            const prevPoint = bestIndex === 0 ? origin : pointFor(order[bestIndex - 1]);
-            const nextPoint = insertedAtEnd ? origin : pointFor(order[bestIndex]);
-            const oldSegments = forwardSegments;
-
-            order.splice(bestIndex, 0, newId);
-            const newAssigned = {};
-            order.forEach((id, idx) => { newAssigned[id] = idx + 1; });
-            routeState.assignedIndices = newAssigned;
-            routeState.autoOptimized = false;
-
-            showCalculatingIndicator(true);
-            try {
-                const segBefore = await getDrivingPath(prevPoint, newPoint);
-                const newSegments = [];
-                for (let k = 0; k < bestIndex; k++) newSegments.push(oldSegments[k]);
-                newSegments.push(segBefore);
-                if (!insertedAtEnd) {
-                    const segAfter = await getDrivingPath(newPoint, nextPoint);
-                    newSegments.push(segAfter);
-                    for (let k = bestIndex + 1; k < oldSegments.length; k++) newSegments.push(oldSegments[k]);
-                    const oldKey = prevPoint.lat.toFixed(6) + ',' + prevPoint.lng.toFixed(6) + '_' + nextPoint.lat.toFixed(6) + ',' + nextPoint.lng.toFixed(6);
-                    delete segmentCache[oldKey];
-                } else {
-                    const retPath = await getDrivingPath(newPoint, origin);
-                    returnPath = retPath;
-                }
-                forwardSegments = newSegments;
-            } catch (err) {
-                console.warn("Segment fetch failed during insertion:", err);
-            }
-
-            if (map) updatePolyline();
-            showCalculatingIndicator(false);
-            updateAutoOptimizeButtonVisual();
-            saveRouteState();
-            recalcETAFromSegments();
-            updateUI();
         }
 
         // ---------- AUTO-OPTIMIZE ----------
@@ -1222,6 +1244,10 @@
 
         async function autoOptimizeRoute() {
             const optimizeBtn = document.getElementById('auto-optimize-btn');
+            // Block the route listener from applying stale remote snapshots while we
+            // compute/save the optimized order (prevents the same clobbering race
+            // described for insertStopIntoFinalizedRoute).
+            isApplyingLocalRouteChange = true;
             try {
                 if (optimizeBtn) optimizeBtn.disabled = true;
                 if (createRouteMapBtn) createRouteMapBtn.disabled = true;
@@ -1310,6 +1336,7 @@
                 showCalculatingIndicator(false);
                 if (optimizeBtn) optimizeBtn.disabled = false;
                 updateCreateRouteButton();
+                isApplyingLocalRouteChange = false;
             }
         }
 
@@ -2172,6 +2199,12 @@
                 return;
             }
 
+            // Block the route listener from applying stale remote snapshots until the
+            // debounced segment fetch below finishes and saves (see insertStopIntoFinalizedRoute
+            // for the race this prevents). Safe to set on every tap: cleared once after the
+            // last scheduled save actually runs, since earlier pending timeouts are cancelled.
+            isApplyingLocalRouteChange = true;
+
             const assignedIds = Object.keys(routeState.assignedIndices);
             const nextNumber = assignedIds.length + 1;
             routeState.assignedIndices[jobId] = nextNumber;
@@ -2222,9 +2255,11 @@
                     } else {
                         panToClosestUnassigned(jobId);
                     }
+                    isApplyingLocalRouteChange = false;
                 }).catch(err => {
                     if (indicator) indicator.style.display = 'none';
                     console.warn("Error adding segment:", err);
+                    isApplyingLocalRouteChange = false;
                 });
             }, 250);
         }
