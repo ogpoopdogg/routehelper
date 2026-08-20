@@ -1,7 +1,7 @@
 // Minimal service worker for E&C Route Planner.
 // Its main job is to satisfy the browser's PWA installability requirement
 // (an active, controlling service worker) so `beforeinstallprompt` can fire.
-const CACHE_NAME = 'ec-route-planner-v1';
+const CACHE_NAME = 'ec-route-planner-v2';
 const APP_SHELL = [
     './',
     './index.html',
