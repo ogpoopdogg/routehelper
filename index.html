@@ -31,6 +31,7 @@
         body.light-mode #auto-optimize-btn.optimized { background: #10B981 !important; color: #fff !important; border-color: #10B981 !important; }
         body.light-mode #far-route-toast .far-route-yes { background: #10B981 !important; color: #fff !important; border-color: #10B981 !important; }
         body.light-mode #far-route-toast .far-route-no { background: #4b5563 !important; color: #fff !important; border-color: #4b5563 !important; }
+        body.light-mode #clear-route-btn { background: #b71c1c !important; color: #fff !important; border-color: #b71c1c !important; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
         header { padding: 16px 24px; background: var(--header-bg); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-soft); }
         .header-logo { height: 24px; width: auto; margin-right: 12px; vertical-align: middle; filter: drop-shadow(0 0 3px var(--accent)); cursor: pointer; }
@@ -516,9 +517,12 @@
 
         <!-- Job List Container -->
         <div id="job-list-container">
-            <h3 style="margin-top:0; color:var(--accent); display: flex; align-items: center; gap: 8px;">
-                ROUTE STOPS
-                <span id="stop-counter" style="display:none; border:2px solid white; color:#ff8c00; font-weight:bold; padding:0 8px; border-radius:12px; font-size:14px;"></span>
+            <h3 style="margin-top:0; color:var(--accent); display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <span style="display: flex; align-items: center; gap: 8px;">
+                    ROUTE STOPS
+                    <span id="stop-counter" style="display:none; border:2px solid white; color:#ff8c00; font-weight:bold; padding:0 8px; border-radius:12px; font-size:14px;"></span>
+                </span>
+                <button id="clear-route-btn" class="btn-clear" onclick="clearAllStops()" style="display:none;">CLEAR ALL</button>
             </h3>
             <div id="job-list"></div>
             <div id="empty-state" style="text-align:center; color:#666; padding:20px;">No jobs added. Use the form above to add stops.</div>
@@ -1485,12 +1489,15 @@
                 document.getElementById('eta-display').classList.remove('eta-glow');
             }
             const counter = document.getElementById('stop-counter');
+            const clearBtn = document.getElementById('clear-route-btn');
             const totalStops = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup').length;
             if (totalStops > 0) {
                 counter.textContent = totalStops;
                 counter.style.display = 'inline-block';
+                if (clearBtn) clearBtn.style.display = 'inline-block';
             } else {
                 counter.style.display = 'none';
+                if (clearBtn) clearBtn.style.display = 'none';
             }
         }
 
@@ -1788,6 +1795,48 @@
                 }
                 renderList();
             }
+        }
+
+        // ---------- CLEAR ALL STOPS ----------
+        function clearAllStops() {
+            const totalStops = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup').length;
+            if (totalStops === 0) return;
+            if (!confirm(`Remove all ${totalStops} stop${totalStops === 1 ? '' : 's'} from the route? This cannot be undone.`)) return;
+
+            // Wipe stops from Firebase
+            db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops`).remove().catch(err => console.warn("Error clearing stops:", err));
+
+            // Reset local state
+            jobs = {};
+            checkedStops = [];
+            if (currentUser) {
+                db.ref(`developer/route_planner/checked_stops/${currentUser.toLowerCase()}`).set([]).catch(err => console.warn("Error clearing checked stops:", err));
+            }
+
+            routeState.order = [];
+            routeState.assignedIndices = {};
+            routeState.isFinalized = false;
+            routeState.autoOptimized = false;
+            isOrderingMode = false;
+
+            forwardSegments = [];
+            returnPath = null;
+            segmentCache = {};
+            etaTotalMinutes = 0;
+            etaTotalKm = 0;
+
+            stopPulsingAll();
+            clearRoutePolylines();
+            if (map) {
+                Object.values(mapMarkers).forEach(m => m.setMap(null));
+                mapMarkers = {};
+            }
+
+            updateAutoOptimizeButtonVisual();
+            updateOrderingOverlays();
+            saveRouteState();
+            updateUI();
+            renderList();
         }
 
         // ---------- MAP MARKERS ----------
