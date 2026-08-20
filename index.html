@@ -742,6 +742,8 @@
                     checkedStops = snap.val() || [];
                     if (!Array.isArray(checkedStops)) checkedStops = [];
                     renderList();
+                    if (map) redrawRouteFromCurrentState();
+                    recalcETAFromSegments();
                 });
             }
         }
@@ -985,8 +987,8 @@
         // ---------- UPDATE FORWARD ROUTE ----------
         async function updateForwardRoute() {
             if (!map) return;
-            const order = routeState.order;
-            if (order.length === 0) {
+            const effectiveOrder = routeState.order.filter(id => !checkedStops.includes(id) && jobs[id] && jobs[id].status === 'pending_pickup');
+            if (effectiveOrder.length === 0) {
                 forwardSegments = [];
                 updatePolyline();
                 return;
@@ -994,7 +996,7 @@
 
             // Build segments: origin -> stop1, stop1->stop2, ...
             const originLatLng = getCurrentOrigin();
-            const stopIds = order;
+            const stopIds = effectiveOrder;
             const segments = [];
             let prev = originLatLng;
             for (let i = 0; i < stopIds.length; i++) {
@@ -1024,13 +1026,13 @@
         // ---------- FETCH RETURN ROUTE ----------
         async function fetchReturnRoute() {
             if (!map) return;
-            const order = routeState.order;
-            if (order.length === 0) {
+            const effectiveOrder = routeState.order.filter(id => !checkedStops.includes(id) && jobs[id] && jobs[id].status === 'pending_pickup');
+            if (effectiveOrder.length === 0) {
                 returnPath = null;
                 updatePolyline();
                 return;
             }
-            const lastId = order[order.length - 1];
+            const lastId = effectiveOrder[effectiveOrder.length - 1];
             const lastJob = jobs[lastId];
             if (!lastJob || !lastJob.lat || !lastJob.lng) {
                 returnPath = null;
@@ -1089,10 +1091,11 @@
 
         // ---------- ETA RECALCULATION (silent) ----------
         async function recalcETAFromSegments() {
-            if (!routeState.isFinalized || routeState.order.length === 0) return;
+            const effectiveOrder = routeState.order.filter(id => !checkedStops.includes(id) && jobs[id] && jobs[id].status === 'pending_pickup');
+            if (!routeState.isFinalized || effectiveOrder.length === 0) return;
             try {
                 const origin = getCurrentOrigin();
-                const waypoints = routeState.order.map(id => ({ location: { latLng: { latitude: jobs[id].lat, longitude: jobs[id].lng } } }));
+                const waypoints = effectiveOrder.map(id => ({ location: { latLng: { latitude: jobs[id].lat, longitude: jobs[id].lng } } }));
                 const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
                     method: "POST",
                     headers: {
@@ -1607,11 +1610,6 @@
             // Toggle locally
             const idx = checkedStops.indexOf(jobId);
             const isCurrentlyChecked = idx !== -1;
-            // If we are checking (adding to checkedStops), remove from route
-            if (!isCurrentlyChecked) {
-                // Remove from route (async)
-                removeStopFromRoute(jobId);
-            }
             if (isCurrentlyChecked) {
                 checkedStops.splice(idx, 1);
             } else {
