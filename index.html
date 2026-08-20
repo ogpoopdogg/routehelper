@@ -1225,7 +1225,7 @@
                 showCalculatingIndicator(true);
 
                 await ensureAllJobsGeocoded();
-                const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+                const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup' && !checkedStops.includes(id));
                 const missingGeocode = pendingIds.filter(id => !jobs[id].lat || !jobs[id].lng);
                 if (missingGeocode.length > 0) {
                     alert("Could not locate one or more addresses. Auto-optimize aborted.");
@@ -1507,7 +1507,7 @@
             }
             const counter = document.getElementById('stop-counter');
             const clearBtn = document.getElementById('clear-route-btn');
-            const totalStops = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup').length;
+            const totalStops = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup' && !checkedStops.includes(id)).length;
             if (totalStops > 0) {
                 counter.textContent = totalStops;
                 counter.style.display = 'inline-block';
@@ -1607,6 +1607,11 @@
             // Toggle locally
             const idx = checkedStops.indexOf(jobId);
             const isCurrentlyChecked = idx !== -1;
+            // If we are checking (adding to checkedStops), remove from route
+            if (!isCurrentlyChecked) {
+                // Remove from route (async)
+                removeStopFromRoute(jobId);
+            }
             if (isCurrentlyChecked) {
                 checkedStops.splice(idx, 1);
             } else {
@@ -1616,6 +1621,68 @@
             updateCardCheckVisual(jobId, !isCurrentlyChecked);
             // Start animation
             startCardAnimation(jobId, !isCurrentlyChecked);
+        }
+
+        // ---------- REMOVE STOP FROM ROUTE (when checked) ----------
+        async function removeStopFromRoute(jobId) {
+            // Check if job exists
+            if (!jobs[jobId]) return;
+            // Remove from order if present
+            const orderIndex = routeState.order.indexOf(jobId);
+            if (orderIndex !== -1) {
+                routeState.order.splice(orderIndex, 1);
+                // Remove from assignedIndices
+                delete routeState.assignedIndices[jobId];
+                // If route was finalized and order becomes empty, set false
+                if (routeState.isFinalized && routeState.order.length === 0) {
+                    routeState.isFinalized = false;
+                }
+                // Stop any pulsing
+                if (pulsingMarkers[jobId]) {
+                    clearInterval(pulsingMarkers[jobId].interval);
+                    if (pulsingMarkers[jobId].circle) pulsingMarkers[jobId].circle.setMap(null);
+                    if (pulsingMarkers[jobId].marker) pulsingMarkers[jobId].marker.setMap(null);
+                    delete pulsingMarkers[jobId];
+                }
+                // Rebuild polylines
+                showCalculatingIndicator(true);
+                try {
+                    await updateForwardRoute();
+                    await fetchReturnRoute();
+                    updatePolyline();
+                    // Recalculate ETA
+                    if (routeState.isFinalized) {
+                        await recalcETAFromSegments();
+                    } else {
+                        etaTotalMinutes = 0;
+                        etaTotalKm = 0;
+                        document.getElementById('eta-display').style.display = 'none';
+                        document.getElementById('eta-display').classList.remove('eta-glow');
+                    }
+                } catch (err) {
+                    console.warn("Error updating route after removal:", err);
+                } finally {
+                    showCalculatingIndicator(false);
+                }
+                // Save state
+                saveRouteState();
+                // Update UI elements
+                updateUI();
+                updateCreateRouteButton();
+                updateAutoOptimizeButtonVisual();
+                updateOrderingOverlays();
+            } else {
+                // Not in order, but may have a marker/pulsing (unassigned in ordering mode)
+                if (pulsingMarkers[jobId]) {
+                    clearInterval(pulsingMarkers[jobId].interval);
+                    if (pulsingMarkers[jobId].circle) pulsingMarkers[jobId].circle.setMap(null);
+                    if (pulsingMarkers[jobId].marker) pulsingMarkers[jobId].marker.setMap(null);
+                    delete pulsingMarkers[jobId];
+                }
+                // Update map markers to remove it
+                if (map) updateMapMarkers();
+                // Save checked state? Already handled in finishAnimation
+            }
         }
 
         // ---------- UPDATE CARD CHECK VISUAL ----------
@@ -1864,7 +1931,7 @@
             mapMarkers = {};
             stopPulsingAll();
 
-            const pendingJobs = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+            const pendingJobs = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup' && !checkedStops.includes(id));
             if (pendingJobs.length === 0) return;
 
             const isOrdering = isOrderingMode;
@@ -2022,7 +2089,7 @@
         // ---------- ORDERING MODE ----------
         function startCreateRoute() {
             clearRoutePolylines();
-            const pendingJobs = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+            const pendingJobs = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup' && !checkedStops.includes(id));
             if (pendingJobs.length === 0) {
                 alert("No stops to route.");
                 return;
@@ -2072,7 +2139,7 @@
             const bounds = new google.maps.LatLngBounds();
             bounds.extend(origin);
             let hasJob = false;
-            const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+            const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup' && !checkedStops.includes(id));
             pendingIds.forEach(id => {
                 const job = jobs[id];
                 if (job.lat && job.lng) {
@@ -2147,7 +2214,7 @@
                     updatePolyline();
 
                     // Check if all stops assigned
-                    const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+                    const pendingIds = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup' && !checkedStops.includes(id));
                     const assignedIdsNow = Object.keys(routeState.assignedIndices);
                     if (pendingIds.length === assignedIdsNow.length && pendingIds.length > 0) {
                         finalizeRoute();
@@ -2166,7 +2233,7 @@
             const fromJob = jobs[fromJobId];
             if (!fromJob || !map) return;
             const candidateIds = Object.keys(jobs).filter(id =>
-                jobs[id].status === 'pending_pickup' && !routeState.assignedIndices[id] && jobs[id].lat && jobs[id].lng
+                jobs[id].status === 'pending_pickup' && !routeState.assignedIndices[id] && !checkedStops.includes(id) && jobs[id].lat && jobs[id].lng
             );
             if (candidateIds.length === 0) return;
             let closestId = null, closestDistSq = Infinity;
@@ -2186,7 +2253,7 @@
         function handleUnassignedMarkerClick(jobId, position) {
             if (!map) { assignNumber(jobId); return; }
             const otherPendingIds = Object.keys(jobs).filter(id =>
-                jobs[id].status === 'pending_pickup' && !routeState.assignedIndices[id] && jobs[id].lat && jobs[id].lng && id !== jobId
+                jobs[id].status === 'pending_pickup' && !routeState.assignedIndices[id] && !checkedStops.includes(id) && jobs[id].lat && jobs[id].lng && id !== jobId
             );
             const tapPoint = new google.maps.LatLng(position.lat, position.lng);
             const hasNearbyCluster = otherPendingIds.some(id => {
@@ -2228,7 +2295,7 @@
             const counterEl = document.getElementById('map-stop-counter');
             const undoBtn = document.getElementById('undo-assignment-btn');
             const finishBtn = document.getElementById('finish-early-btn');
-            const totalStops = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup').length;
+            const totalStops = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup' && !checkedStops.includes(id)).length;
             const assignedCount = Object.keys(routeState.assignedIndices).length;
             if (isOrderingMode && !routeState.isFinalized) {
                 if (counterEl) {
@@ -2411,7 +2478,7 @@
 
         // ---------- UPDATE CREATE ROUTE BUTTON ----------
         function updateCreateRouteButton() {
-            const pending = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup');
+            const pending = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup' && !checkedStops.includes(id));
             const hasStops = pending.length > 0;
             const isFinal = routeState.isFinalized;
             const isOrdering = isOrderingMode;
@@ -2431,7 +2498,7 @@
                     }
                 } else {
                     // Main page button
-                    const unassigned = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup' && !routeState.assignedIndices[id]).length;
+                    const unassigned = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup' && !routeState.assignedIndices[id] && !checkedStops.includes(id)).length;
                     if (!hasStops || (isFinal && unassigned === 0)) {
                         btn.disabled = true;
                         btn.classList.remove('pulse-glow', 'active');
@@ -2506,7 +2573,7 @@
             if (routeState.isFinalized && routeState.order.length > 0) {
                 order = routeState.order;
             } else {
-                order = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup').sort((a,b) => jobs[a].timestamp - jobs[b].timestamp);
+                order = Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup' && !checkedStops.includes(id)).sort((a,b) => jobs[a].timestamp - jobs[b].timestamp);
             }
             if (order.length === 0) { alert("No stops."); return; }
 
@@ -2574,7 +2641,7 @@
             if (hours > 0) timeStr += hours + 'h ';
             timeStr += mins + 'm';
             etaTime.textContent = timeStr;
-            const stops = routeState.order.length || Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup').length;
+            const stops = routeState.order.length || Object.keys(jobs).filter(id => jobs[id].status === 'pending_pickup' && !checkedStops.includes(id)).length;
             const adjustedMinutes = totalMinutes + 3 * stops;
             const adjHours = Math.floor(adjustedMinutes / 60);
             const adjMins = Math.round(adjustedMinutes % 60);
