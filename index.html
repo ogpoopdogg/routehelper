@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+  (function() {
+    // If the URL doesn't already have a cache‑busting parameter
+    if (!location.search.includes('_nocache=')) {
+      const separator = location.search ? '&' : '?';
+      // Reload with a unique timestamp
+      location.replace(location.href + separator + '_nocache=' + Date.now());
+    }
+  })();
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>E&C ROUTE PLANNER</title>
