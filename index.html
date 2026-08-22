@@ -669,6 +669,32 @@
         let lastOriginCalcTime = 0;
         let userMarkerUpdateThrottle = 0;
 
+        // ---------- SAFETY: single choke point for all saved_routes reads/writes ----------
+        // Every listener/read/write that touches this driver's route goes through this
+        // function instead of building the path inline. Reason: a template literal like
+        // `saved_routes/${currentRouteKey}` silently collapses down to the saved_routes
+        // node itself if currentRouteKey is ever empty/undefined (Firebase drops empty
+        // path segments), and a .set() or .remove() on that node would wipe every
+        // driver's saved route in one call — not just this user's. Routing every
+        // saved_routes access through here means that can never happen: it refuses to
+        // hand back a ref unless currentRouteKey is a clean, non-empty key that can't
+        // escape into a sibling driver's node or the saved_routes root.
+        function getOwnRouteRef(subpath) {
+            if (!currentRouteKey || typeof currentRouteKey !== 'string' || currentRouteKey.trim() === '') {
+                console.error('Blocked a saved_routes access: currentRouteKey is not set.');
+                return null;
+            }
+            // Firebase keys can't contain '.', '#', '$', '[', ']'; also reject '/' so
+            // the key can never introduce an extra path segment and point somewhere
+            // other than this driver's own node.
+            if (/[.#$\[\]\/]/.test(currentRouteKey)) {
+                console.error('Blocked a saved_routes access: currentRouteKey has invalid characters.');
+                return null;
+            }
+            const base = `developer/route_planner/saved_routes/${currentRouteKey}`;
+            return db.ref(subpath ? `${base}/${subpath}` : base);
+        }
+
         // Theme
         if (localStorage.getItem('ec_theme') === 'light') document.body.classList.add('light-mode');
         function toggleTheme() {
@@ -714,29 +740,34 @@
         function initApp() {
             db.ref('address_lookup').on('value', snap => { addressData = snap.val() || {}; });
             // Listen to this driver's own route
-            db.ref(`developer/route_planner/saved_routes/${currentRouteKey}`).on('value', snap => {
-                // While a local route mutation (new stop insertion, auto-optimize, manual
-                // assignment, undo) is in-flight, its optimistic in-memory state hasn't been
-                // written to Firebase yet. Applying a remote snapshot now would overwrite
-                // that in-progress state with stale data. Skip until the operation finishes
-                // and saves (see isApplyingLocalRouteChange).
-                if (isApplyingLocalRouteChange) return;
-                const routeData = snap.val() || {};
-                jobs = routeData.stops || {};
-                routeState.order = routeData.order || [];
-                routeState.isFinalized = routeData.isFinalized || false;
-                routeState.assignedIndices = routeData.assignedIndices || {};
-                routeState.autoOptimized = routeData.autoOptimized || false;
-                etaTotalMinutes = routeData.etaTotalMinutes || 0;
-                etaTotalKm = routeData.etaTotalKm || 0;
-                // Ensure all pending jobs have coordinates
-                ensureAllJobsGeocoded().then(() => {
-                    updateUI();
-                    updateAutoOptimizeButtonVisual();
-                    // Redraw route polylines based on current state
-                    redrawRouteFromCurrentState();
+            const ownRouteRef = getOwnRouteRef();
+            if (ownRouteRef) {
+                ownRouteRef.on('value', snap => {
+                    // While a local route mutation (new stop insertion, auto-optimize, manual
+                    // assignment, undo) is in-flight, its optimistic in-memory state hasn't been
+                    // written to Firebase yet. Applying a remote snapshot now would overwrite
+                    // that in-progress state with stale data. Skip until the operation finishes
+                    // and saves (see isApplyingLocalRouteChange).
+                    if (isApplyingLocalRouteChange) return;
+                    const routeData = snap.val() || {};
+                    jobs = routeData.stops || {};
+                    routeState.order = routeData.order || [];
+                    routeState.isFinalized = routeData.isFinalized || false;
+                    routeState.assignedIndices = routeData.assignedIndices || {};
+                    routeState.autoOptimized = routeData.autoOptimized || false;
+                    etaTotalMinutes = routeData.etaTotalMinutes || 0;
+                    etaTotalKm = routeData.etaTotalKm || 0;
+                    // Ensure all pending jobs have coordinates
+                    ensureAllJobsGeocoded().then(() => {
+                        updateUI();
+                        updateAutoOptimizeButtonVisual();
+                        // Redraw route polylines based on current state
+                        redrawRouteFromCurrentState();
+                    });
                 });
-            });
+            } else {
+                console.error('No valid route key — refusing to attach saved_routes listener.');
+            }
             initPlaces();
             createRouteMainBtn = document.getElementById('create-route-main');
             createRouteMapBtn = document.getElementById('create-route-map');
@@ -777,7 +808,8 @@
                         // Write lat/lng together as a single atomic update instead of two
                         // separate .set() calls, so the whole-route 'value' listener only
                         // fires once per geocode instead of twice.
-                        db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops/${jobId}`).update({ lat, lng });
+                        const geoStopRef = getOwnRouteRef(`stops/${jobId}`);
+                        if (geoStopRef) geoStopRef.update({ lat, lng });
                         // Update local copy
                         job.lat = lat;
                         job.lng = lng;
@@ -801,6 +833,8 @@
         // ---------- ROUTE STATE PERSISTENCE ----------
         function saveRouteState() {
             if (!currentUser) return;
+            const ownRouteRef = getOwnRouteRef();
+            if (!ownRouteRef) { console.error("Save route state blocked: no valid route key."); return; }
             // Write full route data to saved_routes
             const routeData = {
                 label: currentUser,
@@ -813,7 +847,7 @@
                 etaTotalMinutes: etaTotalMinutes,
                 etaTotalKm: etaTotalKm
             };
-            db.ref(`developer/route_planner/saved_routes/${currentRouteKey}`).set(routeData).catch(err => console.warn("Save route state error:", err));
+            ownRouteRef.set(routeData).catch(err => console.warn("Save route state error:", err));
         }
 
         // ---------- REDRAW ROUTE FROM CURRENT STATE ----------
@@ -1874,7 +1908,9 @@
 
         function performDelete(id) {
             if (confirm("Remove this stop from route?")) {
-                db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops/${id}`).remove();
+                const stopRef = getOwnRouteRef(`stops/${id}`);
+                if (stopRef) stopRef.remove();
+                else { console.error("Delete blocked: no valid route key."); return; }
                 // Remove from local jobs
                 delete jobs[id];
                 // Remove from checkedStops
@@ -1915,8 +1951,10 @@
             if (totalStops === 0) return;
             if (!confirm(`Remove all ${totalStops} stop${totalStops === 1 ? '' : 's'} from the route? This cannot be undone.`)) return;
 
-            // Wipe stops from Firebase
-            db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops`).remove().catch(err => console.warn("Error clearing stops:", err));
+            // Wipe stops from Firebase — scoped to this driver's own stops node only.
+            const stopsRef = getOwnRouteRef('stops');
+            if (!stopsRef) { alert("Could not clear stops: no valid route key."); return; }
+            stopsRef.remove().catch(err => console.warn("Error clearing stops:", err));
 
             // Reset local state
             jobs = {};
@@ -2456,7 +2494,9 @@
                     const loc = results[0].geometry.location;
                     newJob.lat = loc.lat();
                     newJob.lng = loc.lng();
-                    const newJobRef = db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops`).push();
+                    const stopsRefForPush = getOwnRouteRef('stops');
+                    if (!stopsRefForPush) { alert("Could not add stop: no valid route key."); return; }
+                    const newJobRef = stopsRefForPush.push();
                     newJobRef.set(newJob).then(() => {
                         const newId = newJobRef.key;
                         jobs[newId] = newJob; // add to local jobs
@@ -2476,7 +2516,9 @@
                 return;
             }
 
-            const newJobRef = db.ref(`developer/route_planner/saved_routes/${currentRouteKey}/stops`).push();
+            const stopsRefForNewJob = getOwnRouteRef('stops');
+            if (!stopsRefForNewJob) { alert("Could not add stop: no valid route key."); return; }
+            const newJobRef = stopsRefForNewJob.push();
             newJobRef.set(newJob).then(() => {
                 const newId = newJobRef.key;
                 jobs[newId] = newJob; // add to local jobs
