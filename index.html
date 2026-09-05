@@ -790,6 +790,12 @@
 
         // ---------- DATA LISTENERS ----------
         function initApp() {
+            // Show whatever is already durably cached immediately, before
+            // Firebase has even reconnected (see the cache note above
+            // saveRouteState).
+            loadDriverRouteCacheFromStorage();
+            updateUI();
+
             db.ref('address_lookup').on('value', snap => { addressData = snap.val() || {}; });
             // Listen to this driver's own route
             const ownRouteRef = getOwnRouteRef();
@@ -802,13 +808,27 @@
                     // and saves (see isApplyingLocalRouteChange).
                     if (isApplyingLocalRouteChange) return;
                     const routeData = snap.val() || {};
-                    jobs = routeData.stops || {};
+                    const firebaseStops = routeData.stops || {};
+                    // Firebase is authoritative for every stop it already has;
+                    // anything still in pendingJobIds that it doesn't have yet
+                    // is layered on top so a stop added on this device doesn't
+                    // vanish from the screen while it's still mid-sync (see the
+                    // cache note above saveRouteState).
+                    Object.keys(pendingJobIds).forEach(id => {
+                        if (id in firebaseStops) delete pendingJobIds[id];
+                    });
+                    const mergedStops = { ...firebaseStops };
+                    Object.keys(pendingJobIds).forEach(id => {
+                        if (jobs[id]) mergedStops[id] = jobs[id];
+                    });
+                    jobs = mergedStops;
                     routeState.order = routeData.order || [];
                     routeState.isFinalized = routeData.isFinalized || false;
                     routeState.assignedIndices = routeData.assignedIndices || {};
                     routeState.autoOptimized = routeData.autoOptimized || false;
                     etaTotalMinutes = routeData.etaTotalMinutes || 0;
                     etaTotalKm = routeData.etaTotalKm || 0;
+                    persistDriverRouteCache();
                     // Ensure all pending jobs have coordinates
                     ensureAllJobsGeocoded().then(() => {
                         updateUI();
@@ -820,6 +840,14 @@
             } else {
                 console.error('No valid route key — refusing to attach saved_routes listener.');
             }
+
+            // Retry anything still unconfirmed the instant a connection comes
+            // back, instead of waiting for the driver to reopen the app.
+            db.ref('.info/connected').on('value', snap => {
+                if (snap.val() === true) flushDriverPendingWrites();
+            });
+            window.addEventListener('online', flushDriverPendingWrites);
+
             initPlaces();
             createRouteMainBtn = document.getElementById('create-route-main');
             createRouteMapBtn = document.getElementById('create-route-map');
@@ -882,6 +910,56 @@
             return Promise.all(promises);
         }
 
+        // ---------- LOCAL-FIRST ROUTE CACHE ----------
+        // The Firebase Realtime Database web SDK keeps writes in memory only -
+        // there's no disk cache the way the iOS/Android SDKs have - and
+        // saveRouteState()'s write below was fire-and-forget: only a
+        // console.warn on failure, nothing the driver would ever see. So
+        // instead of treating Firebase's snapshot as the proof a stop or a
+        // route save landed, this cache IS that proof: a new stop lands here
+        // the instant it's added, and a saveRouteState() write stays marked
+        // unsaved until Firebase actually confirms it - either way surviving
+        // a reload and getting retried automatically instead of silently
+        // vanishing or failing without anyone finding out.
+        const DRIVER_ROUTE_CACHE_KEY = 'ec_driver_route_cache';
+
+        let pendingJobIds = {};       // stop id -> true, added locally but not yet confirmed by Firebase
+        let routeSavePending = false; // true from when saveRouteState() is called until Firebase confirms it
+        let routeSaveGeneration = 0;
+
+        function loadDriverRouteCacheFromStorage() {
+            try {
+                const raw = JSON.parse(localStorage.getItem(DRIVER_ROUTE_CACHE_KEY) || 'null');
+                if (raw && typeof raw === 'object' && raw.jobs) {
+                    jobs = raw.jobs;
+                    pendingJobIds = {};
+                    (raw.pending || []).forEach(id => { if (jobs[id]) pendingJobIds[id] = true; });
+                    routeState.order = raw.order || [];
+                    routeState.assignedIndices = raw.assignedIndices || {};
+                    routeState.isFinalized = raw.isFinalized || false;
+                    routeState.autoOptimized = raw.autoOptimized || false;
+                    etaTotalMinutes = raw.etaTotalMinutes || 0;
+                    etaTotalKm = raw.etaTotalKm || 0;
+                    routeSavePending = !!raw.unsaved;
+                }
+            } catch (e) { /* corrupt or unavailable cache - start empty, Firebase fills it in */ }
+        }
+        function persistDriverRouteCache() {
+            try {
+                localStorage.setItem(DRIVER_ROUTE_CACHE_KEY, JSON.stringify({
+                    jobs: jobs,
+                    pending: Object.keys(pendingJobIds),
+                    order: routeState.order,
+                    assignedIndices: routeState.assignedIndices,
+                    isFinalized: routeState.isFinalized,
+                    autoOptimized: routeState.autoOptimized,
+                    etaTotalMinutes: etaTotalMinutes,
+                    etaTotalKm: etaTotalKm,
+                    unsaved: routeSavePending
+                }));
+            } catch (e) { /* localStorage unavailable - rendering still works, just not durable this session */ }
+        }
+
         // ---------- ROUTE STATE PERSISTENCE ----------
         function saveRouteState() {
             if (!currentUser) return;
@@ -899,7 +977,38 @@
                 etaTotalMinutes: etaTotalMinutes,
                 etaTotalKm: etaTotalKm
             };
-            ownRouteRef.set(routeData).catch(err => console.warn("Save route state error:", err));
+            routeSaveGeneration++;
+            const thisGeneration = routeSaveGeneration;
+            routeSavePending = true;
+            persistDriverRouteCache();
+            ownRouteRef.set(routeData).then(() => {
+                // Only the most recent call clears the flag, so a newer save
+                // still in flight when an older one confirms doesn't get
+                // marked done early.
+                if (thisGeneration === routeSaveGeneration) {
+                    routeSavePending = false;
+                    persistDriverRouteCache();
+                }
+            }).catch(err => {
+                console.warn("Save route state error (will retry automatically):", err);
+            });
+        }
+
+        // Retries anything still unconfirmed - a stop that hasn't reached
+        // Firebase yet, or a saveRouteState() write that never got an ack.
+        // Safe to call repeatedly. Triggered on reconnect (both Firebase's own
+        // .info/connected and the browser's online event) in initApp.
+        function flushDriverPendingWrites() {
+            for (const id of Object.keys(pendingJobIds)) {
+                if (!jobs[id]) { delete pendingJobIds[id]; continue; }
+                const stopRef = getOwnRouteRef('stops/' + id);
+                if (!stopRef) continue;
+                stopRef.set(jobs[id]).then(() => {
+                    delete pendingJobIds[id];
+                    persistDriverRouteCache();
+                }).catch(() => { /* still failing - next reconnect/launch tries again */ });
+            }
+            if (routeSavePending) saveRouteState();
         }
 
         // ---------- REDRAW ROUTE FROM CURRENT STATE ----------
@@ -2573,9 +2682,22 @@
                         lastAddedJobId = null;
                         lastAddedJobClearTimer = null;
                     }, 3200);
+
+                    // Local-first: this stop counts as added, and the form
+                    // clears, the instant it's in our own durable cache - not
+                    // once the Firebase write AND the route-insertion math
+                    // (which itself calls the Directions API) both finish (see
+                    // the cache note above saveRouteState).
+                    const newId = newJobRef.key;
+                    jobs[newId] = newJob;
+                    pendingJobIds[newId] = true;
+                    persistDriverRouteCache();
+                    updateUI();
+                    resetFormFields();
+
                     newJobRef.set(newJob).then(() => {
-                        const newId = newJobRef.key;
-                        jobs[newId] = newJob; // add to local jobs
+                        delete pendingJobIds[newId];
+                        persistDriverRouteCache();
                         insertStopIntoFinalizedRoute(newId).then(() => {
                             saveRouteState();
                             const sanitizedKey = name.replace(/[.#$\[\]\/]/g, "").trim();
@@ -2584,9 +2706,15 @@
                                 city: city,
                                 last_edit_by: currentUser
                             });
-                            resetFormFields();
                         });
-                    }).catch(err => alert("Error adding job: " + err.message));
+                    }).catch(err => {
+                        // Don't roll back or touch the form - the stop is
+                        // already durably cached and stays visible;
+                        // flushDriverPendingWrites retries it automatically on
+                        // the next reconnect instead of this needing to be
+                        // noticed and redone by hand.
+                        alert("Couldn't reach the server for this stop (connection issue). It's saved on this device and will keep syncing automatically.");
+                    });
                 });
                 return;
             }
@@ -2600,9 +2728,22 @@
                 lastAddedJobId = null;
                 lastAddedJobClearTimer = null;
             }, 3200);
+
+            // Local-first: this stop counts as added the instant it's in our
+            // own durable cache and on screen - not whenever Firebase gets
+            // around to confirming the write (see the cache note above
+            // saveRouteState). No dependency on the network, or the promise
+            // below settling at all.
+            const newId = newJobRef.key;
+            jobs[newId] = newJob;
+            pendingJobIds[newId] = true;
+            persistDriverRouteCache();
+            updateUI();
+            resetFormFields();
+
             newJobRef.set(newJob).then(() => {
-                const newId = newJobRef.key;
-                jobs[newId] = newJob; // add to local jobs
+                delete pendingJobIds[newId];
+                persistDriverRouteCache();
                 saveRouteState(); // update route record with new stop
                 const sanitizedKey = name.replace(/[.#$\[\]\/]/g, "").trim();
                 db.ref("address_lookup").child(sanitizedKey).update({
@@ -2610,9 +2751,14 @@
                     city: city,
                     last_edit_by: currentUser
                 });
-                resetFormFields();
                 // Geocode the new job after it's added (listener will trigger)
-            }).catch(err => alert("Error adding job: " + err.message));
+            }).catch(err => {
+                // Don't roll back or touch the form - the stop is already
+                // durably cached and stays visible; flushDriverPendingWrites
+                // retries it automatically on the next reconnect instead of
+                // this needing to be noticed and redone by hand.
+                alert("Couldn't reach the server for this stop (connection issue). It's saved on this device and will keep syncing automatically.");
+            });
         }
 
         // ---------- DELETE JOB ----------
