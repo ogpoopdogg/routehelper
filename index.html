@@ -7,10 +7,10 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icon2.png">
     <link rel="apple-touch-icon" href="icon2.png">
-    <meta name="theme-color" content="#0A0A0B">
+    <meta name="theme-color" content="#0B0612">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* =====================================================================
            E&C ROUTE HELPER — one stylesheet for the whole app.
@@ -904,6 +904,339 @@
             .ec-route { stroke-dashoffset: 0 !important; }
         }
     </style>
+    <!-- ================================================================
+         HALLOWEEN THEME — visual only. Recolours the tokens above and adds
+         decorations (moon, fog, graveyard, bats, ghosts, jack-o'-lanterns).
+         Every decoration is aria-hidden and pointer-events: none, so taps
+         always reach the real buttons. Menu > "Spooky effects" turns the
+         moving effects off; reduced-motion settings turn them off too.
+         ================================================================ -->
+    <style id="hw-halloween">
+        /* ---------- HALLOWEEN TOKENS ---------- */
+        :root {
+            --bg: #0B0612;
+            --surface: #150D1F;
+            --surface-2: #1C1229;
+            --surface-3: #261836;
+            --border: #2F2142;
+            --border-strong: #46305F;
+            --text: #F6EFE6;             /* bone white */
+            --text-2: #CBBBD8;
+            --text-3: #9A88AD;
+            --accent: #FF7A1A;           /* pumpkin orange */
+            --accent-hover: #FF8F3D;
+            --accent-press: #E8650A;
+            --accent-text: #FF9A3C;
+            --accent-soft: rgba(255, 122, 26, 0.15);
+            --on-accent: #1A0A00;
+            --pending: #C084FC;          /* witch purple: not numbered yet */
+            --danger: #FF5C6E;
+            --danger-solid: #B3001B;     /* blood red */
+            --success: #4ADE80;          /* slime green */
+            --overlay: rgba(6, 2, 12, 0.72);
+            --header-bg: rgba(11, 6, 18, 0.82);
+            --focus-ring: 0 0 0 3px rgba(255, 122, 26, 0.4);
+            --hw-glow: 0 0 18px rgba(255, 122, 26, 0.35);
+            --hw-purple: #8B3DFF;
+            --hw-font-spooky: 'Creepster', 'Inter', system-ui, sans-serif;
+        }
+        body.light-mode {               /* "Harvest moon": parchment and pumpkin */
+            --bg: #F6EBDD;
+            --surface: #FFFBF5;
+            --surface-2: #FBF3E8;
+            --surface-3: #F1E4D2;
+            --border: #E6D3BC;
+            --border-strong: #CDB394;
+            --text: #1E1326;
+            --text-2: #4A3A55;
+            --text-3: #6E5D78;
+            --accent: #F26B0F;
+            --accent-hover: #FF7D24;
+            --accent-press: #D45A06;
+            --accent-text: #A33F00;
+            --accent-soft: rgba(242, 107, 15, 0.13);
+            --on-accent: #1A0A00;
+            --pending: #7E22CE;
+            --danger: #B3001B;
+            --overlay: rgba(30, 19, 38, 0.45);
+            --header-bg: rgba(255, 248, 238, 0.88);
+            --focus-ring: 0 0 0 3px rgba(163, 63, 0, 0.3);
+            --hw-glow: 0 0 14px rgba(242, 107, 15, 0.25);
+        }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(var(--hw-purple), var(--accent)); }
+
+        /* ---------- SCENE BEHIND THE APP ---------- */
+        #hw-scene, #hw-fx { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+        #hw-scene { z-index: -1; }
+        #hw-fx { z-index: 800; }          /* under the header (900) and every dialog */
+        .hw-sky {
+            position: absolute; inset: 0;
+            background:
+                radial-gradient(70% 45% at 85% 0%, rgba(139, 61, 255, 0.22), transparent 70%),
+                radial-gradient(60% 35% at 10% 10%, rgba(76, 29, 149, 0.25), transparent 70%),
+                radial-gradient(90% 40% at 50% 105%, rgba(255, 110, 20, 0.16), transparent 70%),
+                linear-gradient(#0B0612, #120A1E 60%, #1A0C1A);
+        }
+        .hw-stars { position: absolute; left: 0; top: 0; width: 2px; height: 2px; border-radius: 50%; animation: hw-twinkle 4s ease-in-out infinite alternate; }
+        .hw-stars.hw-b { animation-duration: 6s; animation-delay: -2s; }
+        @keyframes hw-twinkle { from { opacity: 0.25; } to { opacity: 1; } }
+        .hw-moon {
+            position: absolute; top: calc(96px + var(--safe-top)); right: 7%; width: 96px; height: 96px; border-radius: 50%;
+            background:
+                radial-gradient(circle at 62% 38%, rgba(196, 160, 90, 0.55) 0 7px, transparent 8px),
+                radial-gradient(circle at 36% 64%, rgba(196, 160, 90, 0.45) 0 10px, transparent 11px),
+                radial-gradient(circle at 70% 72%, rgba(196, 160, 90, 0.35) 0 5px, transparent 6px),
+                radial-gradient(circle at 35% 32%, #FFF8DE, #F6DE96 55%, #DDB75A);
+            box-shadow: 0 0 40px 8px rgba(255, 222, 140, 0.28), 0 0 140px 50px rgba(255, 140, 40, 0.12);
+            animation: hw-moon-glow 7s ease-in-out infinite alternate;
+        }
+        @keyframes hw-moon-glow { to { box-shadow: 0 0 56px 14px rgba(255, 222, 140, 0.36), 0 0 180px 70px rgba(255, 140, 40, 0.16); } }
+        .hw-graveyard { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 130px; color: #05020A; }
+        .hw-graveyard .hw-face { fill: #FFC24A; }
+        #hw-scene .hw-graveyard { height: 100px; opacity: 0.8; }
+        .hw-graveyard .hw-pk { fill: #8A3606; }
+        .hw-fog {
+            position: absolute; left: 0; bottom: -20px; width: 200%; height: 200px; opacity: 0.9;
+            background:
+                radial-gradient(30% 50% at 10% 70%, rgba(214, 196, 240, 0.10), transparent 70%),
+                radial-gradient(25% 45% at 35% 80%, rgba(214, 196, 240, 0.08), transparent 70%),
+                radial-gradient(30% 50% at 60% 70%, rgba(214, 196, 240, 0.10), transparent 70%),
+                radial-gradient(25% 45% at 85% 80%, rgba(214, 196, 240, 0.08), transparent 70%);
+            animation: hw-fog 70s linear infinite;
+        }
+        .hw-fog.hw-b { bottom: 30px; opacity: 0.6; animation-duration: 110s; animation-direction: reverse; }
+        @keyframes hw-fog { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .hw-eyes { position: absolute; display: flex; gap: 9px; animation: hw-lurk 11s ease-in-out infinite; }
+        .hw-eyes span {
+            width: 9px; height: 6px; border-radius: 50% 50% 45% 45%; background: #FFB020;
+            box-shadow: 0 0 8px 2px rgba(255, 176, 32, 0.7);
+            animation: hw-blink 4.5s infinite;
+        }
+        .hw-eyes span:first-child { transform: rotate(12deg); }
+        .hw-eyes span:last-child { transform: rotate(-12deg); }
+        .hw-eyes.hw-green span { background: #9BFF3A; box-shadow: 0 0 8px 2px rgba(155, 255, 58, 0.6); }
+        @keyframes hw-blink { 0%, 90%, 100% { scale: 1 1; } 93% { scale: 1 0.1; } }
+        @keyframes hw-lurk { 0%, 100% { opacity: 0; } 25%, 70% { opacity: 1; } }
+
+        body.light-mode .hw-sky {
+            background:
+                radial-gradient(70% 45% at 85% 0%, rgba(242, 107, 15, 0.16), transparent 70%),
+                radial-gradient(90% 40% at 50% 105%, rgba(126, 34, 206, 0.10), transparent 70%),
+                linear-gradient(#F6EBDD, #F3E2CC);
+        }
+        body.light-mode .hw-stars, body.light-mode .hw-eyes { display: none; }
+        body.light-mode .hw-moon { opacity: 0.55; }
+        body.light-mode .hw-graveyard { color: #4A2E55; opacity: 0.22; }
+        body.light-mode .hw-fog { opacity: 0.4; }
+
+        /* ---------- FLYING THINGS (spawned by the script) ---------- */
+        .hw-bat { position: absolute; left: 0; top: 0; color: #050208; filter: drop-shadow(0 0 5px rgba(255, 122, 26, 0.55)); will-change: transform; }
+        .hw-bat svg { display: block; width: 100%; height: auto; overflow: visible; }
+        .hw-wing { transform-box: view-box; transform-origin: 50px 24px; animation: hw-flap 0.22s ease-in-out infinite alternate; }
+        @keyframes hw-flap { to { transform: scaleY(0.2); } }
+        body.light-mode .hw-bat { color: #2A1433; filter: drop-shadow(0 0 4px rgba(242, 107, 15, 0.4)); }
+        .hw-ghost { position: absolute; left: 0; top: 0; width: 54px; will-change: transform, opacity; }
+        .hw-ghost-body { display: block; animation: hw-wobble 2.4s ease-in-out infinite alternate; filter: drop-shadow(0 0 10px rgba(235, 225, 255, 0.55)); }
+        .hw-ghost-body svg { display: block; width: 100%; height: auto; }
+        @keyframes hw-wobble { from { transform: rotate(-7deg) translateX(-4px); } to { transform: rotate(7deg) translateX(4px); } }
+        .hw-poof { position: absolute; left: 0; top: 0; width: 40px; text-align: center; }
+        .hw-poof-boo {
+            display: block; margin-bottom: 2px; font: 400 18px/1 var(--hw-font-spooky); letter-spacing: 0.06em;
+            color: var(--accent-text); text-shadow: 0 0 8px rgba(255, 122, 26, 0.7);
+        }
+        .hw-pop { position: absolute; left: 0; top: 0; width: 46px; filter: drop-shadow(0 0 12px rgba(255, 150, 40, 0.75)); }
+        .hw-pop svg { display: block; width: 100%; height: auto; }
+
+        /* ---------- JACK-O'-LANTERNS ---------- */
+        .hw-pumpkin svg { display: block; width: 100%; height: auto; overflow: visible; }
+        .hw-pumpkin .hw-face { fill: #FFC83D; animation: hw-flicker 2.8s infinite; }
+        @keyframes hw-flicker {
+            0%, 100% { opacity: 1; } 8% { opacity: 0.72; } 10% { opacity: 0.95; } 22% { opacity: 0.8; }
+            40% { opacity: 1; } 52% { opacity: 0.68; } 55% { opacity: 0.92; } 78% { opacity: 0.84; }
+        }
+        .hw-graveyard .hw-face { animation: hw-flicker 3.4s infinite; }
+        .ec-logo-wrap { position: relative; border-color: rgba(255, 122, 26, 0.6); box-shadow: var(--shadow-1), 0 0 14px rgba(255, 122, 26, 0.25); }
+        .hw-logo-pumpkin { position: absolute; right: -9px; bottom: -7px; width: 22px; filter: drop-shadow(0 0 5px rgba(255, 140, 30, 0.8)); }
+        .hw-empty-pumpkin { width: 84px; margin: 0 auto var(--sp-4); filter: drop-shadow(0 0 22px rgba(255, 130, 30, 0.55)); animation: hw-bob 3.2s ease-in-out infinite; }
+        @keyframes hw-bob { 50% { transform: translateY(-6px) rotate(-2deg); } }
+
+        /* ---------- SPIDER ON A THREAD (hangs under the header) ---------- */
+        .hw-spider-wrap { position: absolute; top: 100%; left: 54%; width: 26px; height: 92px; overflow: hidden; pointer-events: none; }
+        .hw-spider { position: absolute; left: 0; top: 0; width: 26px; height: 170px; transform: translateY(-170px); animation: hw-spider 13s ease-in-out infinite; animation-delay: 4s; }
+        .hw-spider::before { content: ""; position: absolute; left: 12.5px; top: 0; bottom: 18px; width: 1px; background: rgba(230, 220, 245, 0.55); }
+        .hw-spider svg { position: absolute; left: 0; bottom: 0; width: 26px; height: auto; color: #08040D; filter: drop-shadow(0 0 4px rgba(192, 132, 252, 0.6)); }
+        body.light-mode .hw-spider::before { background: rgba(30, 19, 38, 0.4); }
+        body.light-mode .hw-spider svg { color: #1E1326; filter: none; }
+        @keyframes hw-spider {
+            0%, 52% { transform: translateY(-170px); }
+            62% { transform: translateY(-96px); } 66% { transform: translateY(-104px); } 70% { transform: translateY(-99px); }
+            84% { transform: translateY(-101px); } 96%, 100% { transform: translateY(-170px); }
+        }
+        @media (max-width: 479px) { .hw-spider-wrap { left: 46%; height: 70px; } }
+
+        /* ---------- COBWEBS IN CARD CORNERS ---------- */
+        .input-form-card::after, #job-list-container::after, .login-box::after, .ec-menu-box::after {
+            content: ""; position: absolute; top: -1px; right: -1px; width: 74px; height: 74px; pointer-events: none; z-index: 0;
+            background: var(--hw-web) top right / contain no-repeat; opacity: 0.55;
+            border-top-right-radius: inherit;
+        }
+        #job-list-container { position: relative; }
+        #job-list-container::after { right: auto; left: -1px; transform: scaleX(-1); }
+        .ec-menu-box { position: relative; }
+        .ec-menu-box::after { width: 56px; height: 56px; }
+        #input-panel.collapsed .input-form-card::after, .input-form-card.ec-form-top::after { display: none; }
+        #job-list-container::after { width: 60px; height: 60px; opacity: 0.4; }
+        @media (max-width: 479px) { #job-list-container::after { display: none; } }
+        :root { --hw-web: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23E9DDF7' stroke-width='1.1' stroke-linecap='round'%3E%3Cpath d='M100 0 0 0M100 0 13 50M100 0 50 87M100 0 100 100M100 0 34 22M100 0 78 70'/%3E%3Cpath d='M78 0Q85 6 81 12Q88 14 89 20Q93 25 89 27Q94 28 100 22'/%3E%3Cpath d='M55 0Q66 11 59 23Q72 26 74 37Q83 45 78 50Q90 49 100 46'/%3E%3Cpath d='M30 0Q46 17 35 36Q55 40 58 55Q70 68 63 74Q82 72 100 70'/%3E%3Cpath d='M8 0Q26 22 14 49Q40 55 44 76Q52 92 50 87'/%3E%3C/svg%3E"); }
+        body.light-mode { --hw-web: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%234A3A55' stroke-width='1.1' stroke-linecap='round'%3E%3Cpath d='M100 0 0 0M100 0 13 50M100 0 50 87M100 0 100 100M100 0 34 22M100 0 78 70'/%3E%3Cpath d='M78 0Q85 6 81 12Q88 14 89 20Q93 25 89 27Q94 28 100 22'/%3E%3Cpath d='M55 0Q66 11 59 23Q72 26 74 37Q83 45 78 50Q90 49 100 46'/%3E%3Cpath d='M30 0Q46 17 35 36Q55 40 58 55Q70 68 63 74Q82 72 100 70'/%3E%3Cpath d='M8 0Q26 22 14 49Q40 55 44 76Q52 92 50 87'/%3E%3C/svg%3E"); }
+        body.light-mode .input-form-card::after, body.light-mode #job-list-container::after, body.light-mode .ec-menu-box::after { opacity: 0.35; }
+
+        /* ---------- TYPE ---------- */
+        .ec-wordmark-main, .ec-section-title, .ec-list-title, .ec-empty-title, .ec-login-title, .update-notification-title {
+            font-family: var(--hw-font-spooky); font-weight: 400; letter-spacing: 0.04em;
+        }
+        .ec-wordmark-main { font-size: 23px; color: var(--accent-text); text-shadow: 0 0 10px rgba(255, 122, 26, 0.45); }
+        .ec-section-title, .ec-list-title { font-size: 21px; color: var(--accent-text); }
+        .ec-empty-title { font-size: 22px; color: var(--accent-text); }
+        .update-notification-title { font-size: 20px; }
+        #stop-counter { font-family: var(--font); letter-spacing: 0; box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.35); }
+        body.light-mode .ec-wordmark-main { text-shadow: none; }
+        @media (max-width: 400px) { .ec-wordmark-main { font-size: 20px; } }
+
+        /* ---------- HEADER ---------- */
+        header { border-bottom-color: rgba(255, 122, 26, 0.28); box-shadow: 0 1px 0 rgba(139, 61, 255, 0.18), 0 8px 24px rgba(0, 0, 0, 0.35); }
+        body.light-mode header { box-shadow: 0 1px 0 rgba(242, 107, 15, 0.15); }
+        #map-btn { border-color: rgba(255, 122, 26, 0.65); box-shadow: var(--highlight), var(--shadow-1), 0 0 12px rgba(255, 122, 26, 0.18); }
+        .map-btn.ec-hdr-btn:hover { border-color: var(--hw-purple); box-shadow: 0 0 14px rgba(139, 61, 255, 0.35); }
+        .ec-progress { height: 4px; }
+        .ec-progress > span { background: linear-gradient(90deg, var(--hw-purple), var(--accent) 60%, #FFD23F); box-shadow: 0 0 10px rgba(255, 122, 26, 0.7); }
+
+        /* ---------- CARDS AND BUTTONS ---------- */
+        .input-form-card, #job-list-container { border-color: rgba(139, 61, 255, 0.28); box-shadow: var(--highlight), var(--shadow-2), 0 0 0 1px rgba(255, 122, 26, 0.04), 0 0 40px rgba(139, 61, 255, 0.08); }
+        @media (max-width: 479px) { #job-list-container { border: none; box-shadow: none; } }
+        body.light-mode .input-form-card, body.light-mode #job-list-container { border-color: var(--border); }
+        input:focus, textarea:focus, .glow-field:focus { box-shadow: var(--focus-ring), 0 0 18px rgba(255, 122, 26, 0.18); }
+        .btn-add {
+            position: relative; overflow: hidden;
+            background: linear-gradient(180deg, #FF9A3C, #FF6A00);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 22px rgba(255, 106, 0, 0.35);
+            animation: hw-ember 3.6s ease-in-out infinite;
+        }
+        .btn-add:hover { background: linear-gradient(180deg, #FFAE5C, #FF7A1A); }
+        .btn-add:active { background: linear-gradient(180deg, #F2862A, #E85E00); }
+        .btn-add::after {
+            content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; pointer-events: none;
+            background: linear-gradient(100deg, transparent, rgba(255, 240, 200, 0.45), transparent);
+            transform: skewX(-20deg); animation: hw-shine 5.5s ease-in-out infinite;
+        }
+        @keyframes hw-ember {
+            50% { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 30px rgba(255, 106, 0, 0.6), 0 0 0 1px rgba(255, 170, 60, 0.4); }
+        }
+        @keyframes hw-shine { 0%, 70% { left: -40%; } 100% { left: 120%; } }
+        body.light-mode .btn-add { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12), 0 4px 14px rgba(242, 107, 15, 0.3); animation: none; }
+        .create-route-btn:not(:disabled):not(.active) { border-color: rgba(139, 61, 255, 0.55); }
+        .create-route-btn:not(:disabled):hover { box-shadow: var(--highlight), 0 0 18px rgba(139, 61, 255, 0.35); }
+        .create-route-btn.active { box-shadow: 0 0 22px rgba(255, 122, 26, 0.45); }
+        #f-type-pickup.is-on, #f-type-delivery.is-on, #f-type-both.is-on { box-shadow: var(--shadow-1), 0 0 12px rgba(255, 210, 63, 0.25); }
+
+        /* Stop cards */
+        .job-item { border-color: rgba(139, 61, 255, 0.22); }
+        .job-item:not(.checked):hover { border-color: rgba(139, 61, 255, 0.5); }
+        .custom-checkbox svg rect { stroke: rgba(192, 132, 252, 0.6); }
+        .custom-checkbox .checkmark-path { stroke: var(--success); filter: drop-shadow(0 0 3px rgba(74, 222, 128, 0.7)); }
+        .job-item.next-stop:not(.checked) {
+            border-color: rgba(255, 122, 26, 0.8);
+            box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.35), 0 0 22px rgba(255, 122, 26, 0.22), var(--shadow-2);
+        }
+        .job-item.next-stop:not(.checked):not(.job-item-new) { animation: hw-candle 3.2s ease-in-out infinite; }
+        @keyframes hw-candle {
+            0%, 100% { box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.35), 0 0 18px rgba(255, 122, 26, 0.18), var(--shadow-2); }
+            30% { box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.55), 0 0 30px rgba(255, 122, 26, 0.34), var(--shadow-2); }
+            34% { box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.4), 0 0 20px rgba(255, 122, 26, 0.2), var(--shadow-2); }
+            60% { box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.5), 0 0 26px rgba(255, 122, 26, 0.3), var(--shadow-2); }
+        }
+        body.light-mode .job-item.next-stop:not(.checked) { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--shadow-2); animation: none; }
+        .job-item.next-stop:not(.checked) .job-info::before { content: "\1F383  Next stop"; }
+        .job-item-new { animation: hw-flash 1.4s ease-out; }
+        @keyframes hw-flash { from { box-shadow: 0 0 0 3px var(--accent), 0 0 30px rgba(255, 122, 26, 0.6); } to { box-shadow: 0 0 0 3px rgba(255, 122, 26, 0); } }
+        .ec-done-toggle { border-color: rgba(192, 132, 252, 0.45); }
+        #empty-state { border-color: rgba(255, 122, 26, 0.35); background: radial-gradient(60% 60% at 50% 30%, rgba(255, 122, 26, 0.08), transparent 70%), var(--surface); }
+        .stop-delete-overlay { background: rgba(40, 0, 8, 0.8); }
+
+        /* Dialogs, menu and the message strip */
+        .update-notification-box, .dev-notes-box, .static-note-box, .ec-confirm-box, .ec-menu-box {
+            border-color: rgba(255, 122, 26, 0.28); box-shadow: var(--shadow-3), 0 0 40px rgba(139, 61, 255, 0.18);
+        }
+        body.light-mode .update-notification-box, body.light-mode .dev-notes-box, body.light-mode .static-note-box,
+        body.light-mode .ec-confirm-box, body.light-mode .ec-menu-box { box-shadow: var(--shadow-3); }
+        .ec-toast, body.light-mode .ec-toast {
+            background: #1C1229; color: #F6EFE6; border: 1px solid rgba(255, 122, 26, 0.55);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35), 0 0 26px rgba(255, 122, 26, 0.25);
+        }
+        .ec-toast-action, body.light-mode .ec-toast:not(.is-error) .ec-toast-action { background: var(--accent); color: var(--on-accent); }
+        .ec-toast.is-error, body.light-mode .ec-toast.is-error { border-color: transparent; }
+
+        /* Map pins: not-numbered stops are purple, matching the list */
+        .driver-map-label-pending, .ec-pin-stop.is-unnumbered .ec-pin-label { color: #D8B4FE !important; }
+        .ec-pin-stop.is-unnumbered .ec-pin-dot { border-color: #A855F7; }
+        #map-stop-counter { box-shadow: var(--shadow-3), 0 0 16px rgba(255, 122, 26, 0.35); }
+
+        /* ---------- SIGN-IN: a haunted night ---------- */
+        #login-overlay {
+            background:
+                radial-gradient(70% 50% at 50% 0%, rgba(139, 61, 255, 0.25), transparent 65%),
+                radial-gradient(80% 40% at 50% 105%, rgba(255, 110, 20, 0.22), transparent 70%),
+                linear-gradient(#08040E, #120A1E 65%, #1C0D18);
+        }
+        .hw-login-fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+        .hw-login-fx .hw-moon { top: 9%; right: 10%; width: 120px; height: 120px; }
+        .hw-login-fx .hw-graveyard { height: 170px; }
+        .hw-login-ghost { position: absolute; width: 58px; opacity: 0.55; animation: hw-haunt 9s ease-in-out infinite; }
+        .hw-login-ghost .hw-ghost-body svg { display: block; width: 100%; height: auto; }
+        .hw-login-ghost.hw-g2 { width: 44px; animation-duration: 12s; animation-delay: -4s; }
+        .hw-login-ghost.hw-g3 { width: 36px; animation-duration: 10s; animation-delay: -7s; opacity: 0.4; }
+        @keyframes hw-haunt { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(18px, -22px); } 50% { transform: translate(-6px, -38px); } 75% { transform: translate(-20px, -14px); } }
+        .hw-lightning { position: absolute; inset: 0; background: rgba(205, 185, 255, 1); opacity: 0; animation: hw-lightning 11s infinite; }
+        @keyframes hw-lightning { 0%, 88%, 100% { opacity: 0; } 89% { opacity: 0.16; } 90% { opacity: 0.02; } 91.5% { opacity: 0.12; } 93% { opacity: 0; } }
+        .ec-route { stroke: rgba(255, 122, 26, 0.5); filter: drop-shadow(0 0 4px rgba(255, 122, 26, 0.6)); }
+        .ec-route-dim { stroke: rgba(192, 132, 252, 0.35); }
+        .ec-stop-dot { fill: #FF9A3C; }
+        .ec-stop-ring { stroke: rgba(255, 154, 60, 0.45); }
+        .login-box {
+            background: rgba(21, 13, 31, 0.9); border-color: rgba(255, 122, 26, 0.35);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 32px 80px rgba(0, 0, 0, 0.6), 0 0 60px rgba(139, 61, 255, 0.22);
+        }
+        .ec-login-crest { position: relative; border-color: rgba(255, 122, 26, 0.6); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 26px rgba(255, 122, 26, 0.3); }
+        .hw-crest-pumpkin { position: absolute; right: -16px; bottom: -12px; width: 40px; filter: drop-shadow(0 0 8px rgba(255, 140, 30, 0.85)); }
+        .ec-login-title {
+            font-size: 34px; color: #FF9A3C; line-height: 1.1;
+            text-shadow: 0 0 12px rgba(255, 122, 26, 0.6), 0 0 32px rgba(255, 80, 0, 0.35);
+            animation: hw-title-flicker 6s infinite;
+        }
+        @keyframes hw-title-flicker { 0%, 100% { opacity: 1; } 46% { opacity: 1; } 47% { opacity: 0.55; } 48% { opacity: 1; } 49.5% { opacity: 0.7; } 51% { opacity: 1; } }
+        .ec-login-sub { color: #A794B8; }
+        .hw-login-tag {
+            display: inline-block; margin: 0 0 var(--sp-2); padding: 3px 12px; border-radius: 999px;
+            background: rgba(255, 122, 26, 0.14); border: 1px solid rgba(255, 122, 26, 0.35);
+            color: #FFB066; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+        }
+        .login-input { background: #100919; border-color: #33224A; }
+        .login-input:focus { border-color: #FF7A1A; box-shadow: 0 0 0 3px rgba(255, 122, 26, 0.3), 0 0 20px rgba(255, 122, 26, 0.2); background: #100919; }
+        .login-submit { background: linear-gradient(180deg, #FF9A3C, #FF6A00); color: #1A0A00; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 22px rgba(255, 106, 0, 0.35); }
+        .login-submit:hover { background: linear-gradient(180deg, #FFAE5C, #FF7A1A); }
+        .login-submit.is-loading::after { border-top-color: #1A0A00; }
+
+        /* ---------- CALM / REDUCED MOTION ---------- */
+        /* "Spooky effects: off" keeps the colours and the still pictures, but nothing moves. */
+        body.hw-calm #hw-fx, body.hw-calm .hw-spider-wrap, body.hw-calm .hw-lightning, body.hw-calm .hw-eyes { display: none; }
+        body.hw-calm #hw-scene *, body.hw-calm .hw-login-fx *, body.hw-calm .hw-pumpkin *,
+        body.hw-calm .hw-empty-pumpkin, body.hw-calm .btn-add, body.hw-calm .btn-add::after,
+        body.hw-calm .job-item.next-stop, body.hw-calm .ec-login-title { animation: none !important; }
+        body.hw-calm .btn-add::after { display: none; }
+        @media (prefers-reduced-motion: reduce) {
+            #hw-fx, .hw-spider-wrap, .hw-lightning, .hw-eyes, .btn-add::after { display: none; }
+        }
+    </style>
 </head>
 <body>
     <!-- Login Overlay -->
@@ -1795,26 +2128,27 @@
             }
             return opts;
         }
+        // Halloween night map: purple-black land, pumpkin-orange highways, graveyard-green parks.
         const mapStyles = [
-            {"elementType":"geometry","stylers":[{"color":"#101012"}]},
-            {"elementType":"labels.text.fill","stylers":[{"color":"#9A9A8E"}]},
-            {"elementType":"labels.text.stroke","stylers":[{"color":"#0A0A09"}]},
-            {"featureType":"administrative","elementType":"geometry.stroke","stylers":[{"color":"#3A3A33"}]},
-            {"featureType":"administrative.locality","elementType":"labels.text.fill","stylers":[{"color":"#E8E4A0"}]},
-            {"featureType":"landscape.man_made","elementType":"geometry","stylers":[{"color":"#141417"}]},
-            {"featureType":"poi","elementType":"geometry","stylers":[{"color":"#16171B"}]},
-            {"featureType":"poi","elementType":"labels.text.fill","stylers":[{"color":"#7D7D72"}]},
-            {"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#12201A"}]},
-            {"featureType":"road","elementType":"geometry","stylers":[{"color":"#2A2B30"}]},
-            {"featureType":"road","elementType":"geometry.stroke","stylers":[{"color":"#1A1B1F"}]},
-            {"featureType":"road","elementType":"labels.text.fill","stylers":[{"color":"#B5B5A8"}]},
-            {"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#34353B"}]},
-            {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#6B6700"}]},
-            {"featureType":"road.highway","elementType":"geometry.stroke","stylers":[{"color":"#2E2C00"}]},
-            {"featureType":"road.highway","elementType":"labels.text.fill","stylers":[{"color":"#F2EE7A"}]},
-            {"featureType":"transit","elementType":"geometry","stylers":[{"color":"#1C1D22"}]},
-            {"featureType":"water","elementType":"geometry","stylers":[{"color":"#071018"}]},
-            {"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#3D5A73"}]}
+            {"elementType":"geometry","stylers":[{"color":"#100A18"}]},
+            {"elementType":"labels.text.fill","stylers":[{"color":"#A897B8"}]},
+            {"elementType":"labels.text.stroke","stylers":[{"color":"#08040D"}]},
+            {"featureType":"administrative","elementType":"geometry.stroke","stylers":[{"color":"#3B2A4F"}]},
+            {"featureType":"administrative.locality","elementType":"labels.text.fill","stylers":[{"color":"#FFB066"}]},
+            {"featureType":"landscape.man_made","elementType":"geometry","stylers":[{"color":"#140D1E"}]},
+            {"featureType":"poi","elementType":"geometry","stylers":[{"color":"#170F22"}]},
+            {"featureType":"poi","elementType":"labels.text.fill","stylers":[{"color":"#8A7A9C"}]},
+            {"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#0F2016"}]},
+            {"featureType":"road","elementType":"geometry","stylers":[{"color":"#2C2140"}]},
+            {"featureType":"road","elementType":"geometry.stroke","stylers":[{"color":"#1A1226"}]},
+            {"featureType":"road","elementType":"labels.text.fill","stylers":[{"color":"#C2B3D1"}]},
+            {"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#38294F"}]},
+            {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#8A3D08"}]},
+            {"featureType":"road.highway","elementType":"geometry.stroke","stylers":[{"color":"#3A1600"}]},
+            {"featureType":"road.highway","elementType":"labels.text.fill","stylers":[{"color":"#FFC27A"}]},
+            {"featureType":"transit","elementType":"geometry","stylers":[{"color":"#1E1530"}]},
+            {"featureType":"water","elementType":"geometry","stylers":[{"color":"#080C1F"}]},
+            {"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#5A4F8A"}]}
         ];
 
         // ---------- DEVELOPER NOTES ----------
@@ -2495,7 +2829,7 @@
         // Line options: solid for real road paths; dashed when it's a straight-line stand-in
         // because Google couldn't give a road path (#34). Direction arrows sit at 1/3 and 2/3
         // of each leg as part of the line itself (no separate map pins to create and remove).
-        const EC_ROUTE_COLOR = '#00d4ff';
+        const EC_ROUTE_COLOR = '#FF8C1A'; // Halloween: pumpkin orange (was #00d4ff)
         function ecLineOptions(path, color, zIndex, dashed, opacity, arrows) {
             const opts = { path: path, geodesic: true, clickable: false, map: map, zIndex: zIndex };
             const icons = [];
@@ -3625,7 +3959,7 @@
         function ecMarkerIcon(job, numbered) {
             // Pickup & delivery: same size pin, yellow top half, green bottom half.
             if (job && job.type === 'both') {
-                const ring = numbered ? '#000000' : '#F97316';
+                const ring = numbered ? '#000000' : '#A855F7';
                 const ringW = numbered ? 2 : 4;
                 const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">'
                     + '<path d="M5 16 A11 11 0 0 1 27 16 Z" fill="#E8E400"/>'
@@ -3645,7 +3979,7 @@
                 scale: 11,
                 fillColor: pickup ? '#E8E400' : '#22C55E',
                 fillOpacity: 1,
-                strokeColor: numbered ? '#000000' : '#F97316',
+                strokeColor: numbered ? '#000000' : '#A855F7',
                 strokeWeight: numbered ? 2 : 4,
                 labelOrigin: new google.maps.Point(0, 2.6)
             };
@@ -3655,7 +3989,7 @@
             const numbered = number !== null && number !== undefined;
             return {
                 text: numbered ? `${number}. ${name}` : name,
-                color: numbered ? '#FFFFFF' : '#FDBA74',
+                color: numbered ? '#FFFFFF' : '#D8B4FE',
                 fontWeight: 'bold',
                 fontSize: '14px',
                 fontFamily: "'Inter', system-ui, sans-serif",
@@ -5289,6 +5623,295 @@
                 console.warn('Install prompt failed:', e);
             }
         }
+    </script>
+    <!-- ================================================================
+         HALLOWEEN THEME — decorations only. Adds pictures and short-lived
+         animated elements; never changes jobs, routeState, checkedStops or
+         Firebase, and every piece is wrapped so an error here can't stop the app.
+         ================================================================ -->
+    <script>
+    (function () {
+        'use strict';
+        try {
+            var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+            var CALM_KEY = 'ec_hw_calm';
+            try { if (localStorage.getItem(CALM_KEY) === '1') document.body.classList.add('hw-calm'); } catch (e) {}
+
+            /* ---------- Pictures ---------- */
+            var PUMPKIN =
+                '<svg viewBox="0 0 64 64" aria-hidden="true">'
+                + '<path d="M30 12c0-5 2-8 7-10l2 3c-3 1-4 4-4 7z" fill="#3F6B22"/>'
+                + '<ellipse cx="20" cy="37" rx="15" ry="20" fill="#D9590A"/>'
+                + '<ellipse cx="44" cy="37" rx="15" ry="20" fill="#D9590A"/>'
+                + '<ellipse cx="32" cy="37" rx="14" ry="21.5" fill="#FF7A1A"/>'
+                + '<path d="M32 16v42" stroke="#C24E07" stroke-width="1.2" opacity="0.6"/>'
+                + '<g class="hw-face">'
+                + '<path d="M14 32 21 22 28 32z"/><path d="M36 32 43 22 50 32z"/><path d="M29 39 32 34 35 39z"/>'
+                + '<path d="M13 42 18 45 21 42 25 46 29 42 32 46 35 42 39 46 43 42 46 45 51 42Q47 56 32 56Q17 56 13 42z"/>'
+                + '</g></svg>';
+            var GHOST =
+                '<svg viewBox="0 0 60 72" aria-hidden="true">'
+                + '<path d="M30 2C14 2 4 14 4 30v38l8-7 7 7 7-7 4 4 4-4 7 7 7-7 8 7V30C56 14 46 2 30 2z" fill="#F4EFFF" fill-opacity="0.92"/>'
+                + '<ellipse cx="21" cy="28" rx="4.2" ry="6" fill="#1A0F24"/><ellipse cx="39" cy="28" rx="4.2" ry="6" fill="#1A0F24"/>'
+                + '<ellipse cx="30" cy="45" rx="5" ry="7" fill="#1A0F24"/>'
+                + '</svg>';
+            var BAT =
+                '<svg viewBox="0 0 100 50" fill="currentColor" aria-hidden="true">'
+                + '<path class="hw-wing" d="M50 22C40 8 22 6 4 12c8 4 10 10 8 16 6-4 12-2 14 4 6-6 12-4 16 0z"/>'
+                + '<path class="hw-wing" d="M50 22c10-14 28-16 46-10-8 4-10 10-8 16-6-4-12-2-14 4-6-6-12-4-16 0z"/>'
+                + '<ellipse cx="50" cy="27" rx="7" ry="10"/><circle cx="50" cy="16" r="6"/>'
+                + '<path d="M45 13 46 4 49 11zM55 13 54 4 51 11z"/>'
+                + '<circle cx="47.6" cy="16" r="1.2" fill="#FFB020"/><circle cx="52.4" cy="16" r="1.2" fill="#FFB020"/>'
+                + '</svg>';
+            var SPIDER =
+                '<svg viewBox="0 0 26 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">'
+                + '<path d="M9 9 3 4 1 9M9 11 2 11 0 15M9 13 3 16 2 21M17 9 23 4 25 9M17 11 24 11 26 15M17 13 23 16 24 21"/>'
+                + '<ellipse cx="13" cy="12" rx="5" ry="6" fill="currentColor" stroke="none"/><circle cx="13" cy="5" r="3" fill="currentColor" stroke="none"/>'
+                + '<circle cx="11.8" cy="4.6" r="0.9" fill="#FF3B3B" stroke="none"/><circle cx="14.2" cy="4.6" r="0.9" fill="#FF3B3B" stroke="none"/>'
+                + '</svg>';
+            function tinyPumpkin(x, y, s) {
+                return '<g transform="translate(' + x + ' ' + y + ') scale(' + s + ')">'
+                    + '<ellipse class="hw-pk" cx="-6" cy="0" rx="8" ry="9"/><ellipse class="hw-pk" cx="6" cy="0" rx="8" ry="9"/><ellipse class="hw-pk" cx="0" cy="0" rx="7" ry="9.5"/>'
+                    + '<path fill="currentColor" d="M-1 -9 0 -14 3 -13 1 -9z"/>'
+                    + '<g class="hw-face"><path d="M-8 -2-5 -6-2 -2z"/><path d="M2 -2 5 -6 8 -2z"/><path d="M-8 2-4 4 0 2 4 4 8 2Q5 8 0 8Q-5 8-8 2z"/></g>'
+                    + '</g>';
+            }
+            var GRAVEYARD =
+                '<svg class="hw-graveyard" viewBox="0 0 600 130" preserveAspectRatio="xMidYMax slice" fill="currentColor" aria-hidden="true">'
+                // dead tree
+                + '<g stroke="currentColor" stroke-linecap="round" fill="none">'
+                + '<path d="M66 112C63 84 70 64 66 40" stroke-width="8"/>'
+                + '<path d="M66 52 46 34 36 30M46 34 44 22M67 44 86 26 98 22M86 26 88 14M66 64 88 56 100 60M64 72 48 66" stroke-width="3.5"/>'
+                + '</g>'
+                // ground
+                + '<path d="M0 130V104Q70 88 150 100T310 98T470 94T600 102V130Z"/>'
+                // tombstones and a cross
+                + '<path d="M140 104V78a15 15 0 0 1 30 0v26z"/>'
+                + '<path d="M210 104V70h4v-8h6v8h10v6h-10v28z"/>'
+                + '<rect x="330" y="80" width="24" height="24" rx="3"/>'
+                + '<path d="M540 104V84a11 11 0 0 1 22 0v20z"/>'
+                // iron fence
+                + '<g stroke="currentColor" stroke-width="2.5" fill="none"><path d="M400 102V76M412 102V76M424 102V76M436 102V76M448 102V76M460 102V76M472 102V76M394 84H478M394 96H478"/></g>'
+                + '<path d="M397 78 400 70 403 78zM409 78 412 70 415 78zM421 78 424 70 427 78zM433 78 436 70 439 78zM445 78 448 70 451 78zM457 78 460 70 463 78zM469 78 472 70 475 78z"/>'
+                + tinyPumpkin(262, 98, 1.25) + tinyPumpkin(508, 96, 1) + tinyPumpkin(110, 104, 0.8)
+                + '</svg>';
+
+            function el(tag, cls, html) {
+                var n = document.createElement(tag);
+                if (cls) n.className = cls;
+                if (html) n.innerHTML = html;
+                n.setAttribute('aria-hidden', 'true');
+                return n;
+            }
+            function starField(count, maxY) {
+                var s = [];
+                for (var i = 0; i < count; i++) {
+                    var a = (0.35 + Math.random() * 0.65).toFixed(2);
+                    s.push((Math.random() * 100).toFixed(1) + 'vw ' + (Math.random() * maxY).toFixed(1) + 'vh 0 ' + (Math.random() < 0.15 ? '1px' : '0') + ' rgba(255,245,230,' + a + ')');
+                }
+                return s.join(',');
+            }
+
+            /* ---------- The scene behind the app ---------- */
+            var scene = el('div');
+            scene.id = 'hw-scene';
+            scene.appendChild(el('div', 'hw-sky'));
+            var starsA = el('div', 'hw-stars'); starsA.style.boxShadow = starField(36, 55); scene.appendChild(starsA);
+            var starsB = el('div', 'hw-stars hw-b'); starsB.style.boxShadow = starField(28, 60); scene.appendChild(starsB);
+            scene.appendChild(el('div', 'hw-moon'));
+            scene.insertAdjacentHTML('beforeend', GRAVEYARD);
+            [['6%', '150px', ''], ['82%', '230px', ' hw-green'], ['38%', '62px', '']].forEach(function (p, i) {
+                var eyes = el('div', 'hw-eyes' + p[2], '<span></span><span></span>');
+                eyes.style.left = p[0];
+                eyes.style.bottom = p[1];
+                eyes.style.animationDelay = (-i * 3.7) + 's';
+                eyes.style.animationDuration = (11 + i * 3) + 's';
+                scene.appendChild(eyes);
+            });
+            scene.appendChild(el('div', 'hw-fog'));
+            scene.appendChild(el('div', 'hw-fog hw-b'));
+            document.body.insertBefore(scene, document.body.firstChild);
+
+            var fx = el('div');
+            fx.id = 'hw-fx';
+            document.body.appendChild(fx);
+
+            /* ---------- Jack-o'-lanterns, spider and cobwebs on the page ---------- */
+            var logo = document.querySelector('.ec-logo-wrap');
+            if (logo) logo.appendChild(el('span', 'hw-pumpkin hw-logo-pumpkin', PUMPKIN));
+            var header = document.querySelector('header');
+            if (header) header.appendChild(el('div', 'hw-spider-wrap', '<div class="hw-spider">' + SPIDER + '</div>'));
+            var empty = document.getElementById('empty-state');
+            if (empty) empty.insertBefore(el('div', 'hw-pumpkin hw-empty-pumpkin', PUMPKIN), empty.firstChild);
+
+            /* ---------- Sign-in screen ---------- */
+            var login = document.getElementById('login-overlay');
+            if (login) {
+                var lfx = el('div', 'hw-login-fx');
+                lfx.appendChild(el('div', 'hw-lightning'));
+                var lStars = el('div', 'hw-stars'); lStars.style.boxShadow = starField(50, 60); lfx.appendChild(lStars);
+                lfx.appendChild(el('div', 'hw-moon'));
+                lfx.insertAdjacentHTML('beforeend', GRAVEYARD);
+                [['12%', '22%', ''], ['78%', '58%', ' hw-g2'], ['20%', '70%', ' hw-g3']].forEach(function (p) {
+                    var g = el('div', 'hw-login-ghost' + p[2], '<span class="hw-ghost-body">' + GHOST + '</span>');
+                    g.style.left = p[0];
+                    g.style.top = p[1];
+                    lfx.appendChild(g);
+                });
+                lfx.appendChild(el('div', 'hw-fog'));
+                login.insertBefore(lfx, login.firstChild);
+                var crest = login.querySelector('.ec-login-crest');
+                if (crest) crest.appendChild(el('span', 'hw-pumpkin hw-crest-pumpkin', PUMPKIN));
+                var title = login.querySelector('.ec-login-title');
+                if (title) {
+                    var tag = el('div', 'hw-login-tag');
+                    tag.textContent = '🎃 Happy Halloween';
+                    title.parentNode.insertBefore(tag, title);
+                }
+            }
+
+            /* ---------- Menu switch: Spooky effects on/off ---------- */
+            var themeItem = document.getElementById('ec-menu-theme');
+            if (themeItem) {
+                var fxBtn = document.createElement('button');
+                fxBtn.type = 'button';
+                fxBtn.className = 'ec-menu-item';
+                fxBtn.id = 'hw-menu-fx';
+                var label = function () {
+                    fxBtn.textContent = document.body.classList.contains('hw-calm') ? '🎃 Turn spooky effects on' : '👻 Turn spooky effects off';
+                };
+                label();
+                fxBtn.addEventListener('click', function () {
+                    var calm = document.body.classList.toggle('hw-calm');
+                    try { localStorage.setItem(CALM_KEY, calm ? '1' : '0'); } catch (e) {}
+                    if (calm) fx.innerHTML = '';
+                    label();
+                });
+                themeItem.parentNode.insertBefore(fxBtn, themeItem.nextSibling);
+            }
+
+            /* ---------- Things that fly by ---------- */
+            function fxOn() {
+                return !reduceMotion && !document.hidden && !document.body.classList.contains('hw-calm') && !!fx.animate;
+            }
+            function shown(id) {
+                var n = document.getElementById(id);
+                return !!n && n.style.display !== 'none' && getComputedStyle(n).display !== 'none';
+            }
+            // Bats and ghosts fly over the sign-in screen while it shows, otherwise over the app.
+            // Nothing is sent while the map is open (it would be hidden under it anyway).
+            function stage() {
+                if (shown('login-overlay')) return login.querySelector('.hw-login-fx') || null;
+                if (shown('map-modal') || shown('address-picker-modal')) return null;
+                return fx;
+            }
+            function launch(node, parent, frames, opts) {
+                parent.appendChild(node);
+                var a = node.animate(frames, opts);
+                var done = function () { if (node.parentNode) node.parentNode.removeChild(node); };
+                a.onfinish = done;
+                a.oncancel = done;
+                setTimeout(done, (opts.duration || 0) + (opts.delay || 0) + 500);
+            }
+            function spawnBat(parent, from) {
+                parent = parent || stage();
+                if (!parent) return;
+                var w = window.innerWidth, h = window.innerHeight;
+                var size = 30 + Math.random() * 26;
+                var bat = el('div', 'hw-bat', BAT);
+                bat.style.width = size + 'px';
+                var dir = Math.random() < 0.5 ? 1 : -1;
+                var x0, y0, x1, y1;
+                if (from) {
+                    x0 = from.x - size / 2; y0 = from.y - size / 4;
+                    x1 = x0 + dir * (w * 0.5 + Math.random() * w * 0.3); y1 = y0 - (h * 0.25 + Math.random() * h * 0.3);
+                } else {
+                    x0 = dir > 0 ? -size - 20 : w + 20; x1 = dir > 0 ? w + 20 : -size - 20;
+                    y0 = h * (0.1 + Math.random() * 0.45); y1 = y0 + (Math.random() - 0.5) * h * 0.25;
+                }
+                var amp = 18 + Math.random() * 22, frames = [];
+                for (var i = 0; i <= 8; i++) {
+                    var t = i / 8;
+                    var x = x0 + (x1 - x0) * t;
+                    var y = y0 + (y1 - y0) * t + Math.sin(t * Math.PI * 3) * amp;
+                    frames.push({ transform: 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)', opacity: (from && i === 0) ? 0 : 1 });
+                }
+                launch(bat, parent, frames, { duration: from ? 1600 + Math.random() * 600 : 5200 + Math.random() * 3200, easing: 'linear' });
+            }
+            function spawnGhost() {
+                var parent = stage();
+                if (!parent) return;
+                var w = window.innerWidth, h = window.innerHeight;
+                var ghost = el('div', 'hw-ghost', '<span class="hw-ghost-body">' + GHOST + '</span>');
+                var size = 40 + Math.random() * 24;
+                ghost.style.width = size + 'px';
+                var x0 = w * (0.05 + Math.random() * 0.8) - size / 2, sway = 40 + Math.random() * 50, frames = [];
+                for (var i = 0; i <= 6; i++) {
+                    var t = i / 6;
+                    frames.push({
+                        transform: 'translate(' + (x0 + Math.sin(t * Math.PI * 2) * sway).toFixed(1) + 'px,' + (h + 20 - (h + 160) * t).toFixed(1) + 'px)',
+                        opacity: (i === 0 || i === 6) ? 0 : (i === 3 ? 0.6 : 0.42)
+                    });
+                }
+                launch(ghost, parent, frames, { duration: 11000 + Math.random() * 5000, easing: 'ease-in-out' });
+            }
+            function every(fn, min, max, first) {
+                setTimeout(function tick() {
+                    try { if (fxOn()) fn(); } catch (e) {}
+                    setTimeout(tick, min + Math.random() * (max - min));
+                }, first);
+            }
+            every(function () { spawnBat(); }, 9000, 20000, 2500);
+            every(spawnGhost, 22000, 38000, 9000);
+
+            /* ---------- Checking off a stop: a ghost says BOO! (reads the result, never changes it) ---------- */
+            document.addEventListener('click', function (e) {
+                var cb = e.target && e.target.closest ? e.target.closest('.custom-checkbox') : null;
+                if (!cb) return;
+                var card = cb.closest('.job-item');
+                if (!card) return;
+                var wasChecked = card.classList.contains('checked');
+                var r = cb.getBoundingClientRect();
+                setTimeout(function () {
+                    try {
+                        if (wasChecked || !card.classList.contains('checked') || !fxOn()) return;
+                        var poof = el('div', 'hw-poof', '<span class="hw-poof-boo">BOO!</span><span class="hw-ghost-body">' + GHOST + '</span>');
+                        var x = r.left + r.width / 2 - 20, y = r.top - 40;
+                        launch(poof, fx, [
+                            { transform: 'translate(' + x + 'px,' + (y + 30) + 'px) scale(0.4)', opacity: 0 },
+                            { transform: 'translate(' + x + 'px,' + (y - 10) + 'px) scale(1.05)', opacity: 1, offset: 0.3 },
+                            { transform: 'translate(' + (x - 10) + 'px,' + (y - 70) + 'px) scale(1)', opacity: 0 }
+                        ], { duration: 1500, easing: 'ease-out' });
+                    } catch (err) {}
+                }, 0);
+            }, true);
+
+            /* ---------- Stop added: a jack-o'-lantern pops up and bats scatter ---------- */
+            var origCelebrate = window.ecCelebrateAdd;
+            window.ecCelebrateAdd = function () {
+                var result;
+                if (typeof origCelebrate === 'function') result = origCelebrate.apply(this, arguments);
+                try {
+                    var btn = document.getElementById('add-btn-expanded');
+                    if (!btn || !fxOn()) return result;
+                    var r = btn.getBoundingClientRect();
+                    if (r.width === 0) return result;
+                    var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+                    var pop = el('div', 'hw-pop hw-pumpkin', PUMPKIN);
+                    launch(pop, fx, [
+                        { transform: 'translate(' + (cx - 23) + 'px,' + (cy - 23) + 'px) scale(0.2) rotate(-20deg)', opacity: 0 },
+                        { transform: 'translate(' + (cx - 23) + 'px,' + (cy - 70) + 'px) scale(1.15) rotate(8deg)', opacity: 1, offset: 0.35 },
+                        { transform: 'translate(' + (cx - 23) + 'px,' + (cy - 82) + 'px) scale(1) rotate(0)', opacity: 1, offset: 0.6 },
+                        { transform: 'translate(' + (cx - 23) + 'px,' + (cy - 120) + 'px) scale(0.8)', opacity: 0 }
+                    ], { duration: 1300, easing: 'ease-out' });
+                    for (var i = 0; i < 3; i++) spawnBat(fx, { x: cx + (i - 1) * 30, y: cy });
+                } catch (e) {}
+                return result;
+            };
+        } catch (err) {
+            console.warn('Halloween theme skipped:', err);
+        }
+    })();
     </script>
 </body>
 </html>
