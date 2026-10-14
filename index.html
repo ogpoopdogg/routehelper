@@ -564,7 +564,7 @@
             border-radius: var(--radius-xl); background: #000; border: 1px solid rgba(232, 228, 0, 0.45);
             box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
         }
-        .ec-login-crest img { height: 46px; width: auto; display: block; }
+        .ec-login-crest img { width: 100%; height: 100%; display: block; border-radius: calc(var(--radius-xl) - 1px); }
         .ec-login-title { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: #F4F4F5; }
         .ec-login-sub { margin: var(--sp-1) 0 var(--sp-6); font-size: 14px; color: #8A8A94; }
         #login-form { margin: 0; display: flex; flex-direction: column; gap: var(--sp-3); }
@@ -1257,7 +1257,7 @@
             <g class="ec-stop" style="animation-delay:1.7s"><circle class="ec-stop-ring" cx="620" cy="420" r="14" style="animation-delay:1.8s"/><circle class="ec-stop-dot" cx="620" cy="420" r="5"/></g>
         </svg>
         <div class="login-box">
-            <div class="ec-login-crest"><img src="icon2.png" alt="E&amp;C Courier"></div>
+            <div class="ec-login-crest"><img src="icon-192.png" alt="E&amp;C Courier"></div>
             <h2 class="ec-login-title">Route Helper</h2>
             <p class="ec-login-sub">E&amp;C Courier driver sign-in</p>
             <form id="login-form" onsubmit="event.preventDefault(); attemptLogin();" novalidate>
