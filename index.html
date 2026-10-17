@@ -4843,6 +4843,42 @@
             return newId;
         }
 
+        // ---------- CUSTOMER CHANGE LOG ----------
+        // Every change to a customer in address lookup is also written as one entry in this
+        // folder, named by the date, time and who made it, so the history can be read straight
+        // from the database (oldest at the top). Each entry says what changed, before and after.
+        const EC_CUSTOMER_LOG_PATH = 'developer/route_planner/customer_changes';
+        function ecCustomerSnapshot(name, data) {
+            const spot = ecContactSpot(data);
+            return {
+                name: name || '',
+                address: (data && data.address) || '',
+                city: (data && data.city) || '',
+                exact_spot: spot ? `${spot.lat.toFixed(6)}, ${spot.lng.toFixed(6)}` : 'none'
+            };
+        }
+        let ecLogKeyBase = '', ecLogKeyCount = 0;
+        function ecLogCustomerChange(change, before, after, extra) {
+            const d = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const when = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+            const by = currentUser || 'unknown';
+            // Two changes by the same person in the same second get (2), (3)...
+            const base = `${when} ${ecUserKey(by)}`;
+            ecLogKeyCount = base === ecLogKeyBase ? ecLogKeyCount + 1 : 1;
+            ecLogKeyBase = base;
+            const entry = Object.assign({
+                when: when,
+                by: by,
+                change: change,
+                customer: (after || before).name,
+                before: before || 'none (new customer)',
+                after: after
+            }, extra || {});
+            db.ref(EC_CUSTOMER_LOG_PATH).child(ecLogKeyCount > 1 ? `${base} (${ecLogKeyCount})` : base).set(entry)
+                .catch(err => console.warn('Customer change not logged:', err && err.message));
+        }
+
         // Saves a stop's address to the shared address book. A new name is added. A name that
         // already has a different saved address is only changed if the driver says so, so one
         // delivery to a second location doesn't change everyone's autofill (#9).
@@ -4859,18 +4895,29 @@
             fields.lng = spot ? spot.lng : null;
             const write = f => db.ref('address_lookup').child(key).update(f)
                 .catch(err => console.warn('Address book not updated:', err && err.message));
-            if (!existing || !existing.address) { write(fields); return 'saved'; }
+            const before = existing ? ecCustomerSnapshot(key, existing) : null;
+            const afterWith = f => ecCustomerSnapshot(key, Object.assign({}, existing, f, { lat: f.lat === null ? undefined : f.lat, lng: f.lng === null ? undefined : f.lng }));
+            if (!existing || !existing.address) {
+                write(fields);
+                ecLogCustomerChange(existing ? 'Address added (from a new stop)' : 'New customer added', before, afterWith(fields));
+                return 'saved';
+            }
             const same = String(existing.address).trim().toLowerCase() === String(address).trim().toLowerCase() &&
                 String(existing.city || '').trim().toLowerCase() === String(city).trim().toLowerCase();
             if (same) {
                 // Same address with a newly chosen exact spot: keep the newest spot.
                 const old = ecContactSpot(existing);
                 if (spot && (!old || old.lat !== spot.lat || old.lng !== spot.lng)) {
-                    write({ lat: spot.lat, lng: spot.lng, last_edit_by: currentUser });
+                    const f = { lat: spot.lat, lng: spot.lng, last_edit_by: currentUser };
+                    write(f);
+                    ecLogCustomerChange('Exact spot updated (from a new stop)', before, afterWith(f));
                 }
                 return 'same';
             }
-            ecToast(`"${key}" has a different saved address. Keep it, or save this one for everyone?`, { actionLabel: 'Save new', onAction: () => write(fields), duration: 9000 });
+            ecToast(`"${key}" has a different saved address. Keep it, or save this one for everyone?`, { actionLabel: 'Save new', onAction: () => {
+                write(fields);
+                ecLogCustomerChange('Address changed (from a new stop)', before, afterWith(fields));
+            }, duration: 9000 });
             return 'asked';
         }
 
@@ -5018,8 +5065,18 @@
                 console.warn('Customer not saved:', err && err.message);
                 ecToast("Couldn't save the customer: " + ((err && err.message) || 'unknown error'), { type: 'error', duration: 8000 });
             });
+            // What changed, for the change log.
+            const oldData = ed.key ? addressData[ed.key] : { address: ed.original.address, city: ed.original.city };
+            const before = ecCustomerSnapshot(ed.oldName, oldData);
+            const after = ecCustomerSnapshot(newKey, { address: address, city: city, lat: spot ? spot.lat : undefined, lng: spot ? spot.lng : undefined });
+            const changes = [];
+            if (!ed.key) changes.push('Saved to address lookup (from a stop)');
+            else if (after.name !== before.name) changes.push('Renamed');
+            if (after.address !== before.address || after.city !== before.city) changes.push('Address changed');
+            if (after.exact_spot !== before.exact_spot) changes.push(spot ? 'Exact spot set' : 'Exact spot removed');
             closeCustomerEditor();
             const fixed = ecFixCustomerStops(stopIds, name, address, city, spot);
+            if (changes.length > 0) ecLogCustomerChange(changes.join(', '), before, after, { stops_fixed_on_route: fixed });
             ecToast(fixed > 0
                 ? `Saved "${name}". Fixed ${fixed} stop${fixed === 1 ? '' : 's'} on today's route.`
                 : `Saved "${name}".`);
