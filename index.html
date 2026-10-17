@@ -266,7 +266,7 @@
         .ec-field.ec-compact .ec-field-icon { left: 12px; width: 16px; height: 16px; }
         .ec-field.ec-compact .ec-float-label { left: 37px; max-width: calc(100% - 44px); }
         #f-name { padding-right: 84px; }
-        #f-address { padding-right: 52px; }
+        #f-address { padding-right: 128px; }
 
         .suggestion-reset {
             position: absolute; right: 10px; top: 28px; transform: translateY(-50%); z-index: 2;
@@ -286,6 +286,19 @@
         .address-pin-btn svg { width: 20px; height: 20px; fill: var(--accent-text); }
         body.light-mode .address-pin-btn svg { fill: var(--text); }
         .address-pin-btn:hover { background: var(--surface-3); border-color: var(--border-strong); }
+        /* "Here": fill the address from where the driver is standing */
+        .address-here-btn {
+            position: absolute; right: 52px; top: 28px; transform: translateY(-50%); z-index: 2;
+            display: inline-flex; align-items: center; gap: 4px; height: 38px; padding: 0 10px;
+            border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); cursor: pointer;
+            color: var(--accent-text); font-size: 13px; font-weight: 700;
+            transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+        }
+        .address-here-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+        body.light-mode .address-here-btn { color: var(--text); }
+        .address-here-btn:hover { background: var(--surface-3); border-color: var(--border-strong); }
+        .address-here-btn.is-busy { opacity: 0.6; cursor: progress; }
+        .address-here-btn.is-busy svg { animation: ec-spin 1s linear infinite; }
 
         /* Suggestion lists (names, cities, addresses) and Google's classic list */
         .suggestions-box, .pac-container {
@@ -501,8 +514,13 @@
         .job-item.delete-mode { filter: none !important; opacity: 1 !important; }
         .stop-delete-overlay {
             position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center;
-            border-radius: var(--radius); background: rgba(0, 0, 0, 0.72);
+            gap: var(--sp-3); border-radius: var(--radius); background: rgba(0, 0, 0, 0.72);
             animation: ec-fade 0.15s ease-out;
+        }
+        .stop-edit-btn {
+            min-height: 44px; padding: 0 var(--sp-5); border: none; border-radius: var(--radius-sm); cursor: pointer;
+            background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 700; letter-spacing: 0.04em;
+            box-shadow: var(--shadow-2);
         }
         .stop-delete-btn {
             min-height: 44px; padding: 0 var(--sp-6); border: none; border-radius: var(--radius-sm); cursor: pointer;
@@ -616,7 +634,7 @@
             align-items: center; justify-content: center; background: var(--overlay);
         }
         .ec-sheet-overlay.is-open { display: flex; }
-        .update-notification-box, .dev-notes-box, .static-note-box, .ec-confirm-box, .ec-menu-box {
+        .update-notification-box, .dev-notes-box, .static-note-box, .ec-confirm-box, .ec-menu-box, .ec-customer-box {
             width: 100%; background: var(--surface); color: var(--text);
             border: 1px solid var(--border); border-radius: var(--radius-xl);
             box-shadow: var(--shadow-3);
@@ -728,6 +746,29 @@
         .ec-confirm-cancel { background: transparent; color: var(--text); border: 1px solid var(--border-strong); }
         .ec-confirm-cancel:hover { background: var(--surface-2); }
         .ec-confirm-ok { background: var(--accent); color: var(--on-accent); border: none; }
+
+        /* Fix a customer in address lookup */
+        .ec-customer-box { max-width: 440px; max-height: calc(100vh - 32px); overflow-y: auto; padding: var(--sp-5); }
+        .ec-customer-box .static-note-header { margin-bottom: var(--sp-3); }
+        .ec-customer-label { display: block; margin: var(--sp-3) 0 var(--sp-1); font-size: 13px; font-weight: 600; color: var(--text-2); }
+        .ec-customer-field { position: relative; }
+        .ec-customer-here {
+            display: inline-flex; align-items: center; gap: 6px; margin-top: var(--sp-3); min-height: 44px; padding: 0 var(--sp-4);
+            border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-2); cursor: pointer;
+            color: var(--text); font-size: 14px; font-weight: 600;
+        }
+        .ec-customer-here svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+        .ec-customer-here.is-busy { opacity: 0.6; cursor: progress; }
+        .ec-customer-here.is-busy svg { animation: ec-spin 1s linear infinite; }
+        .ec-customer-hint { margin: var(--sp-2) 0 var(--sp-5); font-size: 13px; line-height: 1.45; color: var(--text-3); }
+        /* Name suggestions: the pencil opens the editor for that customer */
+        .suggestion-item.ec-suggest-customer { flex-direction: row; align-items: center; justify-content: space-between; gap: var(--sp-2); padding-right: 6px; }
+        .ec-suggest-customer .suggestion-main { font-weight: inherit; min-width: 0; overflow-wrap: anywhere; }
+        .ec-suggest-edit {
+            display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; padding: 0; cursor: pointer;
+            border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-2); font-size: 15px;
+        }
+        .ec-suggest-edit:hover { background: var(--surface-3); }
         .ec-confirm-ok.is-danger { background: var(--danger-solid); color: #FFFFFF; }
 
         /* Menu (drops down from the header) */
@@ -1164,11 +1205,11 @@
         .stop-delete-overlay { background: rgba(40, 0, 8, 0.8); }
 
         /* Dialogs, menu and the message strip */
-        .update-notification-box, .dev-notes-box, .static-note-box, .ec-confirm-box, .ec-menu-box {
+        .update-notification-box, .dev-notes-box, .static-note-box, .ec-confirm-box, .ec-menu-box, .ec-customer-box {
             border-color: rgba(255, 122, 26, 0.28); box-shadow: var(--shadow-3), 0 0 40px rgba(139, 61, 255, 0.18);
         }
         body.light-mode .update-notification-box, body.light-mode .dev-notes-box, body.light-mode .static-note-box,
-        body.light-mode .ec-confirm-box, body.light-mode .ec-menu-box { box-shadow: var(--shadow-3); }
+        body.light-mode .ec-confirm-box, body.light-mode .ec-menu-box, body.light-mode .ec-customer-box { box-shadow: var(--shadow-3); }
         .ec-toast, body.light-mode .ec-toast {
             background: #1C1229; color: #F6EFE6; border: 1px solid rgba(255, 122, 26, 0.55);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35), 0 0 26px rgba(255, 122, 26, 0.25);
@@ -1277,20 +1318,18 @@
             </div>
             <div class="update-notification-body">
                 <div class="update-notification-feature">
-                    <div class="update-notification-feature-title">🏠 Return button (top bar)</div>
-                    <p>Tap: Google Maps takes you back to the shop.</p>
-                    <p>Hold: pick your own return spot. A yellow dot means it's not the shop. Hold again and tap "Reset to shop" to undo.</p>
+                    <div class="update-notification-feature-title">📍 Here (add a stop)</div>
+                    <p>At a new customer? Tap Here next to the address, type their name, then pick "Add to route" or "Just save customer".</p>
+                    <p>Their exact spot is saved, so their stops go straight there next time.</p>
                 </div>
-                <div class="update-notification-feature pd">
-                    <div class="update-notification-feature-title"><span class="wn-pill split">PD</span> Pickup &amp; Delivery</div>
-                    <p>New middle button when adding a stop. Half yellow, half green = both.</p>
-                    <p>Tap a stop's P/D tag to change it: P → D → P&amp;D.</p>
+                <div class="update-notification-feature">
+                    <div class="update-notification-feature-title">✏️ Fix a customer</div>
+                    <p>Tap the pencil next to a name in the suggestions, or hold a stop and tap EDIT CUSTOMER.</p>
+                    <p>Change the name, address or city. Their stops on today's route are fixed too.</p>
                 </div>
                 <div class="update-notification-fixes">
                     <div class="update-notification-fixes-title">🔧 Route fixes</div>
-                    <p>New stops now use where you are right now, not where you started.</p>
-                    <p>No more grey line back to the start. Routes end at the last stop.</p>
-                    <p>Navigate now starts from your live GPS.</p>
+                    <p>A stop added to a numbered route now goes where it adds the least driving on the roads, so it lands on your way instead of at the end.</p>
                 </div>
             </div>
             <div class="update-notification-footer">
@@ -1340,6 +1379,9 @@
                         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
                             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                         </svg>
+                    </button>
+                    <button type="button" id="address-here-btn" class="address-here-btn" onclick="fillFormFromHere()" aria-label="Fill in the address where I am now">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span>Here</span>
                     </button>
                     <div id="address-suggestions" class="suggestions-box" role="listbox"></div>
                 </div>
@@ -1547,6 +1589,33 @@
     <div id="ec-toast" class="ec-toast" role="status" aria-live="polite">
         <span id="ec-toast-text"></span>
         <button type="button" id="ec-toast-action" class="ec-toast-action"></button>
+    </div>
+
+    <!-- Fix a customer in address lookup (name, address, city) -->
+    <div id="ec-customer-overlay" class="ec-sheet-overlay" onclick="if (event.target === this) closeCustomerEditor()">
+        <div class="ec-customer-box" role="dialog" aria-modal="true" aria-labelledby="ec-customer-title">
+            <div class="static-note-header">
+                <span id="ec-customer-title">Edit customer</span>
+                <button type="button" class="static-note-close" onclick="closeCustomerEditor()" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            </div>
+            <label class="ec-customer-label" for="ec-customer-name">Name</label>
+            <input type="text" id="ec-customer-name" autocomplete="off">
+            <label class="ec-customer-label" for="ec-customer-address">Address</label>
+            <div class="ec-customer-field">
+                <input type="text" id="ec-customer-address" autocomplete="off" oninput="ecRenderCustomerSpot()">
+                <div id="ec-customer-address-suggestions" class="suggestions-box" role="listbox"></div>
+            </div>
+            <label class="ec-customer-label" for="ec-customer-city">City</label>
+            <input type="text" id="ec-customer-city" autocomplete="off" oninput="ecRenderCustomerSpot()">
+            <button type="button" id="ec-customer-here" class="ec-customer-here" onclick="customerEditorUseHere()">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Use where I am now
+            </button>
+            <p id="ec-customer-spot" class="ec-customer-hint"></p>
+            <div class="ec-confirm-actions">
+                <button type="button" class="ec-confirm-cancel" onclick="closeCustomerEditor()">Cancel</button>
+                <button type="button" class="ec-confirm-ok" onclick="saveCustomerEdit()">Save</button>
+            </div>
+        </div>
     </div>
 
     <!-- In-app yes/no box (replaces browser confirm boxes) -->
@@ -1840,7 +1909,9 @@
         function ecConfirm(message, opts) {
             opts = opts || {};
             return new Promise(resolve => {
-                if (ecConfirmResolve) ecConfirmResolve(false); // only one question at a time
+                // Only one question at a time. A question closed without a button answers null
+                // (falsy, like Cancel), so a caller can tell it apart from the Cancel button.
+                if (ecConfirmResolve) ecConfirmResolve(null);
                 ecConfirmResolve = resolve;
                 ecConfirmReturnFocus = document.activeElement;
                 document.getElementById('ec-confirm-text').textContent = message;
@@ -1867,11 +1938,11 @@
             if (resolve) resolve(answer);
         }
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && document.getElementById('ec-confirm-overlay').classList.contains('is-open')) ecCloseConfirm(false);
+            if (e.key === 'Escape' && document.getElementById('ec-confirm-overlay').classList.contains('is-open')) ecCloseConfirm(null);
         });
         document.getElementById('ec-confirm-ok').addEventListener('click', () => ecCloseConfirm(true));
         document.getElementById('ec-confirm-cancel').addEventListener('click', () => ecCloseConfirm(false));
-        document.getElementById('ec-confirm-overlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) ecCloseConfirm(false); });
+        document.getElementById('ec-confirm-overlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) ecCloseConfirm(null); });
 
         // Menu: light/dark, app feedback, log out (#14 #28 #29).
         function updateMenuLabels() {
@@ -2280,7 +2351,7 @@
         }
 
         // ---------- UPDATE NOTIFICATION (return button + pickup & delivery + route fixes) ----------
-        const UPDATE_NOTIFICATION_ID = 'return_button_pickup_and_delivery_v1';
+        const UPDATE_NOTIFICATION_ID = 'here_button_customer_edit_v1';
         function checkUpdateNotification() {
             if (!currentRouteKey) return;
             const askedAt = Date.now();
@@ -2555,7 +2626,13 @@
         // is gone; if this phone simply hasn't loaded it yet, Firebase re-runs it with the real
         // value. Resolves true when written, false when the stop no longer exists.
         function ecUpdateStopIfExists(stopRef, fields) {
-            return stopRef.transaction(current => (current === null ? null : Object.assign({}, current, fields)), undefined, false)
+            return stopRef.transaction(current => {
+                if (current === null) return null;
+                const next = Object.assign({}, current, fields);
+                // A field set to null is removed from the stop.
+                Object.keys(next).forEach(k => { if (next[k] === null) delete next[k]; });
+                return next;
+            }, undefined, false)
                 .then(result => !!(result && result.committed && result.snapshot && result.snapshot.exists()));
         }
 
@@ -2589,6 +2666,17 @@
                         // Update local copy
                         job.lat = lat;
                         job.lng = lng;
+                        // A fresh copy from Firebase may have replaced the stop while Google was
+                        // answering: give it the spot too (same address only), so numbering it
+                        // below doesn't find it without a location.
+                        const current = jobs[jobId];
+                        if (current && current !== job && current.pickup_location === job.pickup_location && current.city === job.city) {
+                            current.lat = lat;
+                            current.lng = lng;
+                        }
+                        // An unsent edit that cleared this stop's spot must not clear the new one.
+                        const pendingEdit = pendingStopEdits[jobId];
+                        if (pendingEdit && ('lat' in pendingEdit || 'lng' in pendingEdit)) { pendingEdit.lat = lat; pendingEdit.lng = lng; }
                         if (pendingJobIds[jobId]) {
                             // Not on the server yet: send the whole stop, so the server never
                             // gets a stop that only has lat/lng.
@@ -2884,8 +2972,12 @@
         }
 
         // ---------- FETCH DRIVING PATH (using Routes API, cached per segment) ----------
+        // Key for one leg, by its exact start and end. Shared by road lines and road distances.
+        function ecLegKey(a, b) {
+            return a.lat.toFixed(6) + ',' + a.lng.toFixed(6) + '_' + b.lat.toFixed(6) + ',' + b.lng.toFixed(6);
+        }
         async function getDrivingPath(originLatLng, destLatLng) {
-            const cacheKey = originLatLng.lat.toFixed(6) + ',' + originLatLng.lng.toFixed(6) + '_' + destLatLng.lat.toFixed(6) + ',' + destLatLng.lng.toFixed(6);
+            const cacheKey = ecLegKey(originLatLng, destLatLng);
             if (segmentCache[cacheKey]) {
                 return segmentCache[cacheKey];
             }
@@ -3036,6 +3128,96 @@
             const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
             return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
         }
+
+        // ---------- ROAD DISTANCES (where a new stop goes) ----------
+        // Driving distance in metres between two points, as Google's road routing measures it.
+        // A leg already drawn on the map is measured from its road line, which costs nothing;
+        // any other leg is asked of Google's route matrix. Answers are kept for this session only.
+        const ecRoadDistCache = {};
+        function ecKnownRoadDistance(a, b) {
+            const key = ecLegKey(a, b);
+            if (typeof ecRoadDistCache[key] === 'number') return ecRoadDistCache[key];
+            if (!ecMapsLoaded() || !google.maps.geometry) return null;
+            let path = segmentCache[key];
+            if (!path) {
+                const stored = getSegmentStore()[key];
+                if (stored && Date.now() - stored.t < SEGMENT_STORE_MAX_AGE_MS) {
+                    try { path = google.maps.geometry.encoding.decodePath(stored.p); } catch (e) { path = null; }
+                }
+            }
+            if (!path || path.ecStraight || path.length < 2) return null;
+            return ecRoadDistCache[key] = google.maps.geometry.spherical.computeLength(path);
+        }
+        // Google allows at most 625 origin x destination pairs in one matrix request.
+        const EC_MATRIX_MAX_PAIRS = 600;
+        async function ecFetchRoadMatrix(origins, destinations) {
+            const toWaypoint = p => ({ waypoint: { location: { latLng: { latitude: p.lat, longitude: p.lng } } } });
+            let response;
+            try {
+                response = await fetch("https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Goog-Api-Key": EC_GOOGLE_API_KEY,
+                        "X-Goog-FieldMask": "originIndex,destinationIndex,distanceMeters,condition"
+                    },
+                    body: JSON.stringify({
+                        origins: origins.map(toWaypoint),
+                        destinations: destinations.map(toWaypoint),
+                        travelMode: "DRIVE"
+                    })
+                });
+            } catch (netErr) {
+                ecTrackApi('routes__matrix', false);
+                throw netErr;
+            }
+            ecTrackApi('routes__matrix', response.ok);
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            const data = await response.json();
+            if (!Array.isArray(data)) throw new Error("Unexpected route matrix answer");
+            data.forEach(el => {
+                if (!el || el.condition !== 'ROUTE_EXISTS') return;
+                // Zero values are left out of Google's answer (index 0, a 0 m leg).
+                const a = origins[el.originIndex || 0], b = destinations[el.destinationIndex || 0];
+                if (a && b) ecRoadDistCache[ecLegKey(a, b)] = el.distanceMeters || 0;
+            });
+        }
+        // Road distance for every [from, to] pair, in metres; null for a pair Google couldn't
+        // answer. Pairs that share an end go in one request (a new stop to every other stop).
+        async function ecRoadDistances(pairs) {
+            const todo = new Map();
+            pairs.forEach(([a, b]) => { if (ecKnownRoadDistance(a, b) === null) todo.set(ecLegKey(a, b), [a, b]); });
+            const pointKey = p => p.lat.toFixed(6) + ',' + p.lng.toFixed(6);
+            const requests = [];
+            // Biggest group first: the pairs that share one start (side 0) or one end (side 1).
+            for (;;) {
+                let best = null;
+                [0, 1].forEach(side => {
+                    const groups = new Map();
+                    todo.forEach((pair, key) => {
+                        const k = pointKey(pair[side]);
+                        if (!groups.has(k)) groups.set(k, []);
+                        groups.get(k).push(key);
+                    });
+                    groups.forEach(keys => { if (!best || keys.length > best.keys.length) best = { side: side, keys: keys }; });
+                });
+                if (!best || best.keys.length < 2) break;
+                const group = best.keys.map(k => todo.get(k));
+                best.keys.forEach(k => todo.delete(k));
+                for (let i = 0; i < group.length; i += EC_MATRIX_MAX_PAIRS) {
+                    const chunk = group.slice(i, i + EC_MATRIX_MAX_PAIRS);
+                    requests.push(best.side === 1
+                        ? { origins: chunk.map(p => p[0]), destinations: [chunk[0][1]] }
+                        : { origins: [chunk[0][0]], destinations: chunk.map(p => p[1]) });
+                }
+            }
+            todo.forEach(pair => requests.push({ origins: [pair[0]], destinations: [pair[1]] }));
+            await ecMapLimit(requests, EC_PARALLEL_LEGS, req =>
+                ecFetchRoadMatrix(req.origins, req.destinations).catch(err => console.warn("Road distances not available:", err))
+            );
+            return pairs.map(([a, b]) => ecKnownRoadDistance(a, b));
+        }
+
         function showCalculatingIndicator(show) {
             const indicator = document.getElementById('calculating-route-indicator');
             if (indicator) indicator.style.display = show ? 'block' : 'none';
@@ -3072,6 +3254,9 @@
         }
 
         // ---------- AUTOMATIC INSERTION OF A NEW STOP INTO A FINALIZED ROUTE ----------
+        // Two places for a new stop whose extra driving differs by less than this are treated
+        // as equal, and the earlier one is used.
+        const EC_INSERT_TIE_METERS = 50;
         async function insertStopIntoFinalizedRoute(newId) {
             // Block the route listener from applying stale remote snapshots while we
             // compute/save this insertion (prevents the "sits unassigned" race).
@@ -3090,44 +3275,80 @@
                 // If the return spot isn't known (no signal on first use), only the leg to the
                 // new stop is counted, as before.
                 const returnSpot = await ecReturnSpotLatLng();
-                showCalculatingIndicator(false);
-                if (!routeState.isFinalized) return;
-                const order = routeState.order;
-                const newJob = jobs[newId];
-                if (!newJob || !newJob.lat || !newJob.lng || order.includes(newId)) return;
+                if (!routeState.isFinalized) { showCalculatingIndicator(false); return; }
+                let newJob = jobs[newId];
+                if (!newJob || !newJob.lat || !newJob.lng || routeState.order.includes(newId)) { showCalculatingIndicator(false); return; }
                 const newPoint = { lat: newJob.lat, lng: newJob.lng };
-
-                // Drop any order entry whose stop no longer exists (e.g. removed by another
-                // client without updating order). pointFor() on a missing stop throws, which
-                // aborted the whole insertion and left the new stop permanently unnumbered.
-                for (let d = order.length - 1; d >= 0; d--) {
-                    if (!jobs[order[d]]) order.splice(d, 1);
-                }
 
                 // Only stops still left to drive (unchecked, pending, geocoded) decide where
                 // the new stop goes. Checked-off stops keep their numbers and stay in order
                 // (so unchecking one still works), but they no longer pull the new stop back
                 // toward places the driver has already been.
-                const live = order.filter(id => !checkedStops.includes(id) && ecIsActiveStop(id) && ecHasSpot(id));
+                const live = routeState.order.filter(id => jobs[id] && !checkedStops.includes(id) && ecIsActiveStop(id) && ecHasSpot(id));
 
-                let liveIndex = live.length;
-                let bestDelta = Infinity;
+                // Every place the new stop could go: between the driver and stop 1, between
+                // each pair of stops left, and between the last stop and the return spot.
+                const slots = [];
                 for (let i = 0; i <= live.length; i++) {
-                    const prevPoint = i === 0 ? origin : pointFor(live[i - 1]);
-                    const nextPoint = i === live.length ? returnSpot : pointFor(live[i]);
-                    const delta = nextPoint
-                        ? euclidDist(prevPoint, newPoint) + euclidDist(newPoint, nextPoint) - euclidDist(prevPoint, nextPoint)
-                        : euclidDist(prevPoint, newPoint);
-                    if (delta < bestDelta) { bestDelta = delta; liveIndex = i; }
+                    slots.push({
+                        prev: i === 0 ? origin : pointFor(live[i - 1]),
+                        next: i === live.length ? returnSpot : pointFor(live[i])
+                    });
+                }
+                // Measured by road, the way the route line on the map is drawn. Straight
+                // lines across a river, rail yard or field put stops where the road doesn't
+                // go. With no signal, straight lines are used for this one stop.
+                const pairs = [];
+                slots.forEach(s => {
+                    pairs.push([s.prev, newPoint]);
+                    if (s.next) pairs.push([newPoint, s.next], [s.prev, s.next]);
+                });
+                const roadMeters = await ecRoadDistances(pairs);
+                showCalculatingIndicator(false);
+                const byRoad = roadMeters.every(m => typeof m === 'number');
+                const roadDist = new Map(pairs.map((p, i) => [ecLegKey(p[0], p[1]), roadMeters[i]]));
+                const dist = byRoad ? (a, b) => roadDist.get(ecLegKey(a, b)) : euclidDist;
+                if (!byRoad) ecToast('No road distances right now. New stop placed using straight-line distance.', { duration: 6000 });
+
+                // The slot that adds the least driving to the whole day, the drive back
+                // included. Slots within EC_INSERT_TIE_METERS of the best count as a tie: a
+                // stop just off the road out is also just off the road back, so both cost the
+                // same. Then the stop goes right after the tied stop nearest to it (earliest
+                // first), so it is done on the way out, and the driver never drives past a
+                // stop to reach the new one and then comes back.
+                const deltas = slots.map(s => s.next
+                    ? dist(s.prev, newPoint) + dist(newPoint, s.next) - dist(s.prev, s.next)
+                    : dist(s.prev, newPoint));
+                const bestDelta = Math.min(...deltas);
+                const tie = byRoad ? EC_INSERT_TIE_METERS : EC_INSERT_TIE_METERS / 111200; // straight lines are in degrees
+                let liveIndex = -1;
+                deltas.forEach((d, i) => {
+                    if (d > bestDelta + tie) return;
+                    if (liveIndex < 0 || dist(slots[i].prev, newPoint) < dist(slots[liveIndex].prev, newPoint)) liveIndex = i;
+                });
+
+                // The route may have changed while Google was answering.
+                if (!routeState.isFinalized) return;
+                const order = routeState.order;
+                newJob = jobs[newId];
+                if (!newJob || order.includes(newId)) return;
+                // Drop any order entry whose stop no longer exists (e.g. removed by another
+                // client without updating order), so numbers stay 1, 2, 3...
+                for (let d = order.length - 1; d >= 0; d--) {
+                    if (!jobs[order[d]]) order.splice(d, 1);
                 }
 
                 // Map the position among remaining stops back into the full order: right
                 // before the remaining stop it precedes, or right after the last remaining
-                // stop (end of order if every stop is checked off).
-                let insertAt;
+                // stop (end of order if every stop is checked off). The stops after it move
+                // down one number.
+                let insertAt = -1;
                 if (liveIndex < live.length) insertAt = order.indexOf(live[liveIndex]);
-                else if (live.length > 0) insertAt = order.indexOf(live[live.length - 1]) + 1;
-                else insertAt = order.length;
+                else if (live.length > 0) {
+                    const lastAt = order.indexOf(live[live.length - 1]);
+                    if (lastAt >= 0) insertAt = lastAt + 1;
+                }
+                if (insertAt < 0) insertAt = order.length;
 
                 order.splice(insertAt, 0, newId);
                 ecRenumberFromOrder();
@@ -3814,6 +4035,16 @@
             closeStopDeleteOverlay();
             const overlay = document.createElement('div');
             overlay.className = 'stop-delete-overlay';
+            const editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.className = 'stop-edit-btn';
+            editBtn.textContent = 'EDIT CUSTOMER';
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeStopDeleteOverlay();
+                if (jobs[id]) openCustomerEditor(jobs[id].name, id);
+            });
+            overlay.appendChild(editBtn);
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'stop-delete-btn';
@@ -3835,7 +4066,7 @@
             if (stopDeleteOverlayEl) {
                 if (!stopDeleteOverlayEl.isConnected) {
                     closeStopDeleteOverlay();
-                } else if (!(e.target && e.target.closest && e.target.closest('.stop-delete-btn'))) {
+                } else if (!(e.target && e.target.closest && e.target.closest('.stop-delete-btn, .stop-edit-btn'))) {
                     closeStopDeleteOverlay();
                     suppressNextStopClick = true;
                 }
@@ -4449,11 +4680,26 @@
         }
 
         // ---------- ADD JOB ----------
-        function addJob() {
+        async function addJob() {
             const name = document.getElementById('f-name').value.trim();
             const address = document.getElementById('f-address').value.trim();
             const city = document.getElementById('f-city').value.trim();
             if (!name || !address || !city) { ecToast("Fill in the name, address and city.", { type: 'error' }); return; }
+
+            // Filled in with "Here": ask each time whether this is a stop for today, or only a
+            // customer to save for later.
+            const herePick = ecPickedLocationFor(address, city);
+            if (herePick && herePick.fromHere) {
+                const answer = await ecConfirm(`Add "${name}" to today's route too?`, { okLabel: 'Add to route', cancelLabel: 'Just save customer' });
+                if (answer === null) return; // closed without choosing
+                if (!answer) {
+                    const saved = ecSaveContactAddress(name, address, city, { lat: herePick.lat, lng: herePick.lng });
+                    if (saved === 'none') { ecToast("That name can't be saved. Use letters or numbers.", { type: 'error' }); return; }
+                    resetFormFields();
+                    if (saved !== 'asked') ecToast(`Saved "${name}" to address lookup.`);
+                    return;
+                }
+            }
 
             // Only stops not done yet count as duplicates, so a second visit to the same
             // customer later in the day can be added (#11).
@@ -4485,7 +4731,8 @@
                 // Dropped on the map: Google Maps navigation goes to this exact spot (#1).
                 if (pickedLoc.pinned) newJob.pinned = true;
             }
-            const contact = { name: name, address: address, city: city };
+            // A spot the driver chose (map pin or "Here") is saved with the customer too.
+            const contact = { name: name, address: address, city: city, spot: pickedLoc && pickedLoc.pinned ? { lat: pickedLoc.lat, lng: pickedLoc.lng } : null };
 
             // Route not numbered yet: save the stop straight away; its address is looked up
             // when the route is drawn.
@@ -4587,7 +4834,7 @@
                 // Un-numbered route: touch the route record (label / time) as before. A
                 // numbered route already saved it while numbering the stop.
                 if (!routeWasNumbered) saveRouteState();
-                ecSaveContactAddress(contact.name, contact.address, contact.city);
+                ecSaveContactAddress(contact.name, contact.address, contact.city, contact.spot);
             }).catch(() => {
                 // Don't roll back or touch the form: the stop is already saved on the phone
                 // and stays visible; it is sent by itself when the signal is back.
@@ -4599,20 +4846,263 @@
         // Saves a stop's address to the shared address book. A new name is added. A name that
         // already has a different saved address is only changed if the driver says so, so one
         // delivery to a second location doesn't change everyone's autofill (#9).
-        function ecSaveContactAddress(name, address, city) {
+        // spot (optional) is an exact map spot the driver chose for this address; it is saved
+        // with the customer so later stops go straight there. Returns 'saved', 'same' (address
+        // already saved), 'asked' (the driver was asked) or 'none' (no usable name).
+        function ecSaveContactAddress(name, address, city, spot) {
             const key = ecContactKeyExisting(name);
-            if (!key) return;
+            if (!key) return 'none';
             const existing = addressData[key];
-            const write = () => db.ref('address_lookup').child(key).update({
-                address: address,
-                city: city,
-                last_edit_by: currentUser
-            }).catch(err => console.warn('Address book not updated:', err && err.message));
-            if (!existing || !existing.address) { write(); return; }
+            const fields = { address: address, city: city, last_edit_by: currentUser };
+            // A new address without a spot drops the old address's spot (null deletes it).
+            fields.lat = spot ? spot.lat : null;
+            fields.lng = spot ? spot.lng : null;
+            const write = f => db.ref('address_lookup').child(key).update(f)
+                .catch(err => console.warn('Address book not updated:', err && err.message));
+            if (!existing || !existing.address) { write(fields); return 'saved'; }
             const same = String(existing.address).trim().toLowerCase() === String(address).trim().toLowerCase() &&
                 String(existing.city || '').trim().toLowerCase() === String(city).trim().toLowerCase();
-            if (same) return;
-            ecToast(`"${key}" has a different saved address. Keep it, or save this one for everyone?`, { actionLabel: 'Save new', onAction: write, duration: 9000 });
+            if (same) {
+                // Same address with a newly chosen exact spot: keep the newest spot.
+                const old = ecContactSpot(existing);
+                if (spot && (!old || old.lat !== spot.lat || old.lng !== spot.lng)) {
+                    write({ lat: spot.lat, lng: spot.lng, last_edit_by: currentUser });
+                }
+                return 'same';
+            }
+            ecToast(`"${key}" has a different saved address. Keep it, or save this one for everyone?`, { actionLabel: 'Save new', onAction: () => write(fields), duration: 9000 });
+            return 'asked';
+        }
+
+        // ---------- FIX A CUSTOMER IN ADDRESS LOOKUP ----------
+        // Opened from the pencil in the name suggestions, or EDIT CUSTOMER when holding a stop.
+        // Name, address and city can all be changed without retyping the rest. A renamed
+        // customer keeps their notes. Their stops on today's route that aren't done yet are
+        // fixed too, and a stop that moved is placed again in the numbered route.
+        let ecCustomerEdit = null; // { key, oldName, savedSpot, hereSpot, original: { address, city } }
+        let ecCustomerPlacesReady = false;
+        const ecSameText = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+        function openCustomerEditor(name, fromStopId) {
+            const key = ecContactKeyExisting(name);
+            const data = (key && addressData[key]) || null;
+            const stop = fromStopId ? jobs[fromStopId] : null;
+            const address = data ? (data.address || '') : (stop ? stop.pickup_location || '' : '');
+            const city = data ? (data.city || '') : (stop ? stop.city || '' : '');
+            ecCustomerEdit = {
+                key: data ? key : null,
+                oldName: data ? key : String(name || '').trim(),
+                savedSpot: ecContactSpot(data),
+                hereSpot: null,
+                original: { address: address, city: city }
+            };
+            document.getElementById('ec-customer-title').textContent = data ? 'Edit customer' : 'Save customer';
+            document.getElementById('ec-customer-name').value = ecCustomerEdit.oldName;
+            document.getElementById('ec-customer-address').value = address;
+            document.getElementById('ec-customer-city').value = city;
+            const suggestions = document.getElementById('suggestions');
+            if (suggestions) suggestions.style.display = 'none';
+            const active = document.activeElement;
+            if (active && active.tagName === 'INPUT') active.blur();
+            ecAttachCustomerPlaces();
+            ecRenderCustomerSpot();
+            document.getElementById('ec-customer-overlay').classList.add('is-open');
+        }
+        function closeCustomerEditor() {
+            document.getElementById('ec-customer-overlay').classList.remove('is-open');
+            ecCustomerEdit = null;
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && ecCustomerEdit && !document.getElementById('ec-confirm-overlay').classList.contains('is-open')) closeCustomerEditor();
+        });
+        // Address suggestions in the editor, like the add-stop form's.
+        function ecAttachCustomerPlaces() {
+            if (ecCustomerPlacesReady || !ecMapsLoaded() || !google.maps.places) return;
+            ecCustomerPlacesReady = true;
+            const addressInput = document.getElementById('ec-customer-address');
+            const cityInput = document.getElementById('ec-customer-city');
+            ecAttachPlaceSearch(addressInput, document.getElementById('ec-customer-address-suggestions'), {
+                name: 'customer_edit',
+                request: () => ({ includedRegionCodes: ['ca'], locationBias: { center: { lat: 49.848, lng: -99.950 }, radius: 50000 } }),
+                fields: ['addressComponents'],
+                onPick: (place, prediction) => {
+                    const comps = place.addressComponents || [];
+                    const part = type => {
+                        const c = comps.find(x => x.types && x.types.includes(type));
+                        return c ? (c.longText || '') : '';
+                    };
+                    const street = [part('street_number'), part('route')].filter(Boolean).join(' ');
+                    const mainText = prediction && prediction.mainText ? prediction.mainText.toString() : '';
+                    addressInput.value = street || mainText || (prediction ? prediction.text.toString() : addressInput.value);
+                    const town = part('locality') || part('administrative_area_level_3') || part('sublocality');
+                    if (town) cityInput.value = town;
+                    // A typed address replaces a spot taken with "Use where I am now".
+                    if (ecCustomerEdit) ecCustomerEdit.hereSpot = null;
+                    ecRenderCustomerSpot();
+                }
+            });
+        }
+        // The exact spot that Save would keep: one just taken here, else the saved one while
+        // the address and city are unchanged.
+        function ecCustomerEditSpot() {
+            const ed = ecCustomerEdit;
+            if (!ed) return null;
+            if (ed.hereSpot) return ed.hereSpot;
+            const sameAddress = ecSameText(document.getElementById('ec-customer-address').value, ed.original.address) &&
+                ecSameText(document.getElementById('ec-customer-city').value, ed.original.city);
+            return sameAddress ? ed.savedSpot : null;
+        }
+        function ecRenderCustomerSpot() {
+            const ed = ecCustomerEdit;
+            const el = document.getElementById('ec-customer-spot');
+            if (!ed || !el) return;
+            let text;
+            if (ed.hereSpot) text = 'Exact spot: where you are now. Stops for this customer go straight there.';
+            else if (ecCustomerEditSpot()) text = 'Exact map spot saved. Stops for this customer go straight there.';
+            else if (ed.savedSpot) text = 'The address changed, so the old map spot will be removed and the new address looked up.';
+            else text = 'No exact spot saved. The address is looked up on the map.';
+            el.textContent = text;
+        }
+        let ecCustomerHereBusy = false;
+        function customerEditorUseHere() {
+            if (ecCustomerHereBusy || !ecCustomerEdit) return;
+            ecCustomerHereBusy = true;
+            const btn = document.getElementById('ec-customer-here');
+            if (btn) btn.classList.add('is-busy');
+            const ed = ecCustomerEdit;
+            ecLookupHere().then(spot => {
+                if (ecCustomerEdit !== ed) return; // closed or reopened meanwhile
+                document.getElementById('ec-customer-address').value = ecSpotAddressText(spot);
+                if (spot.city) document.getElementById('ec-customer-city').value = spot.city;
+                ed.hereSpot = { lat: spot.lat, lng: spot.lng };
+                ecRenderCustomerSpot();
+                const note = ecHereAccuracyNote(spot);
+                if (note) ecToast(note.trim(), { duration: 7000 });
+            }).catch(message => {
+                ecToast(String(message), { type: 'error', duration: 7000 });
+            }).finally(() => {
+                ecCustomerHereBusy = false;
+                if (btn) btn.classList.remove('is-busy');
+            });
+        }
+        function saveCustomerEdit() {
+            const ed = ecCustomerEdit;
+            if (!ed) return;
+            const name = document.getElementById('ec-customer-name').value.trim();
+            const address = document.getElementById('ec-customer-address').value.trim();
+            const city = document.getElementById('ec-customer-city').value.trim();
+            if (!name || !address || !city) { ecToast('Fill in the name, address and city.', { type: 'error' }); return; }
+            const newKey = ecContactKey(name);
+            if (!newKey) { ecToast("That name can't be saved. Use letters or numbers.", { type: 'error' }); return; }
+            // Another customer already has this name (capital letters don't count): don't merge.
+            const taken = ecContactKeyExisting(name);
+            if (addressData[taken] && taken !== ed.key) {
+                ecToast(`"${taken}" is already in address lookup. Use a different name, or edit that customer instead.`, { type: 'error', duration: 8000 });
+                return;
+            }
+            const spot = ecCustomerEditSpot();
+            const fields = { address: address, city: city, last_edit_by: currentUser, lat: spot ? spot.lat : null, lng: spot ? spot.lng : null };
+            // Today's stops for this customer, found before the save changes the address book.
+            const oldMatch = ecContactKey(ed.oldName).toLowerCase();
+            const stopIds = ecRemainingStopIds().filter(id => ecContactKey(jobs[id].name).toLowerCase() === oldMatch);
+
+            let write;
+            if (!ed.key || newKey === ed.key) {
+                write = db.ref('address_lookup').child(newKey).update(fields);
+            } else {
+                // Renamed: the whole record (notes included) moves to the new name in one write.
+                const record = Object.assign({}, addressData[ed.key] || {}, fields);
+                if (!spot) { delete record.lat; delete record.lng; }
+                write = db.ref('address_lookup').update({ [newKey]: record, [ed.key]: null });
+            }
+            write.catch(err => {
+                console.warn('Customer not saved:', err && err.message);
+                ecToast("Couldn't save the customer: " + ((err && err.message) || 'unknown error'), { type: 'error', duration: 8000 });
+            });
+            closeCustomerEditor();
+            const fixed = ecFixCustomerStops(stopIds, name, address, city, spot);
+            ecToast(fixed > 0
+                ? `Saved "${name}". Fixed ${fixed} stop${fixed === 1 ? '' : 's'} on today's route.`
+                : `Saved "${name}".`);
+        }
+        // Changes one stop on this phone and sends it (retried on reconnect like the stop type).
+        function ecEditStop(id, fields) {
+            const job = jobs[id];
+            if (!job) return;
+            Object.keys(fields).forEach(k => { if (fields[k] === null) delete job[k]; else job[k] = fields[k]; });
+            const pending = Object.assign({}, pendingStopEdits[id], fields);
+            pendingStopEdits[id] = pending;
+            const stopRef = getOwnRouteRef(`stops/${id}`);
+            if (stopRef) {
+                const write = pendingJobIds[id] ? stopRef.set(job) : ecUpdateStopIfExists(stopRef, pending);
+                write.then(() => {
+                    if (pendingStopEdits[id] === pending) { delete pendingStopEdits[id]; persistDriverRouteCache(); }
+                }).catch(err => console.warn("Stop edit not confirmed yet (will retry):", err));
+            }
+            persistDriverRouteCache();
+        }
+        // Puts the customer's fixed name, address and spot on their stops that aren't done yet.
+        // A stop whose place changed comes out of the numbered order and is placed again where
+        // it adds the least driving. Returns how many stops changed.
+        function ecFixCustomerStops(stopIds, name, address, city, spot) {
+            const moved = [];
+            let changed = 0;
+            stopIds.forEach(id => {
+                const job = jobs[id];
+                if (!job) return;
+                const fields = {};
+                if (job.name !== name) fields.name = name;
+                if (job.pickup_location !== address) fields.pickup_location = address;
+                if (job.city !== city) fields.city = city;
+                const placeChanged = !ecSameText(job.pickup_location, address) || !ecSameText(job.city, city) ||
+                    (spot && (job.lat !== spot.lat || job.lng !== spot.lng));
+                if (placeChanged) {
+                    fields.lat = spot ? spot.lat : null;
+                    fields.lng = spot ? spot.lng : null;
+                    fields.pinned = spot ? true : null;
+                }
+                if (Object.keys(fields).length === 0) return;
+                changed++;
+                ecEditStop(id, fields);
+                if (placeChanged) moved.push(id);
+            });
+            if (changed === 0) return 0;
+            // Moved stops lose their number until they are placed again.
+            const reNumber = routeState.isFinalized ? moved.filter(id => routeState.order.includes(id)) : [];
+            if (reNumber.length > 0) {
+                ecBeginLocalRouteChange();
+                try {
+                    routeState.order = routeState.order.filter(id => !reNumber.includes(id));
+                    ecRenumberFromOrder();
+                    routeState.autoOptimized = false;
+                    saveRouteState();
+                } finally {
+                    ecEndLocalRouteChange();
+                }
+            }
+            updateUI();
+            updateAutoOptimizeButtonVisual();
+            if (map) redrawRouteFromCurrentState();
+            (async () => {
+                for (const id of moved) {
+                    if (!jobs[id]) continue;
+                    const place = reNumber.includes(id);
+                    if (ecHasSpot(id)) {
+                        if (place) await insertStopIntoFinalizedRoute(id).catch(err => console.warn("Route insertion failed:", err));
+                        continue;
+                    }
+                    // No exact spot: look the new address up, then place it (geocodeJob does that).
+                    if (place) { ecInsertWhenLocated[id] = true; persistDriverRouteCache(); }
+                    try {
+                        await geocodeJob(id, { force: true });
+                    } catch (err) {
+                        console.warn(err);
+                        ecToast(`Couldn't find "${address}, ${city}" on the map. Check the address, or use the map pin.`, { type: 'error', duration: 8000 });
+                    }
+                }
+                updateUI();
+                if (map) redrawRouteFromCurrentState();
+            })();
+            return changed;
         }
 
         // ---------- OPEN IN GOOGLE MAPS ----------
@@ -5185,44 +5675,112 @@
             pickerGeocoder.geocode({ location: latLng }, function(results, status) {
                 ecTrackApi('geocode__picker_pin', status === 'OK' || status === 'ZERO_RESULTS');
                 if (seq !== pickerLookupSeq) return;
-                const list = (status === 'OK' && Array.isArray(results)) ? results : [];
-                let address = '', plusCode = '', street = '', city = '';
-                if (list.length > 0) {
-                    address = list[0].formatted_address || '';
-                    const comps = list[0].address_components || [];
-                    const part = type => {
-                        const c = comps.find(x => x.types && x.types.includes(type));
-                        return c ? (c.long_name || '') : '';
-                    };
-                    const route = part('route');
-                    street = [part('street_number'), route === 'Unnamed Road' ? '' : route].filter(Boolean).join(' ');
-                    city = part('locality') || part('administrative_area_level_3') || part('sublocality') || '';
-                    for (let result of list) {
-                        if (result.plus_code) {
-                            plusCode = result.plus_code.compound_code || result.plus_code.global_code || '';
-                            break;
-                        }
-                    }
-                    if (!plusCode) {
-                        for (let result of list) {
-                            if (result.address_components) {
-                                for (let comp of result.address_components) {
-                                    if (comp.types && comp.types.includes('plus_code')) {
-                                        plusCode = comp.long_name || comp.short_name || '';
-                                        break;
-                                    }
-                                }
-                            }
-                            if (plusCode) break;
-                        }
-                    }
-                } else {
-                    address = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
-                }
-                const location = { lat, lng, address, street, city, plusCode: plusCode || '' };
+                const location = ecReadSpotLookup(lat, lng, results, status);
                 // Only real answers are reused; a failed lookup is tried again next time.
                 if (status === 'OK' || status === 'ZERO_RESULTS') pickerLastLookup = { key: key, location: location };
                 ecShowPickerLocation(location);
+            });
+        }
+        // Turns Google's answer for a map spot into { lat, lng, address, street, city, plusCode }.
+        function ecReadSpotLookup(lat, lng, results, status) {
+            const list = (status === 'OK' && Array.isArray(results)) ? results : [];
+            let address = '', plusCode = '', street = '', city = '';
+            if (list.length > 0) {
+                address = list[0].formatted_address || '';
+                const comps = list[0].address_components || [];
+                const part = type => {
+                    const c = comps.find(x => x.types && x.types.includes(type));
+                    return c ? (c.long_name || '') : '';
+                };
+                const route = part('route');
+                street = [part('street_number'), route === 'Unnamed Road' ? '' : route].filter(Boolean).join(' ');
+                city = part('locality') || part('administrative_area_level_3') || part('sublocality') || '';
+                for (let result of list) {
+                    if (result.plus_code) {
+                        plusCode = result.plus_code.compound_code || result.plus_code.global_code || '';
+                        break;
+                    }
+                }
+                if (!plusCode) {
+                    for (let result of list) {
+                        if (result.address_components) {
+                            for (let comp of result.address_components) {
+                                if (comp.types && comp.types.includes('plus_code')) {
+                                    plusCode = comp.long_name || comp.short_name || '';
+                                    break;
+                                }
+                            }
+                        }
+                        if (plusCode) break;
+                    }
+                }
+            } else {
+                address = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+            }
+            return { lat, lng, address, street, city, plusCode: plusCode || '' };
+        }
+        // Short text for the address box: street, else Plus Code, else the full address, else the coordinates.
+        function ecSpotAddressText(s) {
+            return (s.street || s.plusCode || s.address || `${s.lat.toFixed(6)}, ${s.lng.toFixed(6)}`).trim();
+        }
+
+        // ---------- WHERE I AM NOW ----------
+        // A fresh GPS fix plus the address Google has for it. Resolves with the same shape as
+        // ecReadSpotLookup plus accuracy (metres), or rejects with a message for the driver.
+        // Unlike ecGetFreshLocation, this never falls back to an old or default spot: the
+        // customer would be saved in the wrong place.
+        const EC_HERE_POOR_ACCURACY_M = 100;
+        function ecLookupHere() {
+            return new Promise((resolve, reject) => {
+                if (!ecMapsLoaded()) { reject("The map tools haven't loaded yet. Check your signal and try again."); return; }
+                if (!navigator.geolocation) { reject("This phone can't share its location with the app."); return; }
+                navigator.geolocation.getCurrentPosition(pos => {
+                    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+                    usingDefaultLocation = false;
+                    ecLastFixAt = Date.now();
+                    hideGpsFallbackBanner();
+                    window.currentUserLocation = { lat, lng };
+                    throttledUpdateUserMarker();
+                    new google.maps.Geocoder().geocode({ location: { lat, lng } }, (results, status) => {
+                        ecTrackApi('geocode__here', status === 'OK' || status === 'ZERO_RESULTS');
+                        if (status !== 'OK' && status !== 'ZERO_RESULTS') { reject('No signal to look up the address here. Try again, or use the map pin.'); return; }
+                        resolve(Object.assign(ecReadSpotLookup(lat, lng, results, status), { accuracy: pos.coords.accuracy }));
+                    });
+                }, err => {
+                    reject(err && err.code === 1
+                        ? 'Location is turned off for this app. Turn it on in the phone settings, or use the map pin.'
+                        : "Couldn't get your location. Try again outside, or use the map pin.");
+                }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 });
+            });
+        }
+        function ecHereAccuracyNote(spot) {
+            return spot.accuracy > EC_HERE_POOR_ACCURACY_M
+                ? ` GPS is only accurate to about ${Math.round(spot.accuracy)} m here, so check the pin on the map.`
+                : '';
+        }
+        let ecHereBusy = false;
+        function fillFormFromHere() {
+            if (ecHereBusy) return;
+            ecHereBusy = true;
+            const btn = document.getElementById('address-here-btn');
+            if (btn) btn.classList.add('is-busy');
+            ecLookupHere().then(spot => {
+                const addressText = ecSpotAddressText(spot);
+                document.getElementById('f-address').value = addressText;
+                if (spot.city) document.getElementById('f-city').value = spot.city;
+                // The exact GPS spot goes with the stop and is saved with the customer.
+                ecPickedAddress = { text: addressText, city: document.getElementById('f-city').value.trim(), lat: spot.lat, lng: spot.lng, pinned: true, fromHere: true };
+                const nameInput = document.getElementById('f-name');
+                const needsName = !nameInput.value.trim();
+                const accuracyNote = ecHereAccuracyNote(spot);
+                // Short unless there's a GPS warning: the message sits over the filled-in address.
+                ecToast((needsName ? "Filled in where you are. Type the customer's name." : 'Filled in where you are.') + accuracyNote, { duration: accuracyNote ? 7000 : 3500 });
+                if (needsName) nameInput.focus();
+            }).catch(message => {
+                ecToast(String(message), { type: 'error', duration: 7000 });
+            }).finally(() => {
+                ecHereBusy = false;
+                if (btn) btn.classList.remove('is-busy');
             });
         }
 
@@ -5257,8 +5815,7 @@
                 return;
             }
             const s = selectedLocation;
-            // Short text for the list: street, else Plus Code, else the full address, else the coordinates.
-            const addressToUse = (s.street || s.plusCode || s.address || `${s.lat.toFixed(6)}, ${s.lng.toFixed(6)}`).trim();
+            const addressToUse = ecSpotAddressText(s);
             document.getElementById('f-address').value = addressToUse;
             if (s.city) document.getElementById('f-city').value = s.city;
             // Keep the exact pin with the stop instead of looking the words up again (#1).
@@ -5270,7 +5827,8 @@
         // ---------- ADDRESS AUTOCOMPLETE ----------
         function handleNameInput(val) {
             const candidates = Object.keys(addressData);
-            showSuggestions(val, 'suggestions', candidates, name => `<div class="suggestion-item" data-value="${ecEscapeHtml(name)}" onclick="selectClient(this.dataset.value)">${ecEscapeHtml(name)}</div>`);
+            // The pencil opens the customer to fix their name, address or city.
+            showSuggestions(val, 'suggestions', candidates, name => `<div class="suggestion-item ec-suggest-customer" data-value="${ecEscapeHtml(name)}" onclick="selectClient(this.dataset.value)"><span class="suggestion-main">${ecEscapeHtml(name)}</span><button type="button" class="ec-suggest-edit" aria-label="Edit ${ecEscapeHtml(name)}" onclick="event.stopPropagation(); openCustomerEditor(this.parentNode.dataset.value)">✏️</button></div>`);
         }
         function getUniqueCities() {
             const cities = new Set();
@@ -5319,6 +5877,15 @@
             document.getElementById('f-address').value = data.address || '';
             document.getElementById('f-city').value = data.city || '';
             document.getElementById('suggestions').style.display = 'none';
+            // A customer saved with an exact spot: the stop goes to that spot instead of a fresh
+            // address lookup (until the address or city text is changed).
+            ecPickedAddress = ecContactSpot(data)
+                ? { text: String(data.address || '').trim(), city: String(data.city || '').trim(), lat: data.lat, lng: data.lng, pinned: true }
+                : null;
+        }
+        // The exact map spot saved with a customer, or null.
+        function ecContactSpot(data) {
+            return data && typeof data.lat === 'number' && typeof data.lng === 'number' ? { lat: data.lat, lng: data.lng } : null;
         }
         function selectCity(city) {
             document.getElementById('f-city').value = city;
