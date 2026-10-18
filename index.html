@@ -2405,6 +2405,9 @@
         // away, even with no signal (#13). The online role check still runs every time and
         // signs the driver out if access was taken away.
         const EC_ROLE_CACHE_PREFIX = 'ec_role_ok_';
+        // The driver the app last opened for on this phone, so the next open can show their
+        // route before Firebase has finished checking the sign-in (see OPEN STRAIGHT AWAY).
+        const EC_LAST_USER_KEY = 'ec_last_user';
         let ecAppStarted = false;
         function ecRoleCached(username) {
             try { return localStorage.getItem(EC_ROLE_CACHE_PREFIX + username) === '1'; } catch (e) { return false; }
@@ -2414,6 +2417,9 @@
                 if (ok) localStorage.setItem(EC_ROLE_CACHE_PREFIX + username, '1');
                 else localStorage.removeItem(EC_ROLE_CACHE_PREFIX + username);
             } catch (e) {}
+        }
+        function ecForgetLastUser() {
+            try { localStorage.removeItem(EC_LAST_USER_KEY); } catch (e) {}
         }
         function ecShowLoginBox() {
             const overlay = document.getElementById('login-overlay');
@@ -2432,6 +2438,7 @@
             currentUser = username.charAt(0).toUpperCase() + username.slice(1);
             currentRouteKey = ecUserKey(username);
             console.log('Resolved currentRouteKey:', currentRouteKey);
+            try { localStorage.setItem(EC_LAST_USER_KEY, username); } catch (e) {}
             document.getElementById('login-overlay').style.display = 'none';
             initApp();
             startGeolocationWatch();
@@ -2440,6 +2447,7 @@
         }
         function ecDenyAccess(username, message) {
             ecSetRoleCached(username, false);
+            ecForgetLastUser();
             try { sessionStorage.setItem('ec_login_message', message); } catch (e) {}
             ecToast(message, { type: 'error' });
             auth.signOut();
@@ -2460,13 +2468,17 @@
         } catch (e) {}
         auth.onAuthStateChanged(user => {
             if (!user) {
-                // Signed out while the app was running: start clean so no driver's data stays on screen.
+                // Signed out while the app was running (or it opened straight away for a driver
+                // who is no longer signed in): start clean so no driver's data stays on screen.
+                ecForgetLastUser();
                 if (ecAppStarted) { location.reload(); return; }
                 ecShowLoginBox();
                 return;
             }
             const username = String(user.email || '').split('@')[0].toLowerCase();
             if (!username) { ecDenyAccess(username, 'This account has no email address, so it cannot use Route Helper.'); return; }
+            // Opened straight away for a different driver than the one signed in: start clean.
+            if (ecAppStarted && ecUserKey(username) !== currentRouteKey) { ecForgetLastUser(); location.reload(); return; }
             if (ecRoleCached(username)) ecStartApp(username);
             else ecShowLoginStatus('Checking your account…');
             const slowTimer = setTimeout(() => {
@@ -6183,10 +6195,10 @@
         })();
 
         // ---------- APP UPDATES (#15) ----------
-        // sw.js now always checks the server for a fresh page, so the old "?_nocache=" reload
-        // on every open is gone. When a new version takes over, the app no longer reloads
-        // instantly: it shows a Refresh button, and otherwise reloads the next time the
-        // driver leaves the app while nothing is half-done.
+        // sw.js opens the app from the copy saved on the phone and fetches the newest page in
+        // the background. When that page is different (or a new sw.js takes over), the app
+        // doesn't reload instantly: it shows a Refresh button, and otherwise reloads the next
+        // time the driver leaves the app while nothing is half-done.
         if ('serviceWorker' in navigator) {
             const ecHadController = !!navigator.serviceWorker.controller;
             let ecUpdateReady = false;
@@ -6203,11 +6215,17 @@
                 const picker = document.getElementById('address-picker-modal');
                 return !(picker && picker.style.display === 'block');
             };
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                // First install: this page is already the newest version.
-                if (!ecHadController || ecUpdateReady) return;
+            const ecOfferUpdate = () => {
+                if (ecUpdateReady) return;
                 ecUpdateReady = true;
                 ecToast('A new version of Route Helper is ready.', { actionLabel: 'Refresh', onAction: () => location.reload(), sticky: true });
+            };
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                // First install: this page is already the newest version.
+                if (ecHadController) ecOfferUpdate();
+            });
+            navigator.serviceWorker.addEventListener('message', (e) => {
+                if (e.data && e.data.type === 'ec-page-updated') ecOfferUpdate();
             });
             document.addEventListener('visibilitychange', () => {
                 if (ecUpdateReady && document.visibilityState === 'hidden' && ecSafeToReload()) location.reload();
@@ -6246,6 +6264,19 @@
             } catch (e) {
                 console.warn('Install prompt failed:', e);
             }
+        }
+
+        // ---------- OPEN STRAIGHT AWAY ----------
+        // Firebase only says who is signed in after asking Google's server, which takes a
+        // moment with good signal and up to 30 seconds with weak signal. A driver who used the
+        // app on this phone and is approved here sees their saved route right away instead.
+        // The sign-in and role checks above still run, and close the app if either fails.
+        // Down here so everything the app needs at start is already set up.
+        try {
+            const lastUser = localStorage.getItem(EC_LAST_USER_KEY);
+            if (lastUser && ecRoleCached(lastUser)) ecStartApp(lastUser);
+        } catch (e) {
+            console.warn('Could not open straight away:', e);
         }
     </script>
     <!-- ================================================================
