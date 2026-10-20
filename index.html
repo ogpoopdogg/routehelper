@@ -308,6 +308,8 @@
             box-shadow: var(--shadow-3);
         }
         .pac-container { position: absolute; top: auto; left: auto; right: auto; margin-top: 6px; font-family: var(--font); }
+        /* Above the customer editor too, which sits over everything else */
+        body .pac-container { z-index: 10800; }
         .suggestion-item {
             display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: var(--radius-sm);
             color: var(--text); font-size: 15px; cursor: pointer;
@@ -752,6 +754,17 @@
         .ec-customer-box .static-note-header { margin-bottom: var(--sp-3); }
         .ec-customer-label { display: block; margin: var(--sp-3) 0 var(--sp-1); font-size: 13px; font-weight: 600; color: var(--text-2); }
         .ec-customer-field { position: relative; }
+        /* Once the address is tapped the editor moves to the top, like the add-stop form, so the
+           suggestions have room above the keyboard and aren't cut off by the box. */
+        #ec-customer-overlay.ec-typing { align-items: flex-start; }
+        #ec-customer-overlay.ec-typing .ec-customer-box { overflow: visible; }
+        .ec-customer-delete {
+            display: block; width: 100%; margin-top: var(--sp-3); min-height: 44px; border-radius: var(--radius);
+            border: 1px solid var(--danger); background: transparent; color: var(--danger);
+            cursor: pointer; font-size: 14px; font-weight: 700;
+        }
+        .ec-customer-delete:hover { background: var(--surface-2); }
+        .ec-customer-delete[hidden] { display: none; }
         .ec-customer-here {
             display: inline-flex; align-items: center; gap: 6px; margin-top: var(--sp-3); min-height: 44px; padding: 0 var(--sp-4);
             border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-2); cursor: pointer;
@@ -1318,18 +1331,13 @@
             </div>
             <div class="update-notification-body">
                 <div class="update-notification-feature">
-                    <div class="update-notification-feature-title">📍 Here (add a stop)</div>
-                    <p>At a new customer? Tap Here next to the address, type their name, then pick "Add to route" or "Just save customer".</p>
-                    <p>Their exact spot is saved, so their stops go straight there next time.</p>
-                </div>
-                <div class="update-notification-feature">
                     <div class="update-notification-feature-title">✏️ Fix a customer</div>
                     <p>Tap the pencil next to a name in the suggestions, or hold a stop and tap EDIT CUSTOMER.</p>
-                    <p>Change the name, address or city. Their stops on today's route are fixed too.</p>
+                    <p>The address box now suggests Google addresses as you type, just like Add a stop.</p>
                 </div>
-                <div class="update-notification-fixes">
-                    <div class="update-notification-fixes-title">🔧 Route fixes</div>
-                    <p>A stop added to a numbered route now goes where it adds the least driving on the roads, so it lands on your way instead of at the end.</p>
+                <div class="update-notification-feature">
+                    <div class="update-notification-feature-title">🗑️ Delete a customer</div>
+                    <p>In Fix a customer, tap Delete customer to remove them and their notes from the name suggestions. Stops already on a route stay.</p>
                 </div>
             </div>
             <div class="update-notification-footer">
@@ -1615,6 +1623,7 @@
                 <button type="button" class="ec-confirm-cancel" onclick="closeCustomerEditor()">Cancel</button>
                 <button type="button" class="ec-confirm-ok" onclick="saveCustomerEdit()">Save</button>
             </div>
+            <button type="button" id="ec-customer-delete" class="ec-customer-delete" onclick="deleteCustomerFromEditor()" hidden>Delete customer</button>
         </div>
     </div>
 
@@ -2351,7 +2360,7 @@
         }
 
         // ---------- UPDATE NOTIFICATION (return button + pickup & delivery + route fixes) ----------
-        const UPDATE_NOTIFICATION_ID = 'here_button_customer_edit_v1';
+        const UPDATE_NOTIFICATION_ID = 'customer_edit_address_delete_v1';
         function checkUpdateNotification() {
             if (!currentRouteKey) return;
             const askedAt = Date.now();
@@ -4883,7 +4892,7 @@
                 when: when,
                 by: by,
                 change: change,
-                customer: (after || before).name,
+                customer: (after && after.name) || before.name,
                 before: before || 'none (new customer)',
                 after: after
             }, extra || {});
@@ -4958,6 +4967,8 @@
             document.getElementById('ec-customer-name').value = ecCustomerEdit.oldName;
             document.getElementById('ec-customer-address').value = address;
             document.getElementById('ec-customer-city').value = city;
+            // Only a customer already in address lookup can be deleted.
+            document.getElementById('ec-customer-delete').hidden = !ecCustomerEdit.key;
             const suggestions = document.getElementById('suggestions');
             if (suggestions) suggestions.style.display = 'none';
             const active = document.activeElement;
@@ -4967,21 +4978,29 @@
             document.getElementById('ec-customer-overlay').classList.add('is-open');
         }
         function closeCustomerEditor() {
-            document.getElementById('ec-customer-overlay').classList.remove('is-open');
+            document.getElementById('ec-customer-overlay').classList.remove('is-open', 'ec-typing');
             ecCustomerEdit = null;
         }
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && ecCustomerEdit && !document.getElementById('ec-confirm-overlay').classList.contains('is-open')) closeCustomerEditor();
         });
-        // Address suggestions in the editor, like the add-stop form's.
+        // Address suggestions in the editor, the same as the add-stop form's: Google's newer
+        // Places service in the app's own list, or the classic Places box if that service isn't
+        // switched on for the key.
         function ecAttachCustomerPlaces() {
             if (ecCustomerPlacesReady || !ecMapsLoaded() || !google.maps.places) return;
             ecCustomerPlacesReady = true;
             const addressInput = document.getElementById('ec-customer-address');
             const cityInput = document.getElementById('ec-customer-city');
+            const BRANDON = { lat: 49.848, lng: -99.950 };
+            // A picked address replaces a spot taken with "Use where I am now".
+            const picked = () => {
+                if (ecCustomerEdit) ecCustomerEdit.hereSpot = null;
+                ecRenderCustomerSpot();
+            };
             ecAttachPlaceSearch(addressInput, document.getElementById('ec-customer-address-suggestions'), {
                 name: 'customer_edit',
-                request: () => ({ includedRegionCodes: ['ca'], locationBias: { center: { lat: 49.848, lng: -99.950 }, radius: 50000 } }),
+                request: () => ({ includedRegionCodes: ['ca'], locationBias: { center: BRANDON, radius: 50000 } }),
                 fields: ['addressComponents'],
                 onPick: (place, prediction) => {
                     const comps = place.addressComponents || [];
@@ -4994,12 +5013,39 @@
                     addressInput.value = street || mainText || (prediction ? prediction.text.toString() : addressInput.value);
                     const town = part('locality') || part('administrative_area_level_3') || part('sublocality');
                     if (town) cityInput.value = town;
-                    // A typed address replaces a spot taken with "Use where I am now".
-                    if (ecCustomerEdit) ecCustomerEdit.hereSpot = null;
-                    ecRenderCustomerSpot();
+                    picked();
+                },
+                fallback: () => {
+                    const box = new google.maps.places.Autocomplete(addressInput, {
+                        fields: ['address_components'],
+                        componentRestrictions: { country: 'ca' },
+                        bounds: new google.maps.Circle({ center: new google.maps.LatLng(BRANDON.lat, BRANDON.lng), radius: 50000 }).getBounds(),
+                        strictBounds: false
+                    });
+                    box.addListener('place_changed', () => {
+                        const place = box.getPlace();
+                        if (!place.address_components) return;
+                        ecTrackApi('places__customer_edit_pick');
+                        for (let comp of place.address_components) {
+                            if (comp.types.includes('locality')) {
+                                cityInput.value = comp.long_name;
+                                break;
+                            }
+                        }
+                        // Read the field after the widget has written the chosen address into it.
+                        setTimeout(picked, 0);
+                    });
                 }
             });
         }
+        // It stays at the top until the editor closes, so Save or Delete don't jump away from
+        // the finger when the address box loses focus.
+        (function () {
+            const overlay = document.getElementById('ec-customer-overlay');
+            const addressInput = document.getElementById('ec-customer-address');
+            if (!overlay || !addressInput) return;
+            addressInput.addEventListener('focus', () => overlay.classList.add('ec-typing'));
+        })();
         // The exact spot that Save would keep: one just taken here, else the saved one while
         // the address and city are unchanged.
         function ecCustomerEditSpot() {
@@ -5092,6 +5138,30 @@
             ecToast(fixed > 0
                 ? `Saved "${name}". Fixed ${fixed} stop${fixed === 1 ? '' : 's'} on today's route.`
                 : `Saved "${name}".`);
+        }
+        // Deletes the customer from address lookup, notes included, after asking. Their stops
+        // already on a route stay as they are. The change log keeps the whole record, so it
+        // could be put back by hand.
+        async function deleteCustomerFromEditor() {
+            const ed = ecCustomerEdit;
+            if (!ed || !ed.key) return;
+            const key = ed.key;
+            const record = addressData[key];
+            if (!record) { ecToast(`"${key}" is no longer in address lookup.`, { type: 'error' }); closeCustomerEditor(); return; }
+            const noteCount = Object.values(record.notes || {}).filter(n => n && n.text && !n.deleted).length;
+            const ok = await ecConfirm(`Delete "${key}" from address lookup${noteCount ? `, with ${noteCount} note${noteCount === 1 ? '' : 's'}` : ''}? Stops already on a route stay.`,
+                { okLabel: 'Delete', danger: true });
+            if (!ok || ecCustomerEdit !== ed) return;
+            const before = ecCustomerSnapshot(key, record);
+            closeCustomerEditor();
+            ecToast(`Deleted "${key}".`);
+            // Logged once Firebase has accepted the delete.
+            db.ref('address_lookup').child(key).remove().then(() => {
+                ecLogCustomerChange('Customer deleted', before, 'none (customer deleted)', { deleted_record: record });
+            }).catch(err => {
+                console.warn('Customer not deleted:', err && err.message);
+                ecToast("Couldn't delete the customer: " + ((err && err.message) || 'unknown error'), { type: 'error', duration: 8000 });
+            });
         }
         // Changes one stop on this phone and sends it (retried on reconnect like the stop type).
         function ecEditStop(id, fields) {
