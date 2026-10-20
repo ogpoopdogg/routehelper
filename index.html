@@ -2382,6 +2382,38 @@
                 .catch(err => console.warn("Failed to save notification read state:", err));
         }
 
+        // ---------- SECURITY LOG ----------
+        // Failed and refused sign-ins are reported to the E&C security log (the Security section of the
+        // usage page). Firebase runs no server code when a password is wrong, so the page has to say so.
+        // The server adds the real IP address and checks the sign-in token sent with a refusal. Only the
+        // error code is sent, never the password. A report never blocks a sign-in, and is dropped if it
+        // can't be sent.
+        const EC_SECURITY_REPORT_URL = 'https://us-central1-eandccourier-36fcc.cloudfunctions.net/auditSignInReport';
+        function ecSendSecurityReport(report) {
+            try {
+                const body = JSON.stringify(Object.assign({ app: 'routehelper', at: Date.now(), page: location.pathname }, report));
+                // text/plain needs no CORS preflight, and a beacon is still sent when the page closes
+                if (navigator.sendBeacon && navigator.sendBeacon(EC_SECURITY_REPORT_URL, new Blob([body], { type: 'text/plain' }))) return;
+                fetch(EC_SECURITY_REPORT_URL, { method: 'POST', mode: 'no-cors', keepalive: true, body: body }).catch(function () {});
+            } catch (e) { /* never get in the way of signing in */ }
+        }
+        // A sign-in Firebase refused (wrong password, unknown email, too many tries...)
+        function ecReportFailedSignIn(email, err) {
+            const code = String((err && err.code) || 'unknown');
+            if (code === 'auth/network-request-failed') return; // nothing reaches the server anyway
+            ecSendSecurityReport({ kind: 'failed', email: String(email || '').trim().toLowerCase().slice(0, 200), code: code });
+        }
+        // A signed-in account this page turned away. Resolves once the report is sent (at most 2 seconds),
+        // so the page can sign out afterwards.
+        function ecReportRefusedSignIn(user, reason) {
+            if (!user) return Promise.resolve();
+            const token = user.getIdToken().catch(function () { return null; });
+            const wait = new Promise(function (resolve) { setTimeout(function () { resolve(null); }, 2000); });
+            return Promise.race([token, wait]).then(function (idToken) {
+                ecSendSecurityReport({ kind: 'refused', email: String(user.email || '').toLowerCase().slice(0, 200), reason: String(reason || '').slice(0, 200), idToken: idToken });
+            });
+        }
+
         // ---------- LOGIN ----------
         function ecLoginErrorText(err) {
             const code = (err && err.code) || '';
@@ -2407,7 +2439,7 @@
             auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
                 .then(() => auth.signInWithEmailAndPassword(email, pass))
                 .then(() => { if (typeof ecLoginFx === 'function') ecLoginFx('success'); })
-                .catch(err => { ecToast(ecLoginErrorText(err), { type: 'error' }); if (typeof ecLoginFx === 'function') ecLoginFx('error'); });
+                .catch(err => { ecReportFailedSignIn(email, err); ecToast(ecLoginErrorText(err), { type: 'error' }); if (typeof ecLoginFx === 'function') ecLoginFx('error'); });
         }
 
         // A driver already approved on this phone is remembered, so the app opens straight
@@ -2459,7 +2491,7 @@
             ecForgetLastUser();
             try { sessionStorage.setItem('ec_login_message', message); } catch (e) {}
             ecToast(message, { type: 'error' });
-            auth.signOut();
+            ecReportRefusedSignIn(auth.currentUser, message).then(() => auth.signOut());
         }
         // A message saved just before a reload (for example "access denied") is shown once.
         try {
