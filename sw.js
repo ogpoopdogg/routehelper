@@ -9,7 +9,7 @@
 //     copy, the saved copy is replaced and the open app is told, so it can offer a Refresh
 //     (index.html shows "A new version of Route Helper is ready"). The next open uses it.
 // Bumping CACHE_NAME also deletes the old cache.
-const CACHE_NAME = 'ec-route-helper-v5';
+const CACHE_NAME = 'ec-route-helper-v4';
 const APP_SHELL = [
     './',
     './index.html',
@@ -18,8 +18,6 @@ const APP_SHELL = [
     './icon-192.png',
     './apple-touch-icon.png'
 ];
-// The daily intro video, saved on its own so a failed download can't stop the app being saved.
-const INTRO_VIDEO = './intro.mp4';
 // Code and fonts from other sites that the page needs before it can start. The Firebase
 // files never change at a given version number, so a saved copy is always right.
 const FIREBASE_SDK = /^https:\/\/www\.gstatic\.com\/firebasejs\//;
@@ -51,8 +49,6 @@ self.addEventListener('install', (event) => {
             // cache: 'reload' skips the browser's own HTTP cache so the saved copy is the current one
             cache.addAll(APP_SHELL.map(url => new Request(url, { cache: 'reload' })))
                 .catch(err => console.warn('SW precache failed:', err)),
-            cache.add(new Request(INTRO_VIDEO, { cache: 'reload' }))
-                .catch(err => console.warn('SW precache failed:', INTRO_VIDEO, err)),
             // One by one, so one missing file doesn't stop the others being saved.
             ...THIRD_PARTY_SHELL.map(url =>
                 fetch(url, { mode: 'cors', credentials: 'omit' })
