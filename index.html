@@ -1105,8 +1105,7 @@
         .hw-pumpkin svg { display: block; width: 100%; height: auto; overflow: visible; }
         .hw-pumpkin .hw-face { fill: #FFC83D; animation: hw-flicker 2.8s infinite; }
         @keyframes hw-flicker {
-            0%, 100% { opacity: 1; } 8% { opacity: 0.72; } 10% { opacity: 0.95; } 22% { opacity: 0.8; }
-            40% { opacity: 1; } 52% { opacity: 0.68; } 55% { opacity: 0.92; } 78% { opacity: 0.84; }
+            0%, 100% { opacity: 1; } 20% { opacity: 0.88; } 40% { opacity: 0.97; } 60% { opacity: 0.86; } 80% { opacity: 0.95; }
         }
         .hw-graveyard .hw-face { animation: hw-flicker 3.4s infinite; }
         .ec-logo-wrap { position: relative; border-color: rgba(255, 122, 26, 0.6); box-shadow: var(--shadow-1), 0 0 14px rgba(255, 122, 26, 0.25); }
@@ -1250,14 +1249,15 @@
         .hw-login-ghost.hw-g2 { width: 44px; animation-duration: 12s; animation-delay: -4s; }
         .hw-login-ghost.hw-g3 { width: 36px; animation-duration: 10s; animation-delay: -7s; opacity: 0.4; }
         @keyframes hw-haunt { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(18px, -22px); } 50% { transform: translate(-6px, -38px); } 75% { transform: translate(-20px, -14px); } }
-        .hw-lightning { position: absolute; inset: 0; background: rgba(205, 185, 255, 1); opacity: 0; animation: hw-lightning 11s infinite; }
-        @keyframes hw-lightning { 0%, 88%, 100% { opacity: 0; } 89% { opacity: 0.16; } 90% { opacity: 0.02; } 91.5% { opacity: 0.12; } 93% { opacity: 0; } }
         .ec-route { stroke: rgba(255, 122, 26, 0.5); filter: drop-shadow(0 0 4px rgba(255, 122, 26, 0.6)); }
         .ec-route-dim { stroke: rgba(192, 132, 252, 0.35); }
         .ec-stop-dot { fill: #FF9A3C; }
         .ec-stop-ring { stroke: rgba(255, 154, 60, 0.45); }
+        /* Solid, not blurred: a blur has to be redrawn whenever a ghost, bat or the fog moves
+           behind the box, and on phones that made the screen flicker. */
         .login-box {
-            background: rgba(21, 13, 31, 0.9); border-color: rgba(255, 122, 26, 0.35);
+            background: rgba(21, 13, 31, 0.97); -webkit-backdrop-filter: none; backdrop-filter: none;
+            border-color: rgba(255, 122, 26, 0.35);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 32px 80px rgba(0, 0, 0, 0.6), 0 0 60px rgba(139, 61, 255, 0.22);
         }
         .ec-login-crest { position: relative; border-color: rgba(255, 122, 26, 0.6); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 26px rgba(255, 122, 26, 0.3); }
@@ -1265,9 +1265,7 @@
         .ec-login-title {
             font-size: 34px; color: #FF9A3C; line-height: 1.1;
             text-shadow: 0 0 12px rgba(255, 122, 26, 0.6), 0 0 32px rgba(255, 80, 0, 0.35);
-            animation: hw-title-flicker 6s infinite;
         }
-        @keyframes hw-title-flicker { 0%, 100% { opacity: 1; } 46% { opacity: 1; } 47% { opacity: 0.55; } 48% { opacity: 1; } 49.5% { opacity: 0.7; } 51% { opacity: 1; } }
         .ec-login-sub { color: #A794B8; }
         .hw-login-tag {
             display: inline-block; margin: 0 0 var(--sp-2); padding: 3px 12px; border-radius: 999px;
@@ -1282,13 +1280,13 @@
 
         /* ---------- CALM / REDUCED MOTION ---------- */
         /* "Spooky effects: off" keeps the colours and the still pictures, but nothing moves. */
-        body.hw-calm #hw-fx, body.hw-calm .hw-spider-wrap, body.hw-calm .hw-lightning, body.hw-calm .hw-eyes { display: none; }
+        body.hw-calm #hw-fx, body.hw-calm .hw-spider-wrap, body.hw-calm .hw-eyes { display: none; }
         body.hw-calm #hw-scene *, body.hw-calm .hw-login-fx *, body.hw-calm .hw-pumpkin *,
         body.hw-calm .hw-empty-pumpkin, body.hw-calm .btn-add, body.hw-calm .btn-add::after,
-        body.hw-calm .job-item.next-stop, body.hw-calm .ec-login-title { animation: none !important; }
+        body.hw-calm .job-item.next-stop { animation: none !important; }
         body.hw-calm .btn-add::after { display: none; }
         @media (prefers-reduced-motion: reduce) {
-            #hw-fx, .hw-spider-wrap, .hw-lightning, .hw-eyes, .btn-add::after { display: none; }
+            #hw-fx, .hw-spider-wrap, .hw-eyes, .btn-add::after { display: none; }
         }
     </style>
 </head>
@@ -2451,10 +2449,12 @@
                 return;
             }
             if (typeof ecLoginFx === 'function') ecLoginFx('loading');
+            ecSigningIn = true;
             auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
                 .then(() => auth.signInWithEmailAndPassword(email, pass))
-                .then(() => { if (typeof ecLoginFx === 'function') ecLoginFx('success'); })
-                .catch(err => { ecReportFailedSignIn(email, err); ecToast(ecLoginErrorText(err), { type: 'error' }); if (typeof ecLoginFx === 'function') ecLoginFx('error'); });
+                // Still checking the account: the spinner stays until the app opens.
+                .then(() => { if (typeof ecLoginFx === 'function') ecLoginFx(ecSigningIn ? 'loading' : 'success'); })
+                .catch(err => { ecSigningIn = false; ecReportFailedSignIn(email, err); ecToast(ecLoginErrorText(err), { type: 'error' }); if (typeof ecLoginFx === 'function') ecLoginFx('error'); });
         }
 
         // A driver already approved on this phone is remembered, so the app opens straight
@@ -2465,6 +2465,8 @@
         // route before Firebase has finished checking the sign-in (see OPEN STRAIGHT AWAY).
         const EC_LAST_USER_KEY = 'ec_last_user';
         let ecAppStarted = false;
+        // True from tapping Sign in until the sign-in fails or the app opens.
+        let ecSigningIn = false;
         function ecRoleCached(username) {
             try { return localStorage.getItem(EC_ROLE_CACHE_PREFIX + username) === '1'; } catch (e) { return false; }
         }
@@ -2474,16 +2476,30 @@
                 else localStorage.removeItem(EC_ROLE_CACHE_PREFIX + username);
             } catch (e) {}
         }
+        // Another tab or window of the app may already have saved the driver who just signed
+        // in there, so only the driver this page opened for is forgotten.
         function ecForgetLastUser() {
-            try { localStorage.removeItem(EC_LAST_USER_KEY); } catch (e) {}
+            try {
+                const saved = localStorage.getItem(EC_LAST_USER_KEY);
+                if (!ecAppStarted || !saved || ecUserKey(saved) === currentRouteKey) localStorage.removeItem(EC_LAST_USER_KEY);
+            } catch (e) {}
         }
         function ecShowLoginBox() {
+            if (ecSigningIn && typeof ecLoginFx === 'function') ecLoginFx('idle');
+            ecSigningIn = false;
             const overlay = document.getElementById('login-overlay');
             overlay.classList.remove('ec-auth-pending');
             overlay.style.display = 'flex';
         }
-        function ecShowLoginStatus(text) {
+        // slow: the check is taking a while (no signal), so the driver should be told.
+        function ecShowLoginStatus(text, slow) {
             const overlay = document.getElementById('login-overlay');
+            // Just tapped Sign in: keep the sign-in box and its spinner on screen while the
+            // account is checked, instead of swapping it for a status line (the screen jumped).
+            if (ecSigningIn && overlay.style.display !== 'none' && !overlay.classList.contains('ec-auth-pending')) {
+                if (slow) ecToast(text, { sticky: true });
+                return;
+            }
             overlay.classList.add('ec-auth-pending');
             overlay.style.display = 'flex';
             document.getElementById('ec-login-status').textContent = text;
@@ -2491,6 +2507,7 @@
         function ecStartApp(username) {
             if (ecAppStarted) return;
             ecAppStarted = true;
+            if (ecSigningIn) { ecSigningIn = false; ecHideToast(); }
             currentUser = username.charAt(0).toUpperCase() + username.slice(1);
             currentRouteKey = ecUserKey(username);
             console.log('Resolved currentRouteKey:', currentRouteKey);
@@ -2538,7 +2555,7 @@
             if (ecRoleCached(username)) ecStartApp(username);
             else ecShowLoginStatus('Checking your account…');
             const slowTimer = setTimeout(() => {
-                if (!ecAppStarted) ecShowLoginStatus('Waiting for signal… The app will open as soon as it can reach the server.');
+                if (!ecAppStarted) ecShowLoginStatus('Waiting for signal… The app will open as soon as it can reach the server.', true);
             }, 6000);
             db.ref(`roles/${ecUserKey(username)}/command`).once('value').then(snap => {
                 clearTimeout(slowTimer);
@@ -6520,7 +6537,6 @@
             var login = document.getElementById('login-overlay');
             if (login) {
                 var lfx = el('div', 'hw-login-fx');
-                lfx.appendChild(el('div', 'hw-lightning'));
                 var lStars = el('div', 'hw-stars'); lStars.style.boxShadow = starField(50, 60); lfx.appendChild(lStars);
                 lfx.appendChild(el('div', 'hw-moon'));
                 lfx.insertAdjacentHTML('beforeend', GRAVEYARD);
