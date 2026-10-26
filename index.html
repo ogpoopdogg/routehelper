@@ -1329,13 +1329,9 @@
             </div>
             <div class="update-notification-body">
                 <div class="update-notification-feature">
-                    <div class="update-notification-feature-title">✏️ Fix a customer</div>
-                    <p>Tap the pencil next to a name in the suggestions, or hold a stop and tap EDIT CUSTOMER.</p>
-                    <p>The address box now suggests Google addresses as you type, just like Add a stop.</p>
-                </div>
-                <div class="update-notification-feature">
-                    <div class="update-notification-feature-title">🗑️ Delete a customer</div>
-                    <p>In Fix a customer, tap Delete customer to remove them and their notes from the name suggestions. Stops already on a route stay.</p>
+                    <div class="update-notification-feature-title">🧭 Stop order ends at your last stop</div>
+                    <p>AUTO-OPTIMIZE now plans the shortest drive from where you are to your last stop. The drive back to the shop no longer changes the order, so a stop near the shop isn't pushed to the end.</p>
+                    <p>New stops added to a numbered route are placed the same way.</p>
                 </div>
             </div>
             <div class="update-notification-footer">
@@ -2358,7 +2354,7 @@
         }
 
         // ---------- UPDATE NOTIFICATION (return button + pickup & delivery + route fixes) ----------
-        const UPDATE_NOTIFICATION_ID = 'customer_edit_address_delete_v1';
+        const UPDATE_NOTIFICATION_ID = 'one_way_route_order_v1';
         function checkUpdateNotification() {
             if (!currentRouteKey) return;
             const askedAt = Date.now();
@@ -3308,36 +3304,6 @@
             if (indicator) indicator.style.display = show ? 'block' : 'none';
         }
 
-        // ---------- RETURN SPOT AS A MAP POINT ----------
-        // The driver's own return spot, or the shop. The shop's address is looked up once and
-        // kept on the phone (for up to 29 days, like the road lines) so it isn't paid for again.
-        const SHOP_SPOT_STORE_KEY = 'ec_shop_spot_v1';
-        let ecShopSpotLookup = null;
-        function ecReturnSpotLatLng() {
-            if (ecReturnPoint) return Promise.resolve({ lat: ecReturnPoint.lat, lng: ecReturnPoint.lng });
-            try {
-                const saved = JSON.parse(localStorage.getItem(SHOP_SPOT_STORE_KEY) || 'null');
-                if (saved && saved.address === EC_SHOP_ADDRESS && typeof saved.lat === 'number' && typeof saved.lng === 'number' &&
-                    Date.now() - saved.t < SEGMENT_STORE_MAX_AGE_MS) {
-                    return Promise.resolve({ lat: saved.lat, lng: saved.lng });
-                }
-            } catch (e) { /* unreadable - look it up again */ }
-            if (ecShopSpotLookup) return ecShopSpotLookup;
-            if (!ecMapsLoaded()) return Promise.resolve(null);
-            ecShopSpotLookup = new Promise(resolve => {
-                new google.maps.Geocoder().geocode({ address: EC_SHOP_ADDRESS, region: 'ca' }, (results, status) => {
-                    ecTrackApi('geocode__shop', status === 'OK' || status === 'ZERO_RESULTS');
-                    ecShopSpotLookup = null;
-                    if (status !== 'OK' || !results || !results.length) { resolve(null); return; }
-                    const loc = results[0].geometry.location;
-                    const spot = { lat: loc.lat(), lng: loc.lng() };
-                    try { localStorage.setItem(SHOP_SPOT_STORE_KEY, JSON.stringify({ address: EC_SHOP_ADDRESS, lat: spot.lat, lng: spot.lng, t: Date.now() })); } catch (e) {}
-                    resolve(spot);
-                });
-            });
-            return ecShopSpotLookup;
-        }
-
         // ---------- AUTOMATIC INSERTION OF A NEW STOP INTO A FINALIZED ROUTE ----------
         // Two places for a new stop whose extra driving differs by less than this are treated
         // as equal, and the earlier one is used.
@@ -3353,13 +3319,6 @@
                 // the driver was when they left the app, not where they are now.
                 showCalculatingIndicator(true);
                 const origin = await ecGetFreshLocation(5000, 'No GPS right now. New stop placed using your last known spot.');
-                // Drivers head back to the shop (or their own return spot) after the last stop,
-                // so putting the new stop last also changes that drive back: last stop -> new
-                // stop -> return spot, instead of last stop -> return spot. Without this, the end
-                // of the route looked cheaper than it is and new stops were put last too often.
-                // If the return spot isn't known (no signal on first use), only the leg to the
-                // new stop is counted, as before.
-                const returnSpot = await ecReturnSpotLatLng();
                 if (!routeState.isFinalized) { showCalculatingIndicator(false); return; }
                 let newJob = jobs[newId];
                 if (!newJob || !newJob.lat || !newJob.lng || routeState.order.includes(newId)) { showCalculatingIndicator(false); return; }
@@ -3372,12 +3331,14 @@
                 const live = routeState.order.filter(id => jobs[id] && !checkedStops.includes(id) && ecIsActiveStop(id) && ecHasSpot(id));
 
                 // Every place the new stop could go: between the driver and stop 1, between
-                // each pair of stops left, and between the last stop and the return spot.
+                // each pair of stops left, or after the last stop. The route is planned one way,
+                // ending at the last stop: the drive back to the shop is not counted (the same
+                // as AUTO-OPTIMIZE), so putting the new stop last costs only the leg to it.
                 const slots = [];
                 for (let i = 0; i <= live.length; i++) {
                     slots.push({
                         prev: i === 0 ? origin : pointFor(live[i - 1]),
-                        next: i === live.length ? returnSpot : pointFor(live[i])
+                        next: i === live.length ? null : pointFor(live[i])
                     });
                 }
                 // Measured by road, the way the route line on the map is drawn. Straight
@@ -3395,12 +3356,10 @@
                 const dist = byRoad ? (a, b) => roadDist.get(ecLegKey(a, b)) : euclidDist;
                 if (!byRoad) ecToast('No road distances right now. New stop placed using straight-line distance.', { duration: 6000 });
 
-                // The slot that adds the least driving to the whole day, the drive back
-                // included. Slots within EC_INSERT_TIE_METERS of the best count as a tie: a
-                // stop just off the road out is also just off the road back, so both cost the
-                // same. Then the stop goes right after the tied stop nearest to it (earliest
-                // first), so it is done on the way out, and the driver never drives past a
-                // stop to reach the new one and then comes back.
+                // The slot that adds the least driving to the route. Slots within
+                // EC_INSERT_TIE_METERS of the best count as a tie. Then the stop goes right after
+                // the tied stop nearest to it (earliest first), so the driver never drives past
+                // a stop to reach the new one and then comes back.
                 const deltas = slots.map(s => s.next
                     ? dist(s.prev, newPoint) + dist(newPoint, s.next) - dist(s.prev, s.next)
                     : dist(s.prev, newPoint));
@@ -3472,8 +3431,113 @@
             }
         }
 
-        // Google's limit on middle stops in one Routes API request.
+        // Most stops AUTO-OPTIMIZE sorts at once. Every pair of stops is measured by road, so
+        // the lookups grow fast: 25 stops is 625 distances.
         const EC_MAX_OPTIMIZE_STOPS = 25;
+        // Order of points 1..n for the shortest one-way drive that starts at point 0 and ends
+        // at any of them. cost[i][j] is the drive from point i to point j. Up to
+        // EC_EXACT_ORDER_MAX_STOPS points every order is checked; above that the best of a few
+        // improved orders is used.
+        const EC_EXACT_ORDER_MAX_STOPS = 15;
+        function ecShortestOpenPath(cost) {
+            const n = cost.length - 1;
+            if (n <= EC_EXACT_ORDER_MAX_STOPS) {
+                // best[mask * n + last]: shortest drive from point 0 through the points in mask
+                // (bit k = point k + 1), ending at point last + 1.
+                const full = (1 << n) - 1;
+                const best = new Float64Array((full + 1) * n).fill(Infinity);
+                const from = new Int8Array((full + 1) * n).fill(-1);
+                for (let k = 0; k < n; k++) best[(1 << k) * n + k] = cost[0][k + 1];
+                for (let mask = 1; mask <= full; mask++) {
+                    for (let last = 0; last < n; last++) {
+                        const here = best[mask * n + last];
+                        if (here === Infinity) continue;
+                        for (let k = 0; k < n; k++) {
+                            if (mask & (1 << k)) continue;
+                            const at = (mask | (1 << k)) * n + k;
+                            const c = here + cost[last + 1][k + 1];
+                            if (c < best[at]) { best[at] = c; from[at] = last; }
+                        }
+                    }
+                }
+                let end = 0;
+                for (let k = 1; k < n; k++) if (best[full * n + k] < best[full * n + end]) end = k;
+                const path = [];
+                for (let mask = full, k = end; k >= 0; ) {
+                    path.unshift(k + 1);
+                    const prev = from[mask * n + k];
+                    mask &= ~(1 << k);
+                    k = prev;
+                }
+                return path;
+            }
+            const pathCost = path => {
+                let c = 0, prev = 0;
+                path.forEach(k => { c += cost[prev][k]; prev = k; });
+                return c;
+            };
+            // Keep shortening an order - reverse a stretch, or move a run of 1-3 stops
+            // elsewhere - until nothing makes it shorter.
+            const improve = path => {
+                let pathLen = pathCost(path), better = true;
+                while (better) {
+                    better = false;
+                    for (let i = 0; i < n - 1; i++) {
+                        for (let j = i + 1; j < n; j++) {
+                            const t = path.slice(0, i).concat(path.slice(i, j + 1).reverse(), path.slice(j + 1));
+                            const c = pathCost(t);
+                            if (c < pathLen - 1e-6) { path = t; pathLen = c; better = true; }
+                        }
+                    }
+                    for (let len = 1; len <= 3; len++) {
+                        for (let i = 0; i + len <= n; i++) {
+                            const run = path.slice(i, i + len), rest = path.slice(0, i).concat(path.slice(i + len));
+                            for (let at = 0; at <= rest.length; at++) {
+                                if (at === i) continue;
+                                const t = rest.slice(0, at).concat(run, rest.slice(at));
+                                const c = pathCost(t);
+                                if (c < pathLen - 1e-6) { path = t; pathLen = c; better = true; break; }
+                            }
+                        }
+                    }
+                }
+                return { path: path, len: pathLen };
+            };
+            // Starting orders: nearest stop next, plus shuffles from a fixed seed so the same
+            // stops always give the same answer.
+            const starts = [];
+            const left = new Set(Array.from({ length: n }, (_, k) => k + 1));
+            const nearest = [];
+            for (let at = 0; left.size > 0; ) {
+                let next = null;
+                left.forEach(k => { if (next === null || cost[at][k] < cost[at][next]) next = k; });
+                nearest.push(next);
+                left.delete(next);
+                at = next;
+            }
+            starts.push(nearest);
+            let seed = 20261026;
+            const rand = () => {
+                seed = (seed + 0x6D2B79F5) | 0;
+                let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+                t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+            for (let s = 0; s < 29; s++) {
+                const order = nearest.slice();
+                for (let i = order.length - 1; i > 0; i--) {
+                    const j = Math.floor(rand() * (i + 1));
+                    const tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+                }
+                starts.push(order);
+            }
+            let bestFound = null;
+            starts.forEach(order => {
+                const r = improve(order);
+                if (!bestFound || r.len < bestFound.len - 1e-6) bestFound = r;
+            });
+            return bestFound.path;
+        }
         async function autoOptimizeRoute(opts) {
             opts = opts || {};
             let reorderAll = !!opts.reorderAll;
@@ -3515,7 +3579,7 @@
                     return;
                 }
                 if (unassignedIds.length > EC_MAX_OPTIMIZE_STOPS) {
-                    ecToast(`Auto-optimize can sort up to ${EC_MAX_OPTIMIZE_STOPS} stops at a time (Google's limit). You have ${unassignedIds.length}. Number some by hand with CREATE ROUTE first.`, { type: 'error', duration: 9000 });
+                    ecToast(`Auto-optimize can sort up to ${EC_MAX_OPTIMIZE_STOPS} stops at a time. You have ${unassignedIds.length}. Number some by hand with CREATE ROUTE first.`, { type: 'error', duration: 9000 });
                     return;
                 }
 
@@ -3533,48 +3597,38 @@
                 const routingOrigin = (!reorderAll && keptWithSpot.length > 0) ? pointFor(keptWithSpot[keptWithSpot.length - 1]) : origin;
                 let orderedUnassigned = unassignedIds;
                 if (unassignedIds.length > 1) {
-                    const intermediates = unassignedIds.map(id => ({ location: { latLng: { latitude: jobs[id].lat, longitude: jobs[id].lng } } }));
-                    let response;
-                    try {
-                    response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-Goog-Api-Key": EC_GOOGLE_API_KEY,
-                            // Only the new stop order is used, so only that is asked for (smaller, faster reply).
-                            "X-Goog-FieldMask": "routes.optimizedIntermediateWaypointIndex"
-                        },
-                        body: JSON.stringify({
-                            origin: { location: { latLng: { latitude: routingOrigin.lat, longitude: routingOrigin.lng } } },
-                            // On purpose: the order is planned for a trip that ends back at the Return
-                            // spot (the shop, unless the driver picked their own with the Return
-                            // button), because drivers go back there after the last stop. The line
-                            // on the map and the Navigate link still stop at the last stop; the
-                            // Return button covers the drive back. Stop insertion
-                            // (insertStopIntoFinalizedRoute) counts the same drive back.
-                            destination: ecReturnWaypoint(),
-                            intermediates: intermediates,
-                            travelMode: "DRIVE",
-                            optimizeWaypointOrder: true
-                        })
-                    });
-                    } catch (netErr) {
-                        // Mark it so the message below can say it was the connection (#11).
-                        if (netErr) netErr.ecNetwork = true;
-                        throw netErr;
-                    }
-                    ecTrackApi('routes__optimize', response.ok);
-                    let data = null;
-                    try { data = await response.json(); } catch (e) { data = null; }
-                    const waypointOrder = data && data.routes && data.routes[0] && data.routes[0].optimizedIntermediateWaypointIndex;
-                    if (!response.ok || !Array.isArray(waypointOrder) || waypointOrder.length !== unassignedIds.length) {
+                    // Planned as a one-way trip: from the start point through every stop, ending
+                    // at whichever stop makes the drive shortest. The drive back to the shop is
+                    // not counted (the Return button covers it), so a stop near the shop is not
+                    // saved for last just because it is on the way home. Google's own optimizer
+                    // always needs an end point, so the order is worked out here from the road
+                    // distance between every pair of stops (Google's route matrix, the same
+                    // distances used to place a new stop).
+                    const points = [routingOrigin].concat(unassignedIds.map(pointFor));
+                    const ptKey = p => p.lat.toFixed(6) + ',' + p.lng.toFixed(6);
+                    const pairs = [];
+                    points.forEach((a, i) => points.forEach((b, j) => {
+                        // Nothing is ever driven back to the start point (index 0).
+                        if (j > 0 && i !== j && ptKey(a) !== ptKey(b)) pairs.push([a, b]);
+                    }));
+                    const roadMeters = await ecRoadDistances(pairs);
+                    if (!roadMeters.every(m => typeof m === 'number')) {
+                        if (navigator.onLine === false) {
+                            const offline = new Error('offline');
+                            offline.ecNetwork = true;
+                            throw offline;
+                        }
                         // Keep the old order and say so - never mark the route "optimized" when it isn't (#9).
-                        const reason = (data && data.error && data.error.message) || ('HTTP ' + response.status);
-                        console.warn("Auto-optimize: Google did not return an order:", reason);
+                        console.warn("Auto-optimize: Google did not return every road distance.");
                         ecToast("Google couldn't optimize this route right now, so the order was not changed.", { type: 'error' });
                         return;
                     }
-                    orderedUnassigned = waypointOrder.map(idx => unassignedIds[idx]);
+                    const roadDist = new Map(pairs.map((p, i) => [ecLegKey(p[0], p[1]), roadMeters[i]]));
+                    const cost = points.map(a => points.map(b => {
+                        const m = roadDist.get(ecLegKey(a, b));
+                        return typeof m === 'number' ? m : 0; // same spot, or back to the start
+                    }));
+                    orderedUnassigned = ecShortestOpenPath(cost).map(k => unassignedIds[k - 1]);
                 }
 
                 const bestOrder = keptInFront.concat(orderedUnassigned);
@@ -5694,11 +5748,6 @@
             } catch (e) {}
             const ref = ecReturnPointRef();
             if (ref) ref.on('value', snap => ecApplyReturnPoint(snap.val()));
-        }
-        // Routes API end point for AUTO-OPTIMIZE.
-        function ecReturnWaypoint() {
-            if (ecReturnPoint) return { location: { latLng: { latitude: ecReturnPoint.lat, longitude: ecReturnPoint.lng } } };
-            return { address: EC_SHOP_ADDRESS };
         }
         function openReturnInMaps() {
             const dest = ecReturnPoint ? `${ecReturnPoint.lat},${ecReturnPoint.lng}` : EC_SHOP_ADDRESS;
