@@ -3431,8 +3431,7 @@
             }
         }
 
-        // Most stops AUTO-OPTIMIZE sorts at once. Every pair of stops is measured by road, so
-        // the lookups grow fast: 25 stops is 625 distances.
+        // Google's limit on middle stops in one Routes API request.
         const EC_MAX_OPTIMIZE_STOPS = 25;
         // Order of points 1..n for the shortest one-way drive that starts at point 0 and ends
         // at any of them. cost[i][j] is the drive from point i to point j. Up to
@@ -3597,38 +3596,58 @@
                 const routingOrigin = (!reorderAll && keptWithSpot.length > 0) ? pointFor(keptWithSpot[keptWithSpot.length - 1]) : origin;
                 let orderedUnassigned = unassignedIds;
                 if (unassignedIds.length > 1) {
-                    // Planned as a one-way trip: from the start point through every stop, ending
-                    // at whichever stop makes the drive shortest. The drive back to the shop is
-                    // not counted (the Return button covers it), so a stop near the shop is not
-                    // saved for last just because it is on the way home. Google's own optimizer
-                    // always needs an end point, so the order is worked out here from the road
-                    // distance between every pair of stops (Google's route matrix, the same
-                    // distances used to place a new stop).
+                    // Planned as a one-way trip that ends at the last stop: the drive back to the
+                    // shop is not counted (the Return button covers it), so a stop near the shop
+                    // is not saved for last just because it is on the way home. Google's optimizer
+                    // always needs an end point, so the last stop is picked here first, from the
+                    // shortest one-way order by straight-line distance (free, no Google request).
                     const points = [routingOrigin].concat(unassignedIds.map(pointFor));
-                    const ptKey = p => p.lat.toFixed(6) + ',' + p.lng.toFixed(6);
-                    const pairs = [];
-                    points.forEach((a, i) => points.forEach((b, j) => {
-                        // Nothing is ever driven back to the start point (index 0).
-                        if (j > 0 && i !== j && ptKey(a) !== ptKey(b)) pairs.push([a, b]);
-                    }));
-                    const roadMeters = await ecRoadDistances(pairs);
-                    if (!roadMeters.every(m => typeof m === 'number')) {
-                        if (navigator.onLine === false) {
-                            const offline = new Error('offline');
-                            offline.ecNetwork = true;
-                            throw offline;
-                        }
+                    const straight = points.map(a => points.map(b => haversineDistanceKm(a, b)));
+                    const straightOrder = ecShortestOpenPath(straight).map(k => unassignedIds[k - 1]);
+                    const lastId = straightOrder[straightOrder.length - 1];
+                    orderedUnassigned = unassignedIds.filter(id => id !== lastId).concat(lastId);
+                }
+                // Google orders the stops before the last one by road, in one request. With only
+                // one stop before it there is nothing to re-order, so no request.
+                if (orderedUnassigned.length > 2) {
+                    const lastId = orderedUnassigned[orderedUnassigned.length - 1];
+                    const middleIds = orderedUnassigned.slice(0, -1);
+                    const toWaypoint = id => ({ location: { latLng: { latitude: jobs[id].lat, longitude: jobs[id].lng } } });
+                    let response;
+                    try {
+                    response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-Goog-Api-Key": EC_GOOGLE_API_KEY,
+                            // Only the new stop order is used, so only that is asked for (smaller, faster reply).
+                            "X-Goog-FieldMask": "routes.optimizedIntermediateWaypointIndex"
+                        },
+                        body: JSON.stringify({
+                            origin: { location: { latLng: { latitude: routingOrigin.lat, longitude: routingOrigin.lng } } },
+                            destination: toWaypoint(lastId),
+                            intermediates: middleIds.map(toWaypoint),
+                            travelMode: "DRIVE",
+                            optimizeWaypointOrder: true
+                        })
+                    });
+                    } catch (netErr) {
+                        // Mark it so the message below can say it was the connection (#11).
+                        if (netErr) netErr.ecNetwork = true;
+                        throw netErr;
+                    }
+                    ecTrackApi('routes__optimize', response.ok);
+                    let data = null;
+                    try { data = await response.json(); } catch (e) { data = null; }
+                    const waypointOrder = data && data.routes && data.routes[0] && data.routes[0].optimizedIntermediateWaypointIndex;
+                    if (!response.ok || !Array.isArray(waypointOrder) || waypointOrder.length !== middleIds.length) {
                         // Keep the old order and say so - never mark the route "optimized" when it isn't (#9).
-                        console.warn("Auto-optimize: Google did not return every road distance.");
+                        const reason = (data && data.error && data.error.message) || ('HTTP ' + response.status);
+                        console.warn("Auto-optimize: Google did not return an order:", reason);
                         ecToast("Google couldn't optimize this route right now, so the order was not changed.", { type: 'error' });
                         return;
                     }
-                    const roadDist = new Map(pairs.map((p, i) => [ecLegKey(p[0], p[1]), roadMeters[i]]));
-                    const cost = points.map(a => points.map(b => {
-                        const m = roadDist.get(ecLegKey(a, b));
-                        return typeof m === 'number' ? m : 0; // same spot, or back to the start
-                    }));
-                    orderedUnassigned = ecShortestOpenPath(cost).map(k => unassignedIds[k - 1]);
+                    orderedUnassigned = waypointOrder.map(idx => middleIds[idx]).concat(lastId);
                 }
 
                 const bestOrder = keptInFront.concat(orderedUnassigned);
