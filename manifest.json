@@ -3,8 +3,8 @@
   "short_name": "Route Helper",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#111827",
-  "theme_color": "gold",
+  "background_color": "#121316",
+  "theme_color": "#121316",
   "icons": [
     {
       "src": "icon-192.png",
