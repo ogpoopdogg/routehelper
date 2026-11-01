@@ -8,10 +8,10 @@
     <link rel="icon" type="image/png" href="icon2.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <meta name="apple-mobile-web-app-title" content="Route Helper">
-    <meta name="theme-color" content="#0B0612">
+    <meta name="theme-color" content="#121316">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* =====================================================================
            E&C ROUTE HELPER — one stylesheet for the whole app.
@@ -24,35 +24,37 @@
         /* ---------- TOKENS ---------- */
         :root {
             /* Dark (default) */
-            --bg: #0A0A0B;
-            --surface: #131315;          /* cards and panels */
-            --surface-2: #1A1A1D;        /* inputs, stop cards */
-            --surface-3: #232327;        /* hover, pressed, raised */
-            --border: #2A2A2F;
-            --border-strong: #3B3B42;
-            --text: #F4F4F5;
-            --text-2: #B9B9C1;           /* secondary text */
-            --text-3: #8A8A94;           /* labels, hints */
-            --accent: #E8E400;           /* E&C yellow */
-            --accent-hover: #F3EF2A;
-            --accent-press: #CFCB00;
-            --accent-text: #E8E400;      /* yellow used as text on the background */
-            --accent-soft: rgba(232, 228, 0, 0.12);
-            --on-accent: #0A0A0B;
-            --pickup: #E8E400;
-            --delivery: #22C55E;
-            --pending: #FB923C;
+            /* Soft charcoal instead of pure black, off-white instead of pure white and a
+               calmer E&C yellow: easier to look at for a whole shift. */
+            --bg: #121316;
+            --surface: #1A1B1F;          /* cards and panels */
+            --surface-2: #202126;        /* inputs, stop cards */
+            --surface-3: #292A30;        /* hover, pressed, raised */
+            --border: #2F3036;
+            --border-strong: #41434A;
+            --text: #E4E4E1;
+            --text-2: #AEAFB4;           /* secondary text */
+            --text-3: #8B8D94;           /* labels, hints */
+            --accent: #DFD549;           /* E&C yellow, softened */
+            --accent-hover: #E8DF63;
+            --accent-press: #CBC13C;
+            --accent-text: #DFD549;      /* yellow used as text on the background */
+            --accent-soft: rgba(223, 213, 73, 0.12);
+            --on-accent: #121316;
+            --pickup: #DFD549;
+            --delivery: #34B86A;
+            --pending: #F59E4F;
             --note: #3B82F6;
-            --danger: #F87171;
-            --danger-solid: #DC2626;
-            --success: #22C55E;
-            --overlay: rgba(0, 0, 0, 0.66);
-            --header-bg: rgba(10, 10, 11, 0.88);
+            --danger: #F08080;
+            --danger-solid: #D03A3A;
+            --success: #34B86A;
+            --overlay: rgba(6, 7, 9, 0.62);
+            --header-bg: rgba(18, 19, 22, 0.88);
             --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.04);
             --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
             --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 16px rgba(0, 0, 0, 0.35);
             --shadow-3: 0 4px 12px rgba(0, 0, 0, 0.45), 0 24px 56px rgba(0, 0, 0, 0.6);
-            --focus-ring: 0 0 0 3px rgba(232, 228, 0, 0.35);
+            --focus-ring: 0 0 0 3px rgba(223, 213, 73, 0.35);
 
             /* Spacing (8-point scale) */
             --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-7: 28px; --sp-8: 32px;
@@ -70,22 +72,23 @@
             color-scheme: dark;
         }
         body.light-mode {
-            --bg: #F3F3F1;
-            --surface: #FFFFFF;
-            --surface-2: #F8F8F6;
-            --surface-3: #EEEEEA;
-            --border: #E2E2DD;
-            --border-strong: #CBCBC4;
-            --text: #18181B;
-            --text-2: #45454D;
-            --text-3: #6A6A73;
+            /* Warm off-white instead of glaring white, dark grey text instead of black */
+            --bg: #EAE9E4;
+            --surface: #F7F6F2;
+            --surface-2: #F2F1EC;
+            --surface-3: #E6E5DF;
+            --border: #DAD8D1;
+            --border-strong: #C3C1B9;
+            --text: #24252A;
+            --text-2: #4A4B52;
+            --text-3: #67686F;
             --accent-text: #6B6700;
             --accent-soft: rgba(168, 164, 0, 0.12);
             --pending: #C2410C;
             --note: #2563EB;
             --danger: #B91C1C;
             --overlay: rgba(24, 24, 27, 0.45);
-            --header-bg: rgba(255, 255, 255, 0.9);
+            --header-bg: rgba(247, 246, 242, 0.9);
             --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.6);
             --shadow-1: 0 1px 2px rgba(24, 24, 27, 0.06);
             --shadow-2: 0 1px 2px rgba(24, 24, 27, 0.06), 0 6px 16px rgba(24, 24, 27, 0.07);
@@ -133,7 +136,7 @@
         .ec-logo-wrap {
             display: grid; place-items: center; flex-shrink: 0;
             width: 40px; height: 40px; border-radius: var(--radius);
-            background: #000; border: 1px solid rgba(232, 228, 0, 0.45);
+            background: #000; border: 1px solid rgba(223, 213, 73, 0.45);
             box-shadow: var(--shadow-1);
         }
         .header-logo { width: 100%; height: 100%; display: block; border-radius: calc(var(--radius) - 1px); }
@@ -153,7 +156,7 @@
         }
         .map-btn.ec-hdr-btn svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--text); }
         .map-btn.ec-hdr-btn:hover { background: var(--surface-3); border-color: var(--border-strong); color: var(--text); }
-        #map-btn { border-color: rgba(232, 228, 0, 0.55); }
+        #map-btn { border-color: rgba(223, 213, 73, 0.55); }
         #map-btn svg { color: var(--accent-text); }
         body.light-mode #map-btn { border-color: var(--text); }
         body.light-mode #map-btn svg { color: var(--text); }
@@ -351,7 +354,7 @@
             border: none; border-radius: var(--radius); cursor: pointer;
             background: var(--accent); color: var(--on-accent);
             font-size: 15px; font-weight: 700; letter-spacing: 0.04em;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 16px rgba(232, 228, 0, 0.14);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 16px rgba(223, 213, 73, 0.14);
             transition: background 0.15s var(--ease), box-shadow 0.15s var(--ease);
         }
         .btn-add::before {
@@ -483,11 +486,11 @@
 
         /* Next stop: the one card that stands out */
         .job-item.next-stop:not(.checked) {
-            background: var(--surface-3); border-color: rgba(232, 228, 0, 0.55);
-            box-shadow: 0 0 0 1px rgba(232, 228, 0, 0.25), var(--shadow-2);
+            background: var(--surface-3); border-color: rgba(223, 213, 73, 0.55);
+            box-shadow: 0 0 0 1px rgba(223, 213, 73, 0.25), var(--shadow-2);
             padding-top: var(--sp-4); padding-bottom: var(--sp-4);
         }
-        body.light-mode .job-item.next-stop:not(.checked) { background: #FFFFFF; border-color: var(--text); box-shadow: 0 0 0 1px var(--text), var(--shadow-2); }
+        body.light-mode .job-item.next-stop:not(.checked) { background: var(--surface); border-color: var(--text); box-shadow: 0 0 0 1px var(--text), var(--shadow-2); }
         .job-item.next-stop:not(.checked) .job-info::before {
             content: "Next stop"; display: block; margin-bottom: 4px;
             font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-text);
@@ -510,7 +513,7 @@
 
         /* Just added (or matched as a duplicate): a short yellow outline that fades */
         .job-item-new { animation: ec-flash 1.4s ease-out; }
-        @keyframes ec-flash { from { box-shadow: 0 0 0 3px var(--accent); } to { box-shadow: 0 0 0 3px rgba(232, 228, 0, 0); } }
+        @keyframes ec-flash { from { box-shadow: 0 0 0 3px var(--accent); } to { box-shadow: 0 0 0 3px rgba(223, 213, 73, 0); } }
 
         /* Hold a card to delete */
         .job-item.delete-mode { filter: none !important; opacity: 1 !important; }
@@ -554,23 +557,23 @@
         #login-overlay {
             position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center;
             padding: var(--sp-4); overflow: hidden;
-            background: radial-gradient(80% 55% at 50% 0%, rgba(232, 228, 0, 0.09), transparent 65%), #070708;
-            color: #F4F4F5; color-scheme: dark;
+            background: radial-gradient(80% 55% at 50% 0%, rgba(223, 213, 73, 0.07), transparent 65%), #0F1013;
+            color: #E4E4E1; color-scheme: dark;
         }
         .ec-login-routes { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0.8; }
         .ec-route-base { fill: none; stroke: rgba(255, 255, 255, 0.04); stroke-width: 7; stroke-linecap: round; }
-        .ec-route { fill: none; stroke: rgba(232, 228, 0, 0.4); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: ec-draw 2.4s var(--ease) forwards; }
+        .ec-route { fill: none; stroke: rgba(223, 213, 73, 0.4); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: ec-draw 2.4s var(--ease) forwards; }
         .ec-route-dim { stroke: rgba(255, 255, 255, 0.18); }
         @keyframes ec-draw { to { stroke-dashoffset: 0; } }
         .ec-stop { transform-box: fill-box; transform-origin: center; animation: ec-pop 0.5s var(--ease) both; }
-        .ec-stop-dot { fill: #E8E400; }
-        .ec-stop-ring { fill: none; stroke: rgba(232, 228, 0, 0.35); stroke-width: 2; }
+        .ec-stop-dot { fill: #DFD549; }
+        .ec-stop-ring { fill: none; stroke: rgba(223, 213, 73, 0.35); stroke-width: 2; }
         @keyframes ec-pop { from { transform: scale(0); opacity: 0; } }
         .ec-traveler { display: none; }
         .login-box {
             position: relative; z-index: 1; width: 100%; max-width: 380px;
             padding: var(--sp-8) var(--sp-7) var(--sp-7); text-align: center;
-            background: rgba(19, 19, 21, 0.92); border: 1px solid #2A2A2F; border-radius: var(--radius-xl);
+            background: rgba(26, 27, 31, 0.92); border: 1px solid #2F3036; border-radius: var(--radius-xl);
             -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 32px 80px rgba(0, 0, 0, 0.6);
             animation: ec-rise 0.5s var(--ease) both;
@@ -580,28 +583,28 @@
         @keyframes ec-rise { from { opacity: 0; transform: translateY(12px); } }
         .ec-login-crest {
             display: grid; place-items: center; width: 80px; height: 80px; margin: 0 auto var(--sp-5);
-            border-radius: var(--radius-xl); background: #000; border: 1px solid rgba(232, 228, 0, 0.45);
+            border-radius: var(--radius-xl); background: #000; border: 1px solid rgba(223, 213, 73, 0.45);
             box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
         }
         .ec-login-crest img { width: 100%; height: 100%; display: block; border-radius: calc(var(--radius-xl) - 1px); }
-        .ec-login-title { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: #F4F4F5; }
-        .ec-login-sub { margin: var(--sp-1) 0 var(--sp-6); font-size: 14px; color: #8A8A94; }
+        .ec-login-title { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: #E4E4E1; }
+        .ec-login-sub { margin: var(--sp-1) 0 var(--sp-6); font-size: 14px; color: #8B8D94; }
         #login-form { margin: 0; display: flex; flex-direction: column; gap: var(--sp-3); }
         .login-input {
             width: 100%; min-height: 52px; margin: 0; padding: 14px 16px;
-            background: #0E0E10; color: #F4F4F5; border: 1px solid #2E2E34; border-radius: var(--radius);
+            background: #15161A; color: #E4E4E1; border: 1px solid #33343A; border-radius: var(--radius);
             font-size: 16px; outline: none;
         }
         .login-input::placeholder { color: #6E6E78; }
-        .login-input:focus { border-color: #E8E400; box-shadow: 0 0 0 3px rgba(232, 228, 0, 0.3); background: #0E0E10; }
+        .login-input:focus { border-color: #DFD549; box-shadow: 0 0 0 3px rgba(223, 213, 73, 0.3); background: #15161A; }
         .login-submit {
             position: relative; width: 100%; min-height: 52px; margin-top: var(--sp-2); padding: 0;
             border: none; border-radius: var(--radius); cursor: pointer;
-            background: #E8E400; color: #0A0A0B; font-size: 15px; font-weight: 700; letter-spacing: 0.04em;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 16px rgba(232, 228, 0, 0.18);
+            background: #DFD549; color: #0A0A0B; font-size: 15px; font-weight: 700; letter-spacing: 0.04em;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 16px rgba(223, 213, 73, 0.18);
             transition: background 0.15s;
         }
-        .login-submit:hover { background: #F3EF2A; }
+        .login-submit:hover { background: #E8DF63; }
         .ec-btn-label { transition: opacity 0.15s; }
         .login-submit.is-loading .ec-btn-label, .login-submit.is-success .ec-btn-label { opacity: 0; }
         .login-submit.is-loading::after {
@@ -619,7 +622,7 @@
         #login-overlay.ec-auth-pending .login-box { display: none; }
         .ec-login-status {
             position: absolute; left: var(--sp-4); right: var(--sp-4); top: 50%; transform: translateY(-50%); z-index: 1; margin: 0;
-            text-align: center; font-size: 14px; line-height: 1.5; color: #8A8A94;
+            text-align: center; font-size: 14px; line-height: 1.5; color: #8B8D94;
         }
         #login-overlay:not(.ec-auth-pending) .ec-login-status { display: none; }
 
@@ -804,18 +807,18 @@
             display: none; align-items: center; gap: var(--sp-3);
             width: max-content; max-width: min(calc(100vw - 2 * var(--gutter)), 460px);
             padding: var(--sp-3) var(--sp-4); border-radius: var(--radius);
-            background: #F4F4F5; color: #18181B; font-size: 14px; font-weight: 500; line-height: 1.4;
+            background: #E4E4E1; color: #1E1F23; font-size: 14px; font-weight: 500; line-height: 1.4;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 16px 40px rgba(0, 0, 0, 0.35);
             animation: ec-fade 0.15s ease-out;
         }
-        body.light-mode .ec-toast { background: #18181B; color: #F4F4F5; }
+        body.light-mode .ec-toast { background: #2A2B30; color: #EDEDEA; }
         .ec-toast.is-visible { display: flex; }
         .ec-toast.is-error, body.light-mode .ec-toast.is-error { background: var(--danger-solid); color: #FFFFFF; }
         .ec-toast-action {
             display: none; flex-shrink: 0; min-height: 36px; padding: 0 var(--sp-3); border: none; border-radius: var(--radius-sm); cursor: pointer;
-            background: #18181B; color: #F4F4F5; font: inherit; font-weight: 700;
+            background: #1E1F23; color: #E4E4E1; font: inherit; font-weight: 700;
         }
-        body.light-mode .ec-toast:not(.is-error) .ec-toast-action { background: #F4F4F5; color: #18181B; }
+        body.light-mode .ec-toast:not(.is-error) .ec-toast-action { background: #EDEDEA; color: #1E1F23; }
         .ec-toast.is-error .ec-toast-action { background: rgba(0, 0, 0, 0.25); color: #FFFFFF; }
         .ec-toast-action.is-visible { display: inline-block; }
 
@@ -952,341 +955,49 @@
         }
         #address-picker-modal.ec-return-mode .picker-info .picker-reset { display: block; }
 
+        /* ---------- MOTION ----------
+           Short effects that answer something happening (a tap, a stop added or checked off,
+           a popup opening). Only opacity and transform move, so phones don't have to redraw
+           the page, and nothing loops in the background. The stop-list movement, button
+           press and closing fades are in the script (search for "MOTION HELPERS").
+           All of it is off when the phone asks for reduced motion (see below). */
+        :root { --ease-out: cubic-bezier(0.16, 1, 0.3, 1); --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1); }
+        /* The dimmed background fades in with the popup */
+        #update-notification-overlay, #dev-notes-overlay, #static-note-overlay, .ec-sheet-overlay { animation: ec-fade 0.2s ease-out; }
+        .update-notification-box, .ec-confirm-box, .ec-customer-box { animation: ec-dialog-in 0.24s var(--ease-out) both; }
+        /* The menu drops down from the header button */
+        .ec-menu-box { transform-origin: top right; animation: ec-menu-in 0.22s var(--ease-out) both; }
+        @keyframes ec-menu-in { from { opacity: 0; transform: translateY(-8px) scale(0.96); } }
+        /* Messages slide down into place */
+        .ec-toast { animation: ec-toast-in 0.28s var(--ease-out); }
+        @keyframes ec-toast-in { from { opacity: 0; translate: 0 -12px; } }
+        /* The map and the pin-drop screen slide up when they open */
+        #map-modal, #address-picker-modal { animation: ec-screen-in 0.3s var(--ease-out); }
+        @keyframes ec-screen-in { from { opacity: 0; translate: 0 28px; } }
+        /* Still showing while its closing fade plays (the script adds and removes this) */
+        .ec-closing { display: flex !important; pointer-events: none !important; }
+        #map-modal.ec-closing, #address-picker-modal.ec-closing { display: block !important; }
+        /* Smoother hover and focus changes on cards */
+        .job-item { transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out), box-shadow 0.25s var(--ease-out), opacity 0.2s ease; }
+
+        /* ---------- REMEMBRANCE DAY ----------
+           A poppy beside "E&C" and "Lest We Forget" under it. Shown from 1 to 11 November
+           (the phone's date); the script right after the header turns it on. */
+        .ec-poppy, .ec-sub-remembrance { display: none; }
+        body.ec-remembrance .ec-sub-default { display: none; }
+        body.ec-remembrance .ec-sub-remembrance { display: inline; }
+        body.ec-remembrance .ec-poppy { display: inline-block; }
+        .ec-wordmark-main { display: inline-flex; align-items: center; gap: 7px; }
+        .ec-poppy { width: 20px; height: 20px; flex-shrink: 0; }
+        .ec-poppy svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35)); animation: ec-poppy-bloom 0.8s var(--ease-spring) 0.25s both; }
+        body.light-mode .ec-poppy svg { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15)); }
+        @keyframes ec-poppy-bloom { from { opacity: 0; transform: scale(0.3) rotate(-60deg); } }
+        @media (max-width: 400px) { .ec-poppy { width: 18px; height: 18px; } }
+
         /* ---------- REDUCED MOTION ---------- */
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
             .ec-route { stroke-dashoffset: 0 !important; }
-        }
-    </style>
-    <!-- ================================================================
-         HALLOWEEN THEME — visual only. Recolours the tokens above and adds
-         decorations (moon, fog, graveyard, bats, ghosts, jack-o'-lanterns).
-         Every decoration is aria-hidden and pointer-events: none, so taps
-         always reach the real buttons. Menu > "Spooky effects" turns the
-         moving effects off; reduced-motion settings turn them off too.
-         ================================================================ -->
-    <style id="hw-halloween">
-        /* ---------- HALLOWEEN TOKENS ---------- */
-        :root {
-            --bg: #0B0612;
-            --surface: #150D1F;
-            --surface-2: #1C1229;
-            --surface-3: #261836;
-            --border: #2F2142;
-            --border-strong: #46305F;
-            --text: #F6EFE6;             /* bone white */
-            --text-2: #CBBBD8;
-            --text-3: #9A88AD;
-            --accent: #FF7A1A;           /* pumpkin orange */
-            --accent-hover: #FF8F3D;
-            --accent-press: #E8650A;
-            --accent-text: #FF9A3C;
-            --accent-soft: rgba(255, 122, 26, 0.15);
-            --on-accent: #1A0A00;
-            --pending: #C084FC;          /* witch purple: not numbered yet */
-            --danger: #FF5C6E;
-            --danger-solid: #B3001B;     /* blood red */
-            --success: #4ADE80;          /* slime green */
-            --overlay: rgba(6, 2, 12, 0.72);
-            --header-bg: rgba(11, 6, 18, 0.82);
-            --focus-ring: 0 0 0 3px rgba(255, 122, 26, 0.4);
-            --hw-glow: 0 0 18px rgba(255, 122, 26, 0.35);
-            --hw-purple: #8B3DFF;
-            --hw-font-spooky: 'Creepster', 'Inter', system-ui, sans-serif;
-        }
-        body.light-mode {               /* "Harvest moon": parchment and pumpkin */
-            --bg: #F6EBDD;
-            --surface: #FFFBF5;
-            --surface-2: #FBF3E8;
-            --surface-3: #F1E4D2;
-            --border: #E6D3BC;
-            --border-strong: #CDB394;
-            --text: #1E1326;
-            --text-2: #4A3A55;
-            --text-3: #6E5D78;
-            --accent: #F26B0F;
-            --accent-hover: #FF7D24;
-            --accent-press: #D45A06;
-            --accent-text: #A33F00;
-            --accent-soft: rgba(242, 107, 15, 0.13);
-            --on-accent: #1A0A00;
-            --pending: #7E22CE;
-            --danger: #B3001B;
-            --overlay: rgba(30, 19, 38, 0.45);
-            --header-bg: rgba(255, 248, 238, 0.88);
-            --focus-ring: 0 0 0 3px rgba(163, 63, 0, 0.3);
-            --hw-glow: 0 0 14px rgba(242, 107, 15, 0.25);
-        }
-        ::-webkit-scrollbar-thumb { background: linear-gradient(var(--hw-purple), var(--accent)); }
-
-        /* ---------- SCENE BEHIND THE APP ---------- */
-        #hw-scene, #hw-fx { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
-        #hw-scene { z-index: -1; }
-        #hw-fx { z-index: 800; }          /* under the header (900) and every dialog */
-        .hw-sky {
-            position: absolute; inset: 0;
-            background:
-                radial-gradient(70% 45% at 85% 0%, rgba(139, 61, 255, 0.22), transparent 70%),
-                radial-gradient(60% 35% at 10% 10%, rgba(76, 29, 149, 0.25), transparent 70%),
-                radial-gradient(90% 40% at 50% 105%, rgba(255, 110, 20, 0.16), transparent 70%),
-                linear-gradient(#0B0612, #120A1E 60%, #1A0C1A);
-        }
-        .hw-stars { position: absolute; left: 0; top: 0; width: 2px; height: 2px; border-radius: 50%; animation: hw-twinkle 4s ease-in-out infinite alternate; }
-        .hw-stars.hw-b { animation-duration: 6s; animation-delay: -2s; }
-        @keyframes hw-twinkle { from { opacity: 0.25; } to { opacity: 1; } }
-        .hw-moon {
-            position: absolute; top: calc(96px + var(--safe-top)); right: 7%; width: 96px; height: 96px; border-radius: 50%;
-            background:
-                radial-gradient(circle at 62% 38%, rgba(196, 160, 90, 0.55) 0 7px, transparent 8px),
-                radial-gradient(circle at 36% 64%, rgba(196, 160, 90, 0.45) 0 10px, transparent 11px),
-                radial-gradient(circle at 70% 72%, rgba(196, 160, 90, 0.35) 0 5px, transparent 6px),
-                radial-gradient(circle at 35% 32%, #FFF8DE, #F6DE96 55%, #DDB75A);
-            box-shadow: 0 0 40px 8px rgba(255, 222, 140, 0.28), 0 0 140px 50px rgba(255, 140, 40, 0.12);
-            animation: hw-moon-glow 7s ease-in-out infinite alternate;
-        }
-        @keyframes hw-moon-glow { to { box-shadow: 0 0 56px 14px rgba(255, 222, 140, 0.36), 0 0 180px 70px rgba(255, 140, 40, 0.16); } }
-        .hw-graveyard { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 130px; color: #05020A; }
-        .hw-graveyard .hw-face { fill: #FFC24A; }
-        #hw-scene .hw-graveyard { height: 100px; opacity: 0.8; }
-        .hw-graveyard .hw-pk { fill: #8A3606; }
-        .hw-fog {
-            position: absolute; left: 0; bottom: -20px; width: 200%; height: 200px; opacity: 0.9;
-            background:
-                radial-gradient(30% 50% at 10% 70%, rgba(214, 196, 240, 0.10), transparent 70%),
-                radial-gradient(25% 45% at 35% 80%, rgba(214, 196, 240, 0.08), transparent 70%),
-                radial-gradient(30% 50% at 60% 70%, rgba(214, 196, 240, 0.10), transparent 70%),
-                radial-gradient(25% 45% at 85% 80%, rgba(214, 196, 240, 0.08), transparent 70%);
-            animation: hw-fog 70s linear infinite;
-        }
-        .hw-fog.hw-b { bottom: 30px; opacity: 0.6; animation-duration: 110s; animation-direction: reverse; }
-        @keyframes hw-fog { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        .hw-eyes { position: absolute; display: flex; gap: 9px; animation: hw-lurk 11s ease-in-out infinite; }
-        .hw-eyes span {
-            width: 9px; height: 6px; border-radius: 50% 50% 45% 45%; background: #FFB020;
-            box-shadow: 0 0 8px 2px rgba(255, 176, 32, 0.7);
-            animation: hw-blink 4.5s infinite;
-        }
-        .hw-eyes span:first-child { transform: rotate(12deg); }
-        .hw-eyes span:last-child { transform: rotate(-12deg); }
-        .hw-eyes.hw-green span { background: #9BFF3A; box-shadow: 0 0 8px 2px rgba(155, 255, 58, 0.6); }
-        @keyframes hw-blink { 0%, 90%, 100% { scale: 1 1; } 93% { scale: 1 0.1; } }
-        @keyframes hw-lurk { 0%, 100% { opacity: 0; } 25%, 70% { opacity: 1; } }
-
-        body.light-mode .hw-sky {
-            background:
-                radial-gradient(70% 45% at 85% 0%, rgba(242, 107, 15, 0.16), transparent 70%),
-                radial-gradient(90% 40% at 50% 105%, rgba(126, 34, 206, 0.10), transparent 70%),
-                linear-gradient(#F6EBDD, #F3E2CC);
-        }
-        body.light-mode .hw-stars, body.light-mode .hw-eyes { display: none; }
-        body.light-mode .hw-moon { opacity: 0.55; }
-        body.light-mode .hw-graveyard { color: #4A2E55; opacity: 0.22; }
-        body.light-mode .hw-fog { opacity: 0.4; }
-
-        /* ---------- FLYING THINGS (spawned by the script) ---------- */
-        .hw-bat { position: absolute; left: 0; top: 0; color: #050208; filter: drop-shadow(0 0 5px rgba(255, 122, 26, 0.55)); will-change: transform; }
-        .hw-bat svg { display: block; width: 100%; height: auto; overflow: visible; }
-        .hw-wing { transform-box: view-box; transform-origin: 50px 24px; animation: hw-flap 0.22s ease-in-out infinite alternate; }
-        @keyframes hw-flap { to { transform: scaleY(0.2); } }
-        body.light-mode .hw-bat { color: #2A1433; filter: drop-shadow(0 0 4px rgba(242, 107, 15, 0.4)); }
-        .hw-ghost { position: absolute; left: 0; top: 0; width: 54px; will-change: transform, opacity; }
-        .hw-ghost-body { display: block; animation: hw-wobble 2.4s ease-in-out infinite alternate; filter: drop-shadow(0 0 10px rgba(235, 225, 255, 0.55)); }
-        .hw-ghost-body svg { display: block; width: 100%; height: auto; }
-        @keyframes hw-wobble { from { transform: rotate(-7deg) translateX(-4px); } to { transform: rotate(7deg) translateX(4px); } }
-        .hw-poof { position: absolute; left: 0; top: 0; width: 40px; text-align: center; }
-        .hw-poof-boo {
-            display: block; margin-bottom: 2px; font: 400 18px/1 var(--hw-font-spooky); letter-spacing: 0.06em;
-            color: var(--accent-text); text-shadow: 0 0 8px rgba(255, 122, 26, 0.7);
-        }
-        .hw-pop { position: absolute; left: 0; top: 0; width: 46px; filter: drop-shadow(0 0 12px rgba(255, 150, 40, 0.75)); }
-        .hw-pop svg { display: block; width: 100%; height: auto; }
-
-        /* ---------- JACK-O'-LANTERNS ---------- */
-        .hw-pumpkin svg { display: block; width: 100%; height: auto; overflow: visible; }
-        .hw-pumpkin .hw-face { fill: #FFC83D; animation: hw-flicker 2.8s infinite; }
-        @keyframes hw-flicker {
-            0%, 100% { opacity: 1; } 20% { opacity: 0.88; } 40% { opacity: 0.97; } 60% { opacity: 0.86; } 80% { opacity: 0.95; }
-        }
-        .hw-graveyard .hw-face { animation: hw-flicker 3.4s infinite; }
-        .ec-logo-wrap { position: relative; border-color: rgba(255, 122, 26, 0.6); box-shadow: var(--shadow-1), 0 0 14px rgba(255, 122, 26, 0.25); }
-        .hw-logo-pumpkin { position: absolute; right: -9px; bottom: -7px; width: 22px; filter: drop-shadow(0 0 5px rgba(255, 140, 30, 0.8)); }
-        .hw-empty-pumpkin { width: 84px; margin: 0 auto var(--sp-4); filter: drop-shadow(0 0 22px rgba(255, 130, 30, 0.55)); animation: hw-bob 3.2s ease-in-out infinite; }
-        @keyframes hw-bob { 50% { transform: translateY(-6px) rotate(-2deg); } }
-
-        /* ---------- SPIDER ON A THREAD (hangs under the header) ---------- */
-        .hw-spider-wrap { position: absolute; top: 100%; left: 54%; width: 26px; height: 92px; overflow: hidden; pointer-events: none; }
-        .hw-spider { position: absolute; left: 0; top: 0; width: 26px; height: 170px; transform: translateY(-170px); animation: hw-spider 13s ease-in-out infinite; animation-delay: 4s; }
-        .hw-spider::before { content: ""; position: absolute; left: 12.5px; top: 0; bottom: 18px; width: 1px; background: rgba(230, 220, 245, 0.55); }
-        .hw-spider svg { position: absolute; left: 0; bottom: 0; width: 26px; height: auto; color: #08040D; filter: drop-shadow(0 0 4px rgba(192, 132, 252, 0.6)); }
-        body.light-mode .hw-spider::before { background: rgba(30, 19, 38, 0.4); }
-        body.light-mode .hw-spider svg { color: #1E1326; filter: none; }
-        @keyframes hw-spider {
-            0%, 52% { transform: translateY(-170px); }
-            62% { transform: translateY(-96px); } 66% { transform: translateY(-104px); } 70% { transform: translateY(-99px); }
-            84% { transform: translateY(-101px); } 96%, 100% { transform: translateY(-170px); }
-        }
-        @media (max-width: 479px) { .hw-spider-wrap { left: 46%; height: 70px; } }
-
-        /* ---------- COBWEBS IN CARD CORNERS ---------- */
-        .input-form-card::after, #job-list-container::after, .login-box::after, .ec-menu-box::after {
-            content: ""; position: absolute; top: -1px; right: -1px; width: 74px; height: 74px; pointer-events: none; z-index: 0;
-            background: var(--hw-web) top right / contain no-repeat; opacity: 0.55;
-            border-top-right-radius: inherit;
-        }
-        #job-list-container { position: relative; }
-        #job-list-container::after { right: auto; left: -1px; transform: scaleX(-1); }
-        .ec-menu-box { position: relative; }
-        .ec-menu-box::after { width: 56px; height: 56px; }
-        #input-panel.collapsed .input-form-card::after, .input-form-card.ec-form-top::after { display: none; }
-        #job-list-container::after { width: 60px; height: 60px; opacity: 0.4; }
-        @media (max-width: 479px) { #job-list-container::after { display: none; } }
-        :root { --hw-web: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23E9DDF7' stroke-width='1.1' stroke-linecap='round'%3E%3Cpath d='M100 0 0 0M100 0 13 50M100 0 50 87M100 0 100 100M100 0 34 22M100 0 78 70'/%3E%3Cpath d='M78 0Q85 6 81 12Q88 14 89 20Q93 25 89 27Q94 28 100 22'/%3E%3Cpath d='M55 0Q66 11 59 23Q72 26 74 37Q83 45 78 50Q90 49 100 46'/%3E%3Cpath d='M30 0Q46 17 35 36Q55 40 58 55Q70 68 63 74Q82 72 100 70'/%3E%3Cpath d='M8 0Q26 22 14 49Q40 55 44 76Q52 92 50 87'/%3E%3C/svg%3E"); }
-        body.light-mode { --hw-web: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%234A3A55' stroke-width='1.1' stroke-linecap='round'%3E%3Cpath d='M100 0 0 0M100 0 13 50M100 0 50 87M100 0 100 100M100 0 34 22M100 0 78 70'/%3E%3Cpath d='M78 0Q85 6 81 12Q88 14 89 20Q93 25 89 27Q94 28 100 22'/%3E%3Cpath d='M55 0Q66 11 59 23Q72 26 74 37Q83 45 78 50Q90 49 100 46'/%3E%3Cpath d='M30 0Q46 17 35 36Q55 40 58 55Q70 68 63 74Q82 72 100 70'/%3E%3Cpath d='M8 0Q26 22 14 49Q40 55 44 76Q52 92 50 87'/%3E%3C/svg%3E"); }
-        body.light-mode .input-form-card::after, body.light-mode #job-list-container::after, body.light-mode .ec-menu-box::after { opacity: 0.35; }
-
-        /* ---------- TYPE ---------- */
-        .ec-wordmark-main, .ec-section-title, .ec-list-title, .ec-empty-title, .ec-login-title, .update-notification-title {
-            font-family: var(--hw-font-spooky); font-weight: 400; letter-spacing: 0.04em;
-        }
-        .ec-wordmark-main { font-size: 23px; color: var(--accent-text); text-shadow: 0 0 10px rgba(255, 122, 26, 0.45); }
-        .ec-section-title, .ec-list-title { font-size: 21px; color: var(--accent-text); }
-        .ec-empty-title { font-size: 22px; color: var(--accent-text); }
-        .update-notification-title { font-size: 20px; }
-        #stop-counter { font-family: var(--font); letter-spacing: 0; box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.35); }
-        body.light-mode .ec-wordmark-main { text-shadow: none; }
-        @media (max-width: 400px) { .ec-wordmark-main { font-size: 20px; } }
-
-        /* ---------- HEADER ---------- */
-        header { border-bottom-color: rgba(255, 122, 26, 0.28); box-shadow: 0 1px 0 rgba(139, 61, 255, 0.18), 0 8px 24px rgba(0, 0, 0, 0.35); }
-        body.light-mode header { box-shadow: 0 1px 0 rgba(242, 107, 15, 0.15); }
-        #map-btn { border-color: rgba(255, 122, 26, 0.65); box-shadow: var(--highlight), var(--shadow-1), 0 0 12px rgba(255, 122, 26, 0.18); }
-        .map-btn.ec-hdr-btn:hover { border-color: var(--hw-purple); box-shadow: 0 0 14px rgba(139, 61, 255, 0.35); }
-        .ec-progress { height: 4px; }
-        .ec-progress > span { background: linear-gradient(90deg, var(--hw-purple), var(--accent) 60%, #FFD23F); box-shadow: 0 0 10px rgba(255, 122, 26, 0.7); }
-
-        /* ---------- CARDS AND BUTTONS ---------- */
-        .input-form-card, #job-list-container { border-color: rgba(139, 61, 255, 0.28); box-shadow: var(--highlight), var(--shadow-2), 0 0 0 1px rgba(255, 122, 26, 0.04), 0 0 40px rgba(139, 61, 255, 0.08); }
-        @media (max-width: 479px) { #job-list-container { border: none; box-shadow: none; } }
-        body.light-mode .input-form-card, body.light-mode #job-list-container { border-color: var(--border); }
-        input:focus, textarea:focus, .glow-field:focus { box-shadow: var(--focus-ring), 0 0 18px rgba(255, 122, 26, 0.18); }
-        .btn-add {
-            position: relative; overflow: hidden;
-            background: linear-gradient(180deg, #FF9A3C, #FF6A00);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 22px rgba(255, 106, 0, 0.35);
-            animation: hw-ember 3.6s ease-in-out infinite;
-        }
-        .btn-add:hover { background: linear-gradient(180deg, #FFAE5C, #FF7A1A); }
-        .btn-add:active { background: linear-gradient(180deg, #F2862A, #E85E00); }
-        .btn-add::after {
-            content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; pointer-events: none;
-            background: linear-gradient(100deg, transparent, rgba(255, 240, 200, 0.45), transparent);
-            transform: skewX(-20deg); animation: hw-shine 5.5s ease-in-out infinite;
-        }
-        @keyframes hw-ember {
-            50% { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 30px rgba(255, 106, 0, 0.6), 0 0 0 1px rgba(255, 170, 60, 0.4); }
-        }
-        @keyframes hw-shine { 0%, 70% { left: -40%; } 100% { left: 120%; } }
-        body.light-mode .btn-add { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12), 0 4px 14px rgba(242, 107, 15, 0.3); animation: none; }
-        .create-route-btn:not(:disabled):not(.active) { border-color: rgba(139, 61, 255, 0.55); }
-        .create-route-btn:not(:disabled):hover { box-shadow: var(--highlight), 0 0 18px rgba(139, 61, 255, 0.35); }
-        .create-route-btn.active { box-shadow: 0 0 22px rgba(255, 122, 26, 0.45); }
-        #f-type-pickup.is-on, #f-type-delivery.is-on, #f-type-both.is-on { box-shadow: var(--shadow-1), 0 0 12px rgba(255, 210, 63, 0.25); }
-
-        /* Stop cards */
-        .job-item { border-color: rgba(139, 61, 255, 0.22); }
-        .job-item:not(.checked):hover { border-color: rgba(139, 61, 255, 0.5); }
-        .custom-checkbox svg rect { stroke: rgba(192, 132, 252, 0.6); }
-        .custom-checkbox .checkmark-path { stroke: var(--success); filter: drop-shadow(0 0 3px rgba(74, 222, 128, 0.7)); }
-        .job-item.next-stop:not(.checked) {
-            border-color: rgba(255, 122, 26, 0.8);
-            box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.35), 0 0 22px rgba(255, 122, 26, 0.22), var(--shadow-2);
-        }
-        .job-item.next-stop:not(.checked):not(.job-item-new) { animation: hw-candle 3.2s ease-in-out infinite; }
-        @keyframes hw-candle {
-            0%, 100% { box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.35), 0 0 18px rgba(255, 122, 26, 0.18), var(--shadow-2); }
-            30% { box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.55), 0 0 30px rgba(255, 122, 26, 0.34), var(--shadow-2); }
-            34% { box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.4), 0 0 20px rgba(255, 122, 26, 0.2), var(--shadow-2); }
-            60% { box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.5), 0 0 26px rgba(255, 122, 26, 0.3), var(--shadow-2); }
-        }
-        body.light-mode .job-item.next-stop:not(.checked) { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--shadow-2); animation: none; }
-        .job-item.next-stop:not(.checked) .job-info::before { content: "\1F383  Next stop"; }
-        .job-item-new { animation: hw-flash 1.4s ease-out; }
-        @keyframes hw-flash { from { box-shadow: 0 0 0 3px var(--accent), 0 0 30px rgba(255, 122, 26, 0.6); } to { box-shadow: 0 0 0 3px rgba(255, 122, 26, 0); } }
-        .ec-done-toggle { border-color: rgba(192, 132, 252, 0.45); }
-        #empty-state { border-color: rgba(255, 122, 26, 0.35); background: radial-gradient(60% 60% at 50% 30%, rgba(255, 122, 26, 0.08), transparent 70%), var(--surface); }
-        .stop-delete-overlay { background: rgba(40, 0, 8, 0.8); }
-
-        /* Dialogs, menu and the message strip */
-        .update-notification-box, .dev-notes-box, .static-note-box, .ec-confirm-box, .ec-menu-box, .ec-customer-box {
-            border-color: rgba(255, 122, 26, 0.28); box-shadow: var(--shadow-3), 0 0 40px rgba(139, 61, 255, 0.18);
-        }
-        body.light-mode .update-notification-box, body.light-mode .dev-notes-box, body.light-mode .static-note-box,
-        body.light-mode .ec-confirm-box, body.light-mode .ec-menu-box, body.light-mode .ec-customer-box { box-shadow: var(--shadow-3); }
-        .ec-toast, body.light-mode .ec-toast {
-            background: #1C1229; color: #F6EFE6; border: 1px solid rgba(255, 122, 26, 0.55);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35), 0 0 26px rgba(255, 122, 26, 0.25);
-        }
-        .ec-toast-action, body.light-mode .ec-toast:not(.is-error) .ec-toast-action { background: var(--accent); color: var(--on-accent); }
-        .ec-toast.is-error, body.light-mode .ec-toast.is-error { border-color: transparent; }
-
-        /* Map pins: not-numbered stops are purple, matching the list */
-        .driver-map-label-pending, .ec-pin-stop.is-unnumbered .ec-pin-label { color: #D8B4FE !important; }
-        .ec-pin-stop.is-unnumbered .ec-pin-dot { border-color: #A855F7; }
-        #map-stop-counter { box-shadow: var(--shadow-3), 0 0 16px rgba(255, 122, 26, 0.35); }
-
-        /* ---------- SIGN-IN: a haunted night ---------- */
-        #login-overlay {
-            background:
-                radial-gradient(70% 50% at 50% 0%, rgba(139, 61, 255, 0.25), transparent 65%),
-                radial-gradient(80% 40% at 50% 105%, rgba(255, 110, 20, 0.22), transparent 70%),
-                linear-gradient(#08040E, #120A1E 65%, #1C0D18);
-        }
-        .hw-login-fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-        .hw-login-fx .hw-moon { top: 9%; right: 10%; width: 120px; height: 120px; }
-        .hw-login-fx .hw-graveyard { height: 170px; }
-        .hw-login-ghost { position: absolute; width: 58px; opacity: 0.55; animation: hw-haunt 9s ease-in-out infinite; }
-        .hw-login-ghost .hw-ghost-body svg { display: block; width: 100%; height: auto; }
-        .hw-login-ghost.hw-g2 { width: 44px; animation-duration: 12s; animation-delay: -4s; }
-        .hw-login-ghost.hw-g3 { width: 36px; animation-duration: 10s; animation-delay: -7s; opacity: 0.4; }
-        @keyframes hw-haunt { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(18px, -22px); } 50% { transform: translate(-6px, -38px); } 75% { transform: translate(-20px, -14px); } }
-        .ec-route { stroke: rgba(255, 122, 26, 0.5); filter: drop-shadow(0 0 4px rgba(255, 122, 26, 0.6)); }
-        .ec-route-dim { stroke: rgba(192, 132, 252, 0.35); }
-        .ec-stop-dot { fill: #FF9A3C; }
-        .ec-stop-ring { stroke: rgba(255, 154, 60, 0.45); }
-        /* Solid, not blurred: a blur has to be redrawn whenever a ghost, bat or the fog moves
-           behind the box, and on phones that made the screen flicker. */
-        .login-box {
-            background: rgba(21, 13, 31, 0.97); -webkit-backdrop-filter: none; backdrop-filter: none;
-            border-color: rgba(255, 122, 26, 0.35);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 32px 80px rgba(0, 0, 0, 0.6), 0 0 60px rgba(139, 61, 255, 0.22);
-        }
-        .ec-login-crest { position: relative; border-color: rgba(255, 122, 26, 0.6); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 26px rgba(255, 122, 26, 0.3); }
-        .hw-crest-pumpkin { position: absolute; right: -16px; bottom: -12px; width: 40px; filter: drop-shadow(0 0 8px rgba(255, 140, 30, 0.85)); }
-        .ec-login-title {
-            font-size: 34px; color: #FF9A3C; line-height: 1.1;
-            text-shadow: 0 0 12px rgba(255, 122, 26, 0.6), 0 0 32px rgba(255, 80, 0, 0.35);
-        }
-        .ec-login-sub { color: #A794B8; }
-        .hw-login-tag {
-            display: inline-block; margin: 0 0 var(--sp-2); padding: 3px 12px; border-radius: 999px;
-            background: rgba(255, 122, 26, 0.14); border: 1px solid rgba(255, 122, 26, 0.35);
-            color: #FFB066; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
-        }
-        .login-input { background: #100919; border-color: #33224A; }
-        .login-input:focus { border-color: #FF7A1A; box-shadow: 0 0 0 3px rgba(255, 122, 26, 0.3), 0 0 20px rgba(255, 122, 26, 0.2); background: #100919; }
-        .login-submit { background: linear-gradient(180deg, #FF9A3C, #FF6A00); color: #1A0A00; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 22px rgba(255, 106, 0, 0.35); }
-        .login-submit:hover { background: linear-gradient(180deg, #FFAE5C, #FF7A1A); }
-        .login-submit.is-loading::after { border-top-color: #1A0A00; }
-
-        /* ---------- CALM / REDUCED MOTION ---------- */
-        /* "Spooky effects: off" keeps the colours and the still pictures, but nothing moves. */
-        body.hw-calm #hw-fx, body.hw-calm .hw-spider-wrap, body.hw-calm .hw-eyes { display: none; }
-        body.hw-calm #hw-scene *, body.hw-calm .hw-login-fx *, body.hw-calm .hw-pumpkin *,
-        body.hw-calm .hw-empty-pumpkin, body.hw-calm .btn-add, body.hw-calm .btn-add::after,
-        body.hw-calm .job-item.next-stop { animation: none !important; }
-        body.hw-calm .btn-add::after { display: none; }
-        @media (prefers-reduced-motion: reduce) {
-            #hw-fx, .hw-spider-wrap, .hw-eyes, .btn-add::after { display: none; }
         }
     </style>
 </head>
@@ -1329,9 +1040,13 @@
             </div>
             <div class="update-notification-body">
                 <div class="update-notification-feature">
-                    <div class="update-notification-feature-title">🧭 Stop order ends at your last stop</div>
-                    <p>AUTO-OPTIMIZE now plans the shortest drive from where you are to your last stop. The drive back to the shop no longer changes the order, so a stop near the shop isn't pushed to the end.</p>
-                    <p>New stops added to a numbered route are placed the same way.</p>
+                    <div class="update-notification-feature-title">✨ A calmer, cleaner look</div>
+                    <p>Halloween is packed away. The colours are softer and easier on the eyes, in both dark and light mode.</p>
+                    <p>Stops now glide into place: after AUTO-OPTIMIZE, when you check one off, and when the list loads. Buttons, popups, messages and the map move smoothly too.</p>
+                </div>
+                <div class="update-notification-feature">
+                    <div class="update-notification-feature-title"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="8" cy="8" r="5.6" fill="#9E1C2C"/><circle cx="16" cy="16" r="5.6" fill="#9E1C2C"/><circle cx="16" cy="8" r="5.6" fill="#C62A3A"/><circle cx="8" cy="16" r="5.6" fill="#C62A3A"/><circle cx="12" cy="12" r="3.1" fill="#16161A"/></svg>Lest We Forget</div>
+                    <p>A poppy sits in the header for Remembrance Day, until November 11.</p>
                 </div>
             </div>
             <div class="update-notification-footer">
@@ -1344,7 +1059,7 @@
     <header>
         <div class="ec-brand">
             <span class="ec-logo-wrap"><img src="icon-192.png" class="header-logo" alt="Logo"></span>
-            <span class="ec-wordmark" aria-label="E&amp;C Route Helper"><span class="ec-wordmark-main">E&amp;C</span><span class="ec-wordmark-sub">Route Helper</span></span>
+            <span class="ec-wordmark" aria-label="E&amp;C Route Helper"><span class="ec-wordmark-main">E&amp;C<span class="ec-poppy" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="5.6" fill="#9E1C2C"/><circle cx="16" cy="16" r="5.6" fill="#9E1C2C"/><circle cx="16" cy="8" r="5.6" fill="#C62A3A"/><circle cx="8" cy="16" r="5.6" fill="#C62A3A"/><circle cx="12" cy="12" r="3.1" fill="#16161A"/><circle cx="11" cy="11.2" r="0.7" fill="#3A3A40"/><circle cx="13.1" cy="12.4" r="0.6" fill="#3A3A40"/></svg></span></span><span class="ec-wordmark-sub"><span class="ec-sub-default">Route Helper</span><span class="ec-sub-remembrance">Lest We Forget</span></span></span>
         </div>
         <div class="ec-hdr-actions">
             <button id="return-btn" class="map-btn ec-hdr-btn" aria-label="Return. Tap to drive back. Hold to choose the return spot"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg><span>Return</span></button>
@@ -1354,6 +1069,14 @@
         </div>
         <div class="ec-progress" id="ec-progress" aria-hidden="true"><span></span></div>
     </header>
+    <script>
+        // Remembrance Day: poppy and "Lest We Forget" in the header from 1 to 11 November,
+        // every year, by the phone's date. Gone again from 12 November.
+        (function () {
+            var d = new Date();
+            if (d.getMonth() === 10 && d.getDate() <= 11) document.body.classList.add('ec-remembrance');
+        })();
+    </script>
 
     <main class="ec-main">
         <!-- Add a stop -->
@@ -1796,6 +1519,143 @@
 
         // ===== SMALL SHARED HELPERS =====
         const ecReduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+        // ===== MOTION HELPERS =====
+        // Visual only: nothing here changes stops, the route or Firebase. Every effect is short,
+        // only moves opacity/transform, and is skipped when the phone asks for reduced motion.
+        const EC_EASE_OUT = 'cubic-bezier(0.16, 1, 0.3, 1)';
+        const EC_EASE_SPRING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
+        function ecCanAnimate(el) {
+            return !ecReduceMotion && !!el && typeof el.animate === 'function';
+        }
+        // Closes a popup or screen with a quick fade before it disappears. `hide` does the real
+        // closing straight away (so every "is it open?" check is right at once); the class
+        // ec-closing only keeps it on screen while the fade plays. Opening it again calls
+        // ecCancelClose, which stops the fade.
+        function ecAnimateClose(el, hide) {
+            if (!el) { hide(); return; }
+            ecCancelClose(el);
+            const visible = getComputedStyle(el).display !== 'none';
+            if (!visible || !ecCanAnimate(el)) { hide(); return; }
+            const box = el.querySelector('.update-notification-box, .dev-notes-box, .static-note-box, .ec-confirm-box, .ec-menu-box, .ec-customer-box');
+            const sheet = !!box && getComputedStyle(box).animationName === 'ec-sheet-up';
+            const ms = sheet ? 220 : 170;
+            el.classList.add('ec-closing');
+            hide();
+            const anims = [el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms, easing: 'ease-in', fill: 'forwards' })];
+            let to = null;
+            if (sheet) to = 'translateY(100%)';
+            else if (box && box.classList.contains('ec-menu-box')) to = 'translateY(-8px) scale(0.96)';
+            else if (box) to = 'translateY(8px) scale(0.98)';
+            else anims.push(el.animate([{ translate: '0 0' }, { translate: '0 24px' }], { duration: ms, easing: 'ease-in', fill: 'forwards' }));
+            if (to) anims.push(box.animate([{ transform: 'none' }, { transform: to }], { duration: ms, easing: 'ease-in', fill: 'forwards' }));
+            el.__ecCloseAnims = anims;
+            el.__ecCloseTimer = setTimeout(() => ecCancelClose(el), ms);
+        }
+        function ecCancelClose(el) {
+            if (!el) return;
+            clearTimeout(el.__ecCloseTimer);
+            el.classList.remove('ec-closing');
+            (el.__ecCloseAnims || []).forEach(a => { try { a.cancel(); } catch (e) {} });
+            el.__ecCloseAnims = null;
+        }
+        // Shows a popup that opens with style.display, stopping any closing fade first.
+        function ecShow(el, display) {
+            if (!el) return;
+            ecCancelClose(el);
+            el.style.display = display || 'flex';
+        }
+
+        // Stop list: remembers where every card is before a redraw, then moves the cards from
+        // there to their new places (after AUTO-OPTIMIZE, a check-off or a new stop), so they
+        // glide instead of jumping. Cards that weren't on screen before fade up one after another.
+        const EC_LIST_ITEMS = '.job-item[data-id], .ec-done-toggle';
+        function ecListKey(el) {
+            return el.classList.contains('ec-done-toggle') ? '__done' : el.dataset.id;
+        }
+        function ecSnapshotList(container) {
+            if (!ecCanAnimate(container)) return null;
+            const snap = new Map();
+            container.querySelectorAll(EC_LIST_ITEMS).forEach(el => {
+                const r = el.getBoundingClientRect();
+                if (r.height === 0) return; // inside the closed Done row
+                snap.set(ecListKey(el), { top: r.top, left: r.left, faded: el.style.opacity === '0', text: el.textContent });
+            });
+            return snap;
+        }
+        function ecAnimateList(container, snap) {
+            if (!snap) return;
+            const vh = window.innerHeight;
+            const onScreen = (top, bottom) => bottom > -60 && top < vh + 60;
+            let entering = 0;
+            container.querySelectorAll(EC_LIST_ITEMS).forEach(el => {
+                const r = el.getBoundingClientRect();
+                if (r.height === 0) return;
+                const key = ecListKey(el);
+                const before = snap.get(key);
+                if (!before) {
+                    if (!onScreen(r.top, r.bottom)) return;
+                    const delay = Math.min(entering++, 10) * 45;
+                    const end = getComputedStyle(el).opacity;
+                    el.animate([{ opacity: 0, transform: 'translateY(12px) scale(0.98)' }, { opacity: end, transform: 'none' }],
+                        { duration: 320, delay, easing: EC_EASE_OUT, fill: 'backwards' });
+                    return;
+                }
+                const dx = before.left - r.left, dy = before.top - r.top;
+                if (key === '__done' && before.text !== el.textContent) {
+                    // One more stop finished: the Done row lights up briefly
+                    const glow = getComputedStyle(document.body).getPropertyValue('--accent-soft').trim() || 'rgba(223, 213, 73, 0.12)';
+                    el.animate([{ backgroundColor: glow }, { backgroundColor: 'transparent' }], { duration: 700, easing: 'ease-out' });
+                }
+                if (Math.abs(dx) < 1 && Math.abs(dy) < 1 && !before.faded) return;
+                if (!onScreen(r.top, r.bottom) && !onScreen(before.top, before.top + r.height)) return;
+                const from = { transform: `translate(${dx}px, ${dy}px)` }, to = { transform: 'none' };
+                if (before.faded) { from.opacity = 0; to.opacity = getComputedStyle(el).opacity; }
+                el.animate([from, to], { duration: Math.min(520, 300 + Math.abs(dy) * 0.12), easing: EC_EASE_OUT });
+            });
+        }
+
+        // "N left": the number counts to its new value with a small pop.
+        function ecSetStopCounter(el, n) {
+            const prev = el.__ecCount;
+            el.__ecCount = n;
+            cancelAnimationFrame(el.__ecRaf);
+            if (prev === undefined || prev === n || el.style.display === 'none' || !ecCanAnimate(el)) {
+                el.textContent = n + ' left';
+                return;
+            }
+            const start = performance.now(), ms = 360;
+            const step = (now) => {
+                const t = Math.min(1, (now - start) / ms);
+                const eased = 1 - Math.pow(1 - t, 3);
+                el.textContent = Math.round(prev + (n - prev) * eased) + ' left';
+                if (t < 1) el.__ecRaf = requestAnimationFrame(step);
+            };
+            el.__ecRaf = requestAnimationFrame(step);
+            el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.14)' }, { transform: 'scale(1)' }], { duration: 360, easing: 'ease-out' });
+        }
+
+        // Buttons sink a little under the finger and spring back when let go.
+        (function () {
+            if (ecReduceMotion) return;
+            const PRESSABLE = 'button, .custom-checkbox';
+            let pressed = null, sink = null;
+            function release() {
+                if (!pressed) return;
+                const el = pressed;
+                pressed = null;
+                if (sink) { try { sink.cancel(); } catch (e) {} sink = null; }
+                el.animate([{ scale: '0.95' }, { scale: '1' }], { duration: 300, easing: EC_EASE_SPRING });
+            }
+            document.addEventListener('pointerdown', (e) => {
+                const el = e.target && e.target.closest ? e.target.closest(PRESSABLE) : null;
+                release();
+                if (!el || el.disabled || typeof el.animate !== 'function') return;
+                pressed = el;
+                sink = el.animate([{ scale: '1' }, { scale: '0.95' }], { duration: 110, easing: 'ease-out', fill: 'forwards' });
+            }, { passive: true, capture: true });
+            ['pointerup', 'pointercancel', 'dragstart', 'blur'].forEach(t => window.addEventListener(t, release, { passive: true, capture: true }));
+        })();
         function ecMapsLoaded() {
             return !!(window.google && window.google.maps);
         }
@@ -1878,7 +1738,7 @@
         function ecHideToast() {
             clearTimeout(ecToastTimer);
             const box = document.getElementById('ec-toast');
-            if (box) box.classList.remove('is-visible');
+            if (box && box.classList.contains('is-visible')) ecAnimateClose(box, () => box.classList.remove('is-visible'));
         }
         function ecToast(message, opts) {
             opts = opts || {};
@@ -1901,6 +1761,7 @@
             // so it never covers the boxes being typed in.
             const pinnedForm = document.querySelector('.input-form-card.ec-form-top');
             box.style.top = pinnedForm ? Math.round(pinnedForm.getBoundingClientRect().bottom + 8) + 'px' : '';
+            ecCancelClose(box);
             box.classList.add('is-visible');
             if (!opts.sticky) ecToastTimer = setTimeout(ecHideToast, opts.duration || (opts.type === 'error' ? 6000 : 3500));
         }
@@ -1923,14 +1784,17 @@
                 ok.classList.toggle('is-danger', !!opts.danger);
                 const cancel = document.getElementById('ec-confirm-cancel');
                 cancel.textContent = opts.cancelLabel || 'Cancel';
-                document.getElementById('ec-confirm-overlay').classList.add('is-open');
+                const confirmOverlay = document.getElementById('ec-confirm-overlay');
+                ecCancelClose(confirmOverlay);
+                confirmOverlay.classList.add('is-open');
                 // Focus a button so the box works with a keyboard or screen reader (#30).
                 // Risky questions start on Cancel.
                 setTimeout(() => { try { (opts.danger ? cancel : ok).focus(); } catch (e) {} }, 0);
             });
         }
         function ecCloseConfirm(answer) {
-            document.getElementById('ec-confirm-overlay').classList.remove('is-open');
+            const confirmOverlay = document.getElementById('ec-confirm-overlay');
+            ecAnimateClose(confirmOverlay, () => confirmOverlay.classList.remove('is-open'));
             const resolve = ecConfirmResolve;
             ecConfirmResolve = null;
             const back = ecConfirmReturnFocus;
@@ -1956,10 +1820,14 @@
         }
         function openMenu() {
             updateMenuLabels();
-            document.getElementById('ec-menu-overlay').classList.add('is-open');
+            const menu = document.getElementById('ec-menu-overlay');
+            ecCancelClose(menu);
+            menu.classList.add('is-open');
         }
         function closeMenu() {
-            document.getElementById('ec-menu-overlay').classList.remove('is-open');
+            const menu = document.getElementById('ec-menu-overlay');
+            if (!menu.classList.contains('is-open')) return;
+            ecAnimateClose(menu, () => menu.classList.remove('is-open'));
         }
         async function logOut() {
             closeMenu();
@@ -2202,27 +2070,26 @@
             }
             return opts;
         }
-        // Halloween night map: purple-black land, pumpkin-orange highways, graveyard-green parks.
         const mapStyles = [
-            {"elementType":"geometry","stylers":[{"color":"#100A18"}]},
-            {"elementType":"labels.text.fill","stylers":[{"color":"#A897B8"}]},
-            {"elementType":"labels.text.stroke","stylers":[{"color":"#08040D"}]},
-            {"featureType":"administrative","elementType":"geometry.stroke","stylers":[{"color":"#3B2A4F"}]},
-            {"featureType":"administrative.locality","elementType":"labels.text.fill","stylers":[{"color":"#FFB066"}]},
-            {"featureType":"landscape.man_made","elementType":"geometry","stylers":[{"color":"#140D1E"}]},
-            {"featureType":"poi","elementType":"geometry","stylers":[{"color":"#170F22"}]},
-            {"featureType":"poi","elementType":"labels.text.fill","stylers":[{"color":"#8A7A9C"}]},
-            {"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#0F2016"}]},
-            {"featureType":"road","elementType":"geometry","stylers":[{"color":"#2C2140"}]},
-            {"featureType":"road","elementType":"geometry.stroke","stylers":[{"color":"#1A1226"}]},
-            {"featureType":"road","elementType":"labels.text.fill","stylers":[{"color":"#C2B3D1"}]},
-            {"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#38294F"}]},
-            {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#8A3D08"}]},
-            {"featureType":"road.highway","elementType":"geometry.stroke","stylers":[{"color":"#3A1600"}]},
-            {"featureType":"road.highway","elementType":"labels.text.fill","stylers":[{"color":"#FFC27A"}]},
-            {"featureType":"transit","elementType":"geometry","stylers":[{"color":"#1E1530"}]},
-            {"featureType":"water","elementType":"geometry","stylers":[{"color":"#080C1F"}]},
-            {"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#5A4F8A"}]}
+            {"elementType":"geometry","stylers":[{"color":"#101012"}]},
+            {"elementType":"labels.text.fill","stylers":[{"color":"#9A9A8E"}]},
+            {"elementType":"labels.text.stroke","stylers":[{"color":"#0A0A09"}]},
+            {"featureType":"administrative","elementType":"geometry.stroke","stylers":[{"color":"#3A3A33"}]},
+            {"featureType":"administrative.locality","elementType":"labels.text.fill","stylers":[{"color":"#E8E4A0"}]},
+            {"featureType":"landscape.man_made","elementType":"geometry","stylers":[{"color":"#141417"}]},
+            {"featureType":"poi","elementType":"geometry","stylers":[{"color":"#16171B"}]},
+            {"featureType":"poi","elementType":"labels.text.fill","stylers":[{"color":"#7D7D72"}]},
+            {"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#12201A"}]},
+            {"featureType":"road","elementType":"geometry","stylers":[{"color":"#2A2B30"}]},
+            {"featureType":"road","elementType":"geometry.stroke","stylers":[{"color":"#1A1B1F"}]},
+            {"featureType":"road","elementType":"labels.text.fill","stylers":[{"color":"#B5B5A8"}]},
+            {"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#34353B"}]},
+            {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#6B6700"}]},
+            {"featureType":"road.highway","elementType":"geometry.stroke","stylers":[{"color":"#2E2C00"}]},
+            {"featureType":"road.highway","elementType":"labels.text.fill","stylers":[{"color":"#F2EE7A"}]},
+            {"featureType":"transit","elementType":"geometry","stylers":[{"color":"#1C1D22"}]},
+            {"featureType":"water","elementType":"geometry","stylers":[{"color":"#071018"}]},
+            {"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#3D5A73"}]}
         ];
 
         // ---------- DEVELOPER NOTES ----------
@@ -2234,7 +2101,7 @@
         function openDevNotes() {
             const overlay = document.getElementById('dev-notes-overlay');
             if (!overlay) return;
-            overlay.style.display = 'flex';
+            ecShow(overlay, 'flex');
             if (!devNotesRef) {
                 devNotesRef = db.ref('developer/route_planner/dev_notes');
                 devNotesHandler = devNotesRef.on('value', snap => {
@@ -2245,7 +2112,7 @@
 
         function closeDevNotes() {
             const overlay = document.getElementById('dev-notes-overlay');
-            if (overlay) overlay.style.display = 'none';
+            if (overlay) ecAnimateClose(overlay, () => { overlay.style.display = 'none'; });
             // Stop downloading feedback once the window is closed (#20).
             if (devNotesRef) {
                 devNotesRef.off('value', devNotesHandler);
@@ -2354,7 +2221,7 @@
         }
 
         // ---------- UPDATE NOTIFICATION (return button + pickup & delivery + route fixes) ----------
-        const UPDATE_NOTIFICATION_ID = 'one_way_route_order_v1';
+        const UPDATE_NOTIFICATION_ID = 'clean_look_remembrance_v1';
         function checkUpdateNotification() {
             if (!currentRouteKey) return;
             const askedAt = Date.now();
@@ -2365,12 +2232,12 @@
                 if (Date.now() - askedAt > 8000) return;
                 if (isMapModalOpen() || document.querySelector('.input-form-card.ec-form-top')) return;
                 const overlay = document.getElementById('update-notification-overlay');
-                if (overlay) overlay.style.display = 'flex';
+                if (overlay) ecShow(overlay, 'flex');
             }).catch(err => console.warn("Update notification check failed:", err));
         }
         function markUpdateNotificationRead() {
             const overlay = document.getElementById('update-notification-overlay');
-            if (overlay) overlay.style.display = 'none';
+            if (overlay) ecAnimateClose(overlay, () => { overlay.style.display = 'none'; });
             if (!currentRouteKey) return;
             db.ref(`developer/route_planner/notification_reads/${UPDATE_NOTIFICATION_ID}/${currentRouteKey}`).set(true)
                 .catch(err => console.warn("Failed to save notification read state:", err));
@@ -2998,7 +2865,7 @@
         // Line options: solid for real road paths; dashed when it's a straight-line stand-in
         // because Google couldn't give a road path (#34). Direction arrows sit at 1/3 and 2/3
         // of each leg as part of the line itself (no separate map pins to create and remove).
-        const EC_ROUTE_COLOR = '#FF8C1A'; // Halloween: pumpkin orange (was #00d4ff)
+        const EC_ROUTE_COLOR = '#00d4ff';
         function ecLineOptions(path, color, zIndex, dashed, opacity, arrows) {
             const opts = { path: path, geodesic: true, clickable: false, map: map, zIndex: zIndex };
             const icons = [];
@@ -3874,8 +3741,8 @@
             const clearBtn = document.getElementById('clear-route-btn');
             const totalStops = ecRemainingStopIds().length;
             if (totalStops > 0) {
-                counter.textContent = totalStops + ' left';
                 counter.style.display = 'inline-block';
+                ecSetStopCounter(counter, totalStops);
                 if (clearBtn) clearBtn.style.display = 'inline-block';
             } else {
                 counter.style.display = 'none';
@@ -3912,7 +3779,9 @@
             const pendingJobs = ecActiveStopIds();
             if (pendingJobs.length === 0) {
                 container.innerHTML = '';
+                const empty = emptyState.style.display === 'none';
                 emptyState.style.display = 'block';
+                if (empty && ecCanAnimate(emptyState)) emptyState.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 320, easing: EC_EASE_OUT });
                 return;
             }
             emptyState.style.display = 'none';
@@ -3964,7 +3833,9 @@
                 html += `<button type="button" class="ec-done-toggle" aria-expanded="${ecDoneExpanded ? 'true' : 'false'}" onclick="toggleDoneGroup()"><span>Done (${checked.length})</span><span aria-hidden="true">${ecDoneExpanded ? '&#9662;' : '&#9656;'}</span></button>`;
                 html += `<div class="ec-done-group"${ecDoneExpanded ? '' : ' hidden'}>${checked.map(id => cardHtml(id, false)).join('')}</div>`;
             }
+            const snap = ecSnapshotList(container);
             container.innerHTML = html;
+            ecAnimateList(container, snap);
         }
 
         // ---------- TOGGLE CHECKED ----------
@@ -4000,6 +3871,9 @@
                 card.classList.add('checked');
                 const checkmark = card.querySelector('.checkmark-path');
                 if (checkmark) checkmark.style.strokeDashoffset = '0';
+                // The box gives a small pop as the tick draws
+                const tickBox = card.querySelector('.custom-checkbox svg');
+                if (ecCanAnimate(tickBox)) tickBox.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.22)' }, { transform: 'scale(1)' }], { duration: 320, easing: 'ease-out' });
             } else {
                 card.classList.remove('checked');
                 const checkmark = card.querySelector('.checkmark-path');
@@ -4020,8 +3894,8 @@
                 finishAnimation();
                 return;
             }
-            // A short fade (0.2 s). The list then redraws with the stop in its new place
-            // (finished stops go into the "Done" row), so there is no slide to land wrong.
+            // The tick shows for a moment, then the card shrinks away (0.2 s). The list then
+            // redraws and the cards below glide up into its place (ecAnimateList).
             let done = false;
             const finish = () => {
                 if (done) return;
@@ -4031,12 +3905,12 @@
             };
             const onEnd = (e) => { if (e.target === card && e.propertyName === 'opacity') finish(); };
             card.addEventListener('transitionend', onEnd);
-            card.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
+            card.style.transition = 'opacity 0.2s ease-in 0.15s, transform 0.2s ease-in 0.15s';
             void card.offsetWidth;
             card.style.opacity = '0';
-            card.style.transform = 'translateX(12px)';
+            card.style.transform = 'scale(0.96)';
             // Fallback in case transitionend never fires
-            setTimeout(finish, 400);
+            setTimeout(finish, 550);
         }
 
         // ---------- FINISH ANIMATION ----------
@@ -4348,10 +4222,10 @@
         function ecMarkerIcon(job, numbered) {
             // Pickup & delivery: same size pin, yellow top half, green bottom half.
             if (job && job.type === 'both') {
-                const ring = numbered ? '#000000' : '#A855F7';
+                const ring = numbered ? '#000000' : '#F97316';
                 const ringW = numbered ? 2 : 4;
                 const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">'
-                    + '<path d="M5 16 A11 11 0 0 1 27 16 Z" fill="#E8E400"/>'
+                    + '<path d="M5 16 A11 11 0 0 1 27 16 Z" fill="#DFD549"/>'
                     + '<path d="M5 16 A11 11 0 0 0 27 16 Z" fill="#22C55E"/>'
                     + '<circle cx="16" cy="16" r="11" fill="none" stroke="' + ring + '" stroke-width="' + ringW + '"/>'
                     + '</svg>';
@@ -4366,9 +4240,9 @@
             return {
                 path: google.maps.SymbolPath.CIRCLE,
                 scale: 11,
-                fillColor: pickup ? '#E8E400' : '#22C55E',
+                fillColor: pickup ? '#DFD549' : '#22C55E',
                 fillOpacity: 1,
-                strokeColor: numbered ? '#000000' : '#A855F7',
+                strokeColor: numbered ? '#000000' : '#F97316',
                 strokeWeight: numbered ? 2 : 4,
                 labelOrigin: new google.maps.Point(0, 2.6)
             };
@@ -4378,7 +4252,7 @@
             const numbered = number !== null && number !== undefined;
             return {
                 text: numbered ? `${number}. ${name}` : name,
-                color: numbered ? '#FFFFFF' : '#D8B4FE',
+                color: numbered ? '#FFFFFF' : '#FDBA74',
                 fontWeight: 'bold',
                 fontSize: '14px',
                 fontFamily: "'Inter', system-ui, sans-serif",
@@ -5112,10 +4986,13 @@
             if (active && active.tagName === 'INPUT') active.blur();
             ecAttachCustomerPlaces();
             ecRenderCustomerSpot();
-            document.getElementById('ec-customer-overlay').classList.add('is-open');
+            const customerOverlay = document.getElementById('ec-customer-overlay');
+            ecCancelClose(customerOverlay);
+            customerOverlay.classList.add('is-open');
         }
         function closeCustomerEditor() {
-            document.getElementById('ec-customer-overlay').classList.remove('is-open', 'ec-typing');
+            const customerOverlay = document.getElementById('ec-customer-overlay');
+            ecAnimateClose(customerOverlay, () => customerOverlay.classList.remove('is-open', 'ec-typing'));
             ecCustomerEdit = null;
         }
         document.addEventListener('keydown', (e) => {
@@ -5433,10 +5310,11 @@
             staticNoteJobId = jobId;
             document.getElementById('static-note-textarea').value = '';
             renderStaticNoteList();
-            document.getElementById('static-note-overlay').style.display = 'flex';
+            ecShow(document.getElementById('static-note-overlay'), 'flex');
         }
         function closeStaticNote() {
-            document.getElementById('static-note-overlay').style.display = 'none';
+            const noteOverlay = document.getElementById('static-note-overlay');
+            ecAnimateClose(noteOverlay, () => { noteOverlay.style.display = 'none'; });
             staticNoteJobId = null;
         }
         function renderStaticNoteList() {
@@ -5616,7 +5494,7 @@
                 return;
             }
             mapOpenedWithFinalizedRoute = !!routeState.isFinalized;
-            document.getElementById('map-modal').style.display = 'block';
+            ecShow(document.getElementById('map-modal'), 'block');
             setTimeout(() => {
                 google.maps.event.trigger(map, 'resize');
                 if (shouldZoomToAll) {
@@ -5639,7 +5517,8 @@
         }
 
         function closeMap() {
-            document.getElementById('map-modal').style.display = 'none';
+            const mapModal = document.getElementById('map-modal');
+            ecAnimateClose(mapModal, () => { mapModal.style.display = 'none'; });
             // Route was created during this map visit: collapse the add-stop panel so the
             // stop list is visible. toggleInputPanel() also saves the state for next launch.
             const inputPanel = document.getElementById('input-panel');
@@ -5898,7 +5777,7 @@
             }
             ecPickerMode = mode === 'return' ? 'return' : 'stop';
             ecSetPickerModeUI();
-            document.getElementById('address-picker-modal').style.display = 'block';
+            ecShow(document.getElementById('address-picker-modal'), 'block');
             if (!pickerInitialized) initAddressPickerMap();
             if (ecPickerMode === 'return' && ecReturnPoint && pickerMarker) pickerMarker.setPosition({ lat: ecReturnPoint.lat, lng: ecReturnPoint.lng });
             setTimeout(() => {
@@ -5916,7 +5795,8 @@
         }
 
         function closeAddressPicker() {
-            document.getElementById('address-picker-modal').style.display = 'none';
+            const picker = document.getElementById('address-picker-modal');
+            ecAnimateClose(picker, () => { picker.style.display = 'none'; });
             ecPickerMode = 'stop';
             ecSetPickerModeUI();
         }
@@ -6480,294 +6360,6 @@
         } catch (e) {
             console.warn('Could not open straight away:', e);
         }
-    </script>
-    <!-- ================================================================
-         HALLOWEEN THEME — decorations only. Adds pictures and short-lived
-         animated elements; never changes jobs, routeState, checkedStops or
-         Firebase, and every piece is wrapped so an error here can't stop the app.
-         ================================================================ -->
-    <script>
-    (function () {
-        'use strict';
-        try {
-            var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-            var CALM_KEY = 'ec_hw_calm';
-            try { if (localStorage.getItem(CALM_KEY) === '1') document.body.classList.add('hw-calm'); } catch (e) {}
-
-            /* ---------- Pictures ---------- */
-            var PUMPKIN =
-                '<svg viewBox="0 0 64 64" aria-hidden="true">'
-                + '<path d="M30 12c0-5 2-8 7-10l2 3c-3 1-4 4-4 7z" fill="#3F6B22"/>'
-                + '<ellipse cx="20" cy="37" rx="15" ry="20" fill="#D9590A"/>'
-                + '<ellipse cx="44" cy="37" rx="15" ry="20" fill="#D9590A"/>'
-                + '<ellipse cx="32" cy="37" rx="14" ry="21.5" fill="#FF7A1A"/>'
-                + '<path d="M32 16v42" stroke="#C24E07" stroke-width="1.2" opacity="0.6"/>'
-                + '<g class="hw-face">'
-                + '<path d="M14 32 21 22 28 32z"/><path d="M36 32 43 22 50 32z"/><path d="M29 39 32 34 35 39z"/>'
-                + '<path d="M13 42 18 45 21 42 25 46 29 42 32 46 35 42 39 46 43 42 46 45 51 42Q47 56 32 56Q17 56 13 42z"/>'
-                + '</g></svg>';
-            var GHOST =
-                '<svg viewBox="0 0 60 72" aria-hidden="true">'
-                + '<path d="M30 2C14 2 4 14 4 30v38l8-7 7 7 7-7 4 4 4-4 7 7 7-7 8 7V30C56 14 46 2 30 2z" fill="#F4EFFF" fill-opacity="0.92"/>'
-                + '<ellipse cx="21" cy="28" rx="4.2" ry="6" fill="#1A0F24"/><ellipse cx="39" cy="28" rx="4.2" ry="6" fill="#1A0F24"/>'
-                + '<ellipse cx="30" cy="45" rx="5" ry="7" fill="#1A0F24"/>'
-                + '</svg>';
-            var BAT =
-                '<svg viewBox="0 0 100 50" fill="currentColor" aria-hidden="true">'
-                + '<path class="hw-wing" d="M50 22C40 8 22 6 4 12c8 4 10 10 8 16 6-4 12-2 14 4 6-6 12-4 16 0z"/>'
-                + '<path class="hw-wing" d="M50 22c10-14 28-16 46-10-8 4-10 10-8 16-6-4-12-2-14 4-6-6-12-4-16 0z"/>'
-                + '<ellipse cx="50" cy="27" rx="7" ry="10"/><circle cx="50" cy="16" r="6"/>'
-                + '<path d="M45 13 46 4 49 11zM55 13 54 4 51 11z"/>'
-                + '<circle cx="47.6" cy="16" r="1.2" fill="#FFB020"/><circle cx="52.4" cy="16" r="1.2" fill="#FFB020"/>'
-                + '</svg>';
-            var SPIDER =
-                '<svg viewBox="0 0 26 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">'
-                + '<path d="M9 9 3 4 1 9M9 11 2 11 0 15M9 13 3 16 2 21M17 9 23 4 25 9M17 11 24 11 26 15M17 13 23 16 24 21"/>'
-                + '<ellipse cx="13" cy="12" rx="5" ry="6" fill="currentColor" stroke="none"/><circle cx="13" cy="5" r="3" fill="currentColor" stroke="none"/>'
-                + '<circle cx="11.8" cy="4.6" r="0.9" fill="#FF3B3B" stroke="none"/><circle cx="14.2" cy="4.6" r="0.9" fill="#FF3B3B" stroke="none"/>'
-                + '</svg>';
-            function tinyPumpkin(x, y, s) {
-                return '<g transform="translate(' + x + ' ' + y + ') scale(' + s + ')">'
-                    + '<ellipse class="hw-pk" cx="-6" cy="0" rx="8" ry="9"/><ellipse class="hw-pk" cx="6" cy="0" rx="8" ry="9"/><ellipse class="hw-pk" cx="0" cy="0" rx="7" ry="9.5"/>'
-                    + '<path fill="currentColor" d="M-1 -9 0 -14 3 -13 1 -9z"/>'
-                    + '<g class="hw-face"><path d="M-8 -2-5 -6-2 -2z"/><path d="M2 -2 5 -6 8 -2z"/><path d="M-8 2-4 4 0 2 4 4 8 2Q5 8 0 8Q-5 8-8 2z"/></g>'
-                    + '</g>';
-            }
-            var GRAVEYARD =
-                '<svg class="hw-graveyard" viewBox="0 0 600 130" preserveAspectRatio="xMidYMax slice" fill="currentColor" aria-hidden="true">'
-                // dead tree
-                + '<g stroke="currentColor" stroke-linecap="round" fill="none">'
-                + '<path d="M66 112C63 84 70 64 66 40" stroke-width="8"/>'
-                + '<path d="M66 52 46 34 36 30M46 34 44 22M67 44 86 26 98 22M86 26 88 14M66 64 88 56 100 60M64 72 48 66" stroke-width="3.5"/>'
-                + '</g>'
-                // ground
-                + '<path d="M0 130V104Q70 88 150 100T310 98T470 94T600 102V130Z"/>'
-                // tombstones and a cross
-                + '<path d="M140 104V78a15 15 0 0 1 30 0v26z"/>'
-                + '<path d="M210 104V70h4v-8h6v8h10v6h-10v28z"/>'
-                + '<rect x="330" y="80" width="24" height="24" rx="3"/>'
-                + '<path d="M540 104V84a11 11 0 0 1 22 0v20z"/>'
-                // iron fence
-                + '<g stroke="currentColor" stroke-width="2.5" fill="none"><path d="M400 102V76M412 102V76M424 102V76M436 102V76M448 102V76M460 102V76M472 102V76M394 84H478M394 96H478"/></g>'
-                + '<path d="M397 78 400 70 403 78zM409 78 412 70 415 78zM421 78 424 70 427 78zM433 78 436 70 439 78zM445 78 448 70 451 78zM457 78 460 70 463 78zM469 78 472 70 475 78z"/>'
-                + tinyPumpkin(262, 98, 1.25) + tinyPumpkin(508, 96, 1) + tinyPumpkin(110, 104, 0.8)
-                + '</svg>';
-
-            function el(tag, cls, html) {
-                var n = document.createElement(tag);
-                if (cls) n.className = cls;
-                if (html) n.innerHTML = html;
-                n.setAttribute('aria-hidden', 'true');
-                return n;
-            }
-            function starField(count, maxY) {
-                var s = [];
-                for (var i = 0; i < count; i++) {
-                    var a = (0.35 + Math.random() * 0.65).toFixed(2);
-                    s.push((Math.random() * 100).toFixed(1) + 'vw ' + (Math.random() * maxY).toFixed(1) + 'vh 0 ' + (Math.random() < 0.15 ? '1px' : '0') + ' rgba(255,245,230,' + a + ')');
-                }
-                return s.join(',');
-            }
-
-            /* ---------- The scene behind the app ---------- */
-            var scene = el('div');
-            scene.id = 'hw-scene';
-            scene.appendChild(el('div', 'hw-sky'));
-            var starsA = el('div', 'hw-stars'); starsA.style.boxShadow = starField(36, 55); scene.appendChild(starsA);
-            var starsB = el('div', 'hw-stars hw-b'); starsB.style.boxShadow = starField(28, 60); scene.appendChild(starsB);
-            scene.appendChild(el('div', 'hw-moon'));
-            scene.insertAdjacentHTML('beforeend', GRAVEYARD);
-            [['6%', '150px', ''], ['82%', '230px', ' hw-green'], ['38%', '62px', '']].forEach(function (p, i) {
-                var eyes = el('div', 'hw-eyes' + p[2], '<span></span><span></span>');
-                eyes.style.left = p[0];
-                eyes.style.bottom = p[1];
-                eyes.style.animationDelay = (-i * 3.7) + 's';
-                eyes.style.animationDuration = (11 + i * 3) + 's';
-                scene.appendChild(eyes);
-            });
-            scene.appendChild(el('div', 'hw-fog'));
-            scene.appendChild(el('div', 'hw-fog hw-b'));
-            document.body.insertBefore(scene, document.body.firstChild);
-
-            var fx = el('div');
-            fx.id = 'hw-fx';
-            document.body.appendChild(fx);
-
-            /* ---------- Jack-o'-lanterns, spider and cobwebs on the page ---------- */
-            var logo = document.querySelector('.ec-logo-wrap');
-            if (logo) logo.appendChild(el('span', 'hw-pumpkin hw-logo-pumpkin', PUMPKIN));
-            var header = document.querySelector('header');
-            if (header) header.appendChild(el('div', 'hw-spider-wrap', '<div class="hw-spider">' + SPIDER + '</div>'));
-            var empty = document.getElementById('empty-state');
-            if (empty) empty.insertBefore(el('div', 'hw-pumpkin hw-empty-pumpkin', PUMPKIN), empty.firstChild);
-
-            /* ---------- Sign-in screen ---------- */
-            var login = document.getElementById('login-overlay');
-            if (login) {
-                var lfx = el('div', 'hw-login-fx');
-                var lStars = el('div', 'hw-stars'); lStars.style.boxShadow = starField(50, 60); lfx.appendChild(lStars);
-                lfx.appendChild(el('div', 'hw-moon'));
-                lfx.insertAdjacentHTML('beforeend', GRAVEYARD);
-                [['12%', '22%', ''], ['78%', '58%', ' hw-g2'], ['20%', '70%', ' hw-g3']].forEach(function (p) {
-                    var g = el('div', 'hw-login-ghost' + p[2], '<span class="hw-ghost-body">' + GHOST + '</span>');
-                    g.style.left = p[0];
-                    g.style.top = p[1];
-                    lfx.appendChild(g);
-                });
-                lfx.appendChild(el('div', 'hw-fog'));
-                login.insertBefore(lfx, login.firstChild);
-                var crest = login.querySelector('.ec-login-crest');
-                if (crest) crest.appendChild(el('span', 'hw-pumpkin hw-crest-pumpkin', PUMPKIN));
-                var title = login.querySelector('.ec-login-title');
-                if (title) {
-                    var tag = el('div', 'hw-login-tag');
-                    tag.textContent = '🎃 Happy Halloween';
-                    title.parentNode.insertBefore(tag, title);
-                }
-            }
-
-            /* ---------- Menu switch: Spooky effects on/off ---------- */
-            var themeItem = document.getElementById('ec-menu-theme');
-            if (themeItem) {
-                var fxBtn = document.createElement('button');
-                fxBtn.type = 'button';
-                fxBtn.className = 'ec-menu-item';
-                fxBtn.id = 'hw-menu-fx';
-                var label = function () {
-                    fxBtn.textContent = document.body.classList.contains('hw-calm') ? '🎃 Turn spooky effects on' : '👻 Turn spooky effects off';
-                };
-                label();
-                fxBtn.addEventListener('click', function () {
-                    var calm = document.body.classList.toggle('hw-calm');
-                    try { localStorage.setItem(CALM_KEY, calm ? '1' : '0'); } catch (e) {}
-                    if (calm) fx.innerHTML = '';
-                    label();
-                });
-                themeItem.parentNode.insertBefore(fxBtn, themeItem.nextSibling);
-            }
-
-            /* ---------- Things that fly by ---------- */
-            function fxOn() {
-                return !reduceMotion && !document.hidden && !document.body.classList.contains('hw-calm') && !!fx.animate;
-            }
-            function shown(id) {
-                var n = document.getElementById(id);
-                return !!n && n.style.display !== 'none' && getComputedStyle(n).display !== 'none';
-            }
-            // Bats and ghosts fly over the sign-in screen while it shows, otherwise over the app.
-            // Nothing is sent while the map is open (it would be hidden under it anyway).
-            function stage() {
-                if (shown('login-overlay')) return login.querySelector('.hw-login-fx') || null;
-                if (shown('map-modal') || shown('address-picker-modal')) return null;
-                return fx;
-            }
-            function launch(node, parent, frames, opts) {
-                parent.appendChild(node);
-                var a = node.animate(frames, opts);
-                var done = function () { if (node.parentNode) node.parentNode.removeChild(node); };
-                a.onfinish = done;
-                a.oncancel = done;
-                setTimeout(done, (opts.duration || 0) + (opts.delay || 0) + 500);
-            }
-            function spawnBat(parent, from) {
-                parent = parent || stage();
-                if (!parent) return;
-                var w = window.innerWidth, h = window.innerHeight;
-                var size = 30 + Math.random() * 26;
-                var bat = el('div', 'hw-bat', BAT);
-                bat.style.width = size + 'px';
-                var dir = Math.random() < 0.5 ? 1 : -1;
-                var x0, y0, x1, y1;
-                if (from) {
-                    x0 = from.x - size / 2; y0 = from.y - size / 4;
-                    x1 = x0 + dir * (w * 0.5 + Math.random() * w * 0.3); y1 = y0 - (h * 0.25 + Math.random() * h * 0.3);
-                } else {
-                    x0 = dir > 0 ? -size - 20 : w + 20; x1 = dir > 0 ? w + 20 : -size - 20;
-                    y0 = h * (0.1 + Math.random() * 0.45); y1 = y0 + (Math.random() - 0.5) * h * 0.25;
-                }
-                var amp = 18 + Math.random() * 22, frames = [];
-                for (var i = 0; i <= 8; i++) {
-                    var t = i / 8;
-                    var x = x0 + (x1 - x0) * t;
-                    var y = y0 + (y1 - y0) * t + Math.sin(t * Math.PI * 3) * amp;
-                    frames.push({ transform: 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)', opacity: (from && i === 0) ? 0 : 1 });
-                }
-                launch(bat, parent, frames, { duration: from ? 1600 + Math.random() * 600 : 5200 + Math.random() * 3200, easing: 'linear' });
-            }
-            function spawnGhost() {
-                var parent = stage();
-                if (!parent) return;
-                var w = window.innerWidth, h = window.innerHeight;
-                var ghost = el('div', 'hw-ghost', '<span class="hw-ghost-body">' + GHOST + '</span>');
-                var size = 40 + Math.random() * 24;
-                ghost.style.width = size + 'px';
-                var x0 = w * (0.05 + Math.random() * 0.8) - size / 2, sway = 40 + Math.random() * 50, frames = [];
-                for (var i = 0; i <= 6; i++) {
-                    var t = i / 6;
-                    frames.push({
-                        transform: 'translate(' + (x0 + Math.sin(t * Math.PI * 2) * sway).toFixed(1) + 'px,' + (h + 20 - (h + 160) * t).toFixed(1) + 'px)',
-                        opacity: (i === 0 || i === 6) ? 0 : (i === 3 ? 0.6 : 0.42)
-                    });
-                }
-                launch(ghost, parent, frames, { duration: 11000 + Math.random() * 5000, easing: 'ease-in-out' });
-            }
-            function every(fn, min, max, first) {
-                setTimeout(function tick() {
-                    try { if (fxOn()) fn(); } catch (e) {}
-                    setTimeout(tick, min + Math.random() * (max - min));
-                }, first);
-            }
-            every(function () { spawnBat(); }, 9000, 20000, 2500);
-            every(spawnGhost, 22000, 38000, 9000);
-
-            /* ---------- Checking off a stop: a ghost says BOO! (reads the result, never changes it) ---------- */
-            document.addEventListener('click', function (e) {
-                var cb = e.target && e.target.closest ? e.target.closest('.custom-checkbox') : null;
-                if (!cb) return;
-                var card = cb.closest('.job-item');
-                if (!card) return;
-                var wasChecked = card.classList.contains('checked');
-                var r = cb.getBoundingClientRect();
-                setTimeout(function () {
-                    try {
-                        if (wasChecked || !card.classList.contains('checked') || !fxOn()) return;
-                        var poof = el('div', 'hw-poof', '<span class="hw-poof-boo">BOO!</span><span class="hw-ghost-body">' + GHOST + '</span>');
-                        var x = r.left + r.width / 2 - 20, y = r.top - 40;
-                        launch(poof, fx, [
-                            { transform: 'translate(' + x + 'px,' + (y + 30) + 'px) scale(0.4)', opacity: 0 },
-                            { transform: 'translate(' + x + 'px,' + (y - 10) + 'px) scale(1.05)', opacity: 1, offset: 0.3 },
-                            { transform: 'translate(' + (x - 10) + 'px,' + (y - 70) + 'px) scale(1)', opacity: 0 }
-                        ], { duration: 1500, easing: 'ease-out' });
-                    } catch (err) {}
-                }, 0);
-            }, true);
-
-            /* ---------- Stop added: a jack-o'-lantern pops up and bats scatter ---------- */
-            var origCelebrate = window.ecCelebrateAdd;
-            window.ecCelebrateAdd = function () {
-                var result;
-                if (typeof origCelebrate === 'function') result = origCelebrate.apply(this, arguments);
-                try {
-                    var btn = document.getElementById('add-btn-expanded');
-                    if (!btn || !fxOn()) return result;
-                    var r = btn.getBoundingClientRect();
-                    if (r.width === 0) return result;
-                    var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-                    var pop = el('div', 'hw-pop hw-pumpkin', PUMPKIN);
-                    launch(pop, fx, [
-                        { transform: 'translate(' + (cx - 23) + 'px,' + (cy - 23) + 'px) scale(0.2) rotate(-20deg)', opacity: 0 },
-                        { transform: 'translate(' + (cx - 23) + 'px,' + (cy - 70) + 'px) scale(1.15) rotate(8deg)', opacity: 1, offset: 0.35 },
-                        { transform: 'translate(' + (cx - 23) + 'px,' + (cy - 82) + 'px) scale(1) rotate(0)', opacity: 1, offset: 0.6 },
-                        { transform: 'translate(' + (cx - 23) + 'px,' + (cy - 120) + 'px) scale(0.8)', opacity: 0 }
-                    ], { duration: 1300, easing: 'ease-out' });
-                    for (var i = 0; i < 3; i++) spawnBat(fx, { x: cx + (i - 1) * 30, y: cy });
-                } catch (e) {}
-                return result;
-            };
-        } catch (err) {
-            console.warn('Halloween theme skipped:', err);
-        }
-    })();
     </script>
 </body>
 </html>

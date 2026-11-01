@@ -9,7 +9,7 @@
 //     copy, the saved copy is replaced and the open app is told, so it can offer a Refresh
 //     (index.html shows "A new version of Route Helper is ready"). The next open uses it.
 // Bumping CACHE_NAME also deletes the old cache.
-const CACHE_NAME = 'ec-route-helper-v4';
+const CACHE_NAME = 'ec-route-helper-v5';
 const APP_SHELL = [
     './',
     './index.html',
@@ -27,7 +27,7 @@ const THIRD_PARTY_SHELL = [
     'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',
     'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js',
     'https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js',
-    'https://fonts.googleapis.com/css2?family=Creepster&family=Inter:wght@400;500;600;700;800&display=swap'
+    'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'
 ];
 
 // Asks another site for a file in a way that gives a readable answer (so a failed download
