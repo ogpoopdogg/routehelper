@@ -9,7 +9,7 @@
 //     copy, the saved copy is replaced and the open app is told, so it can offer a Refresh
 //     (index.html shows "A new version of Route Helper is ready"). The next open uses it.
 // Bumping CACHE_NAME also deletes the old cache.
-const CACHE_NAME = 'ec-route-helper-v5';
+const CACHE_NAME = 'ec-route-helper-v6';
 const APP_SHELL = [
     './',
     './index.html',

@@ -980,6 +980,47 @@
         /* Smoother hover and focus changes on cards */
         .job-item { transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out), box-shadow 0.25s var(--ease-out), opacity 0.2s ease; }
 
+        /* CREATE ROUTE while some stops still need a number: the words pulse gently, a soft
+           glow breathes behind the button and a faint sheen passes over it every few seconds.
+           Only opacity and transform move. Stops as soon as every stop has a number. */
+        #create-route-main { position: relative; overflow: hidden; isolation: isolate; }
+        #create-route-main .ec-crt-label { position: relative; z-index: 1; display: inline-block; }
+        #create-route-main::before, #create-route-main::after { content: ""; position: absolute; pointer-events: none; opacity: 0; }
+        #create-route-main::before { inset: 0; z-index: 0; background: radial-gradient(70% 140% at 50% 50%, rgba(223, 213, 73, 0.16), transparent 70%); }
+        #create-route-main::after {
+            top: 0; bottom: 0; left: 0; width: 40%; z-index: 0;
+            background: linear-gradient(100deg, transparent, rgba(223, 213, 73, 0.14) 50%, transparent);
+            transform: translateX(-120%) skewX(-18deg);
+        }
+        body.light-mode #create-route-main::before { background: radial-gradient(70% 140% at 50% 50%, rgba(160, 150, 20, 0.14), transparent 70%); }
+        body.light-mode #create-route-main::after { background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.7) 50%, transparent); }
+        body:has(#job-list .job-item.pending:not(.checked)) #create-route-main:not(:disabled):not(.active) .ec-crt-label { animation: ec-crt-text 2.2s ease-in-out infinite; }
+        body:has(#job-list .job-item.pending:not(.checked)) #create-route-main:not(:disabled):not(.active)::before { animation: ec-crt-glow 2.2s ease-in-out infinite; }
+        body:has(#job-list .job-item.pending:not(.checked)) #create-route-main:not(:disabled):not(.active)::after { opacity: 1; animation: ec-crt-sheen 4.4s ease-in-out infinite; }
+        @keyframes ec-crt-text { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(0.97); } }
+        @keyframes ec-crt-glow { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+        @keyframes ec-crt-sheen { 0%, 55% { transform: translateX(-120%) skewX(-18deg); } 100% { transform: translateX(320%) skewX(-18deg); } }
+
+        /* Map: stops that don't have a number yet pulse and glow (drawn under the pins by
+           the script, see ecPulseLayer). Only while the map is open. */
+        .ec-map-pulse { position: absolute; width: 0; height: 0; pointer-events: none; }
+        .ec-map-pulse::before, .ec-map-pulse::after {
+            content: ""; position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; border-radius: 50%;
+        }
+        .ec-map-pulse::before { background: radial-gradient(circle, rgba(249, 115, 22, 0.55) 0 40%, rgba(249, 115, 22, 0) 70%); transform: scale(1.5); animation: ec-map-glow 1.6s ease-in-out infinite; }
+        .ec-map-pulse::after { border: 3px solid rgba(249, 115, 22, 0.85); animation: ec-map-ring 1.6s ease-out infinite; }
+        @keyframes ec-map-glow { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+        @keyframes ec-map-ring { from { transform: scale(0.7); opacity: 0.9; } to { transform: scale(2.3); opacity: 0; } }
+        @media (prefers-reduced-motion: reduce) { .ec-map-pulse::after { display: none; } .ec-map-pulse::before { opacity: 1; } }
+
+        /* Keeps the phone's own bottom bar its normal colour: phones that draw their bottom bar
+           over the page tint it from whatever is underneath (a yellow button scrolling past made
+           it yellow), so a strip of the page background always sits there. */
+        .ec-bottom-shield {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 890; pointer-events: none;
+            height: max(var(--safe-bottom), 1px); background: var(--bg);
+        }
+
         /* ---------- REMEMBRANCE DAY ----------
            A poppy beside "E&C" and "Lest We Forget" under it. Shown from 1 to 11 November
            (the phone's date); the script right after the header turns it on. */
@@ -1002,6 +1043,7 @@
     </style>
 </head>
 <body>
+    <div class="ec-bottom-shield" aria-hidden="true"></div>
     <!-- Login Overlay -->
     <div id="login-overlay" class="ec-auth-pending">
         <svg class="ec-login-routes" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -1122,7 +1164,7 @@
         </div>
 
         <!-- CREATE ROUTE button (main page) -->
-        <button id="create-route-main" class="create-route-btn" onclick="startCreateRoute()">CREATE ROUTE</button>
+        <button id="create-route-main" class="create-route-btn" onclick="startCreateRoute()"><span class="ec-crt-label">CREATE ROUTE</span></button>
 
         </section>
         <script>
@@ -2045,49 +2087,18 @@
             document.body.classList.toggle('light-mode');
             const light = document.body.classList.contains('light-mode');
             try { localStorage.setItem('ec_theme', light ? 'light' : 'dark'); } catch (e) {}
-            if (!EC_MAP_ID) {
-                if (map) map.setOptions({ styles: light ? [] : mapStyles });
-                if (pickerMap) pickerMap.setOptions({ styles: light ? [] : mapStyles });
-            }
             updateMenuLabels();
         }
-        // Options shared by both maps. Without a Map ID the app's own dark colours (mapStyles)
-        // are used. With a Map ID Google ignores those, so its own dark/light colour scheme is
-        // used instead; that can only be chosen when a map is made, so after switching the theme
-        // the map changes the next time the app is opened.
+        // Options shared by both maps. The maps always use Google's normal light colours,
+        // in dark mode too (Justin: no dark map anywhere).
         function ecMapOptions(base) {
-            const light = document.body.classList.contains('light-mode');
             const opts = Object.assign({ gestureHandling: 'greedy' }, base);
             if (EC_MAP_ID) {
                 opts.mapId = EC_MAP_ID;
-                opts.colorScheme = light ? 'LIGHT' : 'DARK';
-            } else {
-                opts.styles = light ? [] : mapStyles;
+                opts.colorScheme = 'LIGHT';
             }
             return opts;
         }
-        const mapStyles = [
-            {"elementType":"geometry","stylers":[{"color":"#101012"}]},
-            {"elementType":"labels.text.fill","stylers":[{"color":"#9A9A8E"}]},
-            {"elementType":"labels.text.stroke","stylers":[{"color":"#0A0A09"}]},
-            {"featureType":"administrative","elementType":"geometry.stroke","stylers":[{"color":"#3A3A33"}]},
-            {"featureType":"administrative.locality","elementType":"labels.text.fill","stylers":[{"color":"#E8E4A0"}]},
-            {"featureType":"landscape.man_made","elementType":"geometry","stylers":[{"color":"#141417"}]},
-            {"featureType":"poi","elementType":"geometry","stylers":[{"color":"#16171B"}]},
-            {"featureType":"poi","elementType":"labels.text.fill","stylers":[{"color":"#7D7D72"}]},
-            {"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#12201A"}]},
-            {"featureType":"road","elementType":"geometry","stylers":[{"color":"#2A2B30"}]},
-            {"featureType":"road","elementType":"geometry.stroke","stylers":[{"color":"#1A1B1F"}]},
-            {"featureType":"road","elementType":"labels.text.fill","stylers":[{"color":"#B5B5A8"}]},
-            {"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#34353B"}]},
-            {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#6B6700"}]},
-            {"featureType":"road.highway","elementType":"geometry.stroke","stylers":[{"color":"#2E2C00"}]},
-            {"featureType":"road.highway","elementType":"labels.text.fill","stylers":[{"color":"#F2EE7A"}]},
-            {"featureType":"transit","elementType":"geometry","stylers":[{"color":"#1C1D22"}]},
-            {"featureType":"water","elementType":"geometry","stylers":[{"color":"#071018"}]},
-            {"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#3D5A73"}]}
-        ];
-
         // ---------- DEVELOPER NOTES ----------
         let devNotesRef = null;
         let devNotesHandler = null;
@@ -4343,6 +4354,52 @@
             mapMarkers = {};
         }
 
+        // Pulsing glow under every stop that doesn't have a number yet. One overlay on the
+        // map holds a small HTML ring per stop; the rings pulse with CSS (.ec-map-pulse), so
+        // nothing is redrawn by the script while they pulse.
+        let ecPulseLayer = null;
+        function ecPulseRings() {
+            if (ecPulseLayer) return ecPulseLayer;
+            if (!map || !window.google || !google.maps || !google.maps.OverlayView) return null;
+            const layer = new google.maps.OverlayView();
+            const rings = {};
+            let pane = null;
+            layer.onAdd = function () {
+                pane = this.getPanes().overlayLayer;
+                Object.values(rings).forEach(r => pane.appendChild(r.el));
+            };
+            layer.draw = function () {
+                const proj = this.getProjection();
+                if (!proj) return;
+                Object.values(rings).forEach(r => {
+                    const pt = proj.fromLatLngToDivPixel(r.latLng);
+                    if (pt) { r.el.style.left = pt.x + 'px'; r.el.style.top = pt.y + 'px'; }
+                });
+            };
+            layer.onRemove = function () {
+                Object.values(rings).forEach(r => r.el.remove());
+                pane = null;
+            };
+            layer.ecSet = function (stops) {
+                Object.keys(rings).forEach(id => layer.ecRemove(id));
+                stops.forEach(st => {
+                    const el = document.createElement('div');
+                    el.className = 'ec-map-pulse';
+                    rings[st.id] = { el, latLng: new google.maps.LatLng(st.lat, st.lng) };
+                    if (pane) pane.appendChild(el);
+                });
+                layer.draw();
+            };
+            layer.ecRemove = function (id) {
+                if (!rings[id]) return;
+                rings[id].el.remove();
+                delete rings[id];
+            };
+            layer.setMap(map);
+            ecPulseLayer = layer;
+            return layer;
+        }
+
         function updateMapMarkers() {
             if (!map) return;
             // Hidden map: openMap() rebuilds the pins when it's shown, so don't redo them on
@@ -4353,6 +4410,9 @@
             stopPulsingAll();
 
             const pendingJobs = ecRemainingStopIds();
+            const rings = ecPulseRings();
+            if (rings) rings.ecSet(pendingJobs.filter(id => !routeState.assignedIndices[id] && jobs[id].lat && jobs[id].lng)
+                .map(id => ({ id, lat: jobs[id].lat, lng: jobs[id].lng })));
             if (pendingJobs.length === 0) return;
 
             const isOrdering = isOrderingMode;
@@ -4498,6 +4558,7 @@
                 marker.setZIndex(10);
                 delete pulsingMarkers[jobId];
             }
+            if (ecPulseLayer) ecPulseLayer.ecRemove(jobId);
 
             updateOrderingOverlays();
 
