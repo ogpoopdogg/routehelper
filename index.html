@@ -63,7 +63,7 @@
 
             /* Shape */
             --radius-sm: 8px; --radius: 12px; --radius-lg: 16px; --radius-xl: 20px;
-            --control-h: 48px;           /* buttons and inputs: easy to hit with a thumb */
+            --control-h: 44px;           /* buttons and inputs: still easy to hit with a thumb */
 
             --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
             --ease: cubic-bezier(0.2, 0, 0, 1);
@@ -127,7 +127,7 @@
             display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3);
             /* On wide screens the header lines up with the centred content below it */
             --hdr-x: max(var(--gutter), calc((100% - var(--content-max)) / 2 + var(--gutter)));
-            padding: calc(var(--sp-3) + var(--safe-top)) var(--hdr-x) var(--sp-3);
+            padding: calc(var(--sp-2) + var(--safe-top)) var(--hdr-x) var(--sp-2);
             background: var(--header-bg);
             -webkit-backdrop-filter: saturate(150%) blur(14px); backdrop-filter: saturate(150%) blur(14px);
             border-bottom: 1px solid var(--border);
@@ -135,7 +135,7 @@
         .ec-brand { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; flex-shrink: 0; }
         .ec-logo-wrap {
             display: grid; place-items: center; flex-shrink: 0;
-            width: 40px; height: 40px; border-radius: var(--radius);
+            width: 38px; height: 38px; border-radius: var(--radius);
             background: #000; border: 1px solid rgba(223, 213, 73, 0.45);
             box-shadow: var(--shadow-1);
         }
@@ -147,7 +147,7 @@
 
         .map-btn.ec-hdr-btn {
             display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-            min-width: 50px; height: 48px; padding: 0 var(--sp-2);
+            min-width: 50px; height: 44px; padding: 0 var(--sp-2);
             border-radius: var(--radius); border: 1px solid var(--border);
             background: var(--surface); color: var(--text-2);
             font-size: 11px; font-weight: 600; line-height: 1; cursor: pointer;
@@ -182,28 +182,28 @@
         /* ---------- PAGE LAYOUT ---------- */
         .ec-main {
             width: 100%; max-width: var(--content-max); margin: 0 auto;
-            padding: var(--sp-5) var(--gutter) calc(var(--sp-8) + var(--safe-bottom));
-            display: flex; flex-direction: column; gap: var(--sp-6);
+            padding: var(--sp-3) var(--gutter) calc(var(--sp-6) + var(--safe-bottom));
+            display: flex; flex-direction: column; gap: var(--sp-4);
         }
         .ec-section-title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
 
         /* ---------- ADD-A-STOP PANEL ---------- */
-        #input-panel { display: flex; flex-direction: column; gap: var(--sp-4); }
+        #input-panel { display: flex; flex-direction: column; gap: var(--sp-3); }
         .input-form-card {
             position: relative;
-            display: flex; flex-direction: column; gap: var(--sp-3);
-            padding: var(--sp-5);
+            display: flex; flex-direction: column; gap: var(--sp-2);
+            padding: var(--sp-3) var(--sp-4) var(--sp-4);
             background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
             box-shadow: var(--highlight), var(--shadow-2);
         }
-        .input-panel-header { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); margin-bottom: var(--sp-1); }
+        .input-panel-header { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
         .input-panel-toggle {
-            display: grid; place-items: center; width: 36px; height: 36px; padding: 0; flex-shrink: 0;
+            display: grid; place-items: center; width: 34px; height: 34px; padding: 0; flex-shrink: 0;
             border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2);
             cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
         }
         .input-panel-toggle:hover { color: var(--text); border-color: var(--border-strong); background: var(--surface-3); }
-        .flex-row { display: flex; gap: var(--sp-3); }
+        .flex-row { display: flex; gap: var(--sp-2); }
         .input-wrap { position: relative; flex: 1; min-width: 0; }
         .ec-field-name { position: relative; width: 100%; }
         .ec-field-address { flex: 1.6; }
@@ -232,7 +232,7 @@
 
         /* ---------- TEXT FIELDS ---------- */
         input, select, textarea {
-            width: 100%; min-height: var(--control-h); padding: 12px 14px;
+            width: 100%; min-height: var(--control-h); padding: 10px 14px;
             background: var(--surface-2); color: var(--text);
             border: 1px solid var(--border); border-radius: var(--radius);
             font-family: var(--font); font-size: 16px; line-height: 1.35;
@@ -245,22 +245,22 @@
         textarea { resize: vertical; }
 
         /* Fields with an icon and a label that moves up when there's text */
-        .ec-field > input { padding: 22px 14px 6px 42px; min-height: 56px; }
+        .ec-field > input { padding: 17px 14px 3px 42px; min-height: 46px; }
         .ec-field > input::placeholder { color: transparent; }
         .ec-field-icon {
-            position: absolute; left: 14px; top: 28px; transform: translateY(-50%); z-index: 1; pointer-events: none;
+            position: absolute; left: 14px; top: 23px; transform: translateY(-50%); z-index: 1; pointer-events: none;
             width: 18px; height: 18px; fill: none; stroke: var(--text-3); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
             transition: stroke 0.15s;
         }
         .ec-float-label {
-            position: absolute; left: 43px; top: 28px; z-index: 1; pointer-events: none;
+            position: absolute; left: 43px; top: 23px; z-index: 1; pointer-events: none;
             transform: translateY(-50%); transform-origin: left center;
             max-width: calc(100% - 64px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             font-size: 15px; color: var(--text-3);
             transition: top 0.15s var(--ease), transform 0.15s var(--ease), color 0.15s;
         }
         .ec-field > input:focus ~ .ec-float-label,
-        .ec-field > input:not(:placeholder-shown) ~ .ec-float-label { top: 16px; transform: translateY(-50%) scale(0.78); }
+        .ec-field > input:not(:placeholder-shown) ~ .ec-float-label { top: 12px; transform: translateY(-50%) scale(0.74); }
         .ec-field > input:focus ~ .ec-float-label { color: var(--accent-text); }
         .ec-field > input:focus ~ .ec-field-icon { stroke: var(--accent-text); }
         body.light-mode .ec-field > input:focus ~ .ec-float-label { color: var(--text); }
@@ -272,8 +272,8 @@
         #f-address { padding-right: 128px; }
 
         .suggestion-reset {
-            position: absolute; right: 10px; top: 28px; transform: translateY(-50%); z-index: 2;
-            min-height: 32px; padding: 0 12px; border-radius: var(--radius-sm);
+            position: absolute; right: 8px; top: 23px; transform: translateY(-50%); z-index: 2;
+            min-height: 30px; padding: 0 12px; border-radius: var(--radius-sm);
             border: 1px solid var(--border); background: var(--surface); color: var(--text-2);
             font-size: 12px; font-weight: 600; cursor: pointer;
             transition: color 0.15s, border-color 0.15s, background 0.15s;
@@ -281,8 +281,8 @@
         .suggestion-reset:hover { color: var(--text); border-color: var(--border-strong); background: var(--surface-3); }
 
         .address-pin-btn {
-            position: absolute; right: 8px; top: 28px; transform: translateY(-50%); z-index: 2;
-            display: grid; place-items: center; width: 38px; height: 38px; padding: 0;
+            position: absolute; right: 6px; top: 23px; transform: translateY(-50%); z-index: 2;
+            display: grid; place-items: center; width: 36px; height: 34px; padding: 0;
             border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); cursor: pointer;
             transition: background 0.15s, border-color 0.15s;
         }
@@ -291,8 +291,8 @@
         .address-pin-btn:hover { background: var(--surface-3); border-color: var(--border-strong); }
         /* "Here": fill the address from where the driver is standing */
         .address-here-btn {
-            position: absolute; right: 52px; top: 28px; transform: translateY(-50%); z-index: 2;
-            display: inline-flex; align-items: center; gap: 4px; height: 38px; padding: 0 10px;
+            position: absolute; right: 48px; top: 23px; transform: translateY(-50%); z-index: 2;
+            display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 10px;
             border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); cursor: pointer;
             color: var(--accent-text); font-size: 13px; font-weight: 700;
             transition: background 0.15s, border-color 0.15s, opacity 0.15s;
@@ -329,11 +329,11 @@
 
         /* ---------- PICKUP / DELIVERY CHOICE (segmented control) ---------- */
         .ec-type-row {
-            gap: 4px; padding: 4px; margin-top: var(--sp-1);
+            gap: 4px; padding: 3px; margin-top: 0;
             background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
         }
         .ec-type-choice {
-            flex: 1; min-height: 44px; padding: 0 var(--sp-2);
+            flex: 1; min-height: 38px; padding: 0 var(--sp-2);
             border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; cursor: pointer;
             color: var(--text-2); font-size: 15px; font-weight: 600;
             transition: background 0.15s, color 0.15s;
@@ -350,7 +350,7 @@
         /* Primary: ADD TO ROUTE. Solid E&C yellow, the one loud button on the page. */
         .btn-add {
             display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
-            width: 100%; min-height: 52px; margin-top: var(--sp-1); padding: 0 var(--sp-5);
+            width: 100%; min-height: 46px; margin-top: 2px; padding: 0 var(--sp-5);
             border: none; border-radius: var(--radius); cursor: pointer;
             background: var(--accent); color: var(--on-accent);
             font-size: 15px; font-weight: 700; letter-spacing: 0.04em;
@@ -371,7 +371,7 @@
         /* Secondary: CREATE ROUTE. Neutral; gets a yellow ring while stops still need numbers. */
         .create-route-btn {
             display: flex; align-items: center; justify-content: center; gap: var(--sp-2);
-            width: 100%; min-height: 52px; margin: 0; padding: 0 var(--sp-5);
+            width: 100%; min-height: 46px; margin: 0; padding: 0 var(--sp-5);
             border: 1px solid var(--border-strong); border-radius: var(--radius); cursor: pointer;
             background: var(--surface); color: var(--text);
             font-size: 15px; font-weight: 700; letter-spacing: 0.04em;
@@ -401,18 +401,18 @@
 
         /* ---------- STOP LIST ---------- */
         #job-list-container {
-            padding: var(--sp-5) var(--sp-3) var(--sp-3);
+            padding: var(--sp-3) var(--sp-3) var(--sp-3);
             background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
             box-shadow: var(--highlight), var(--shadow-2);
         }
         /* Phones: the list sits straight on the page, so stop cards get the full width */
         @media (max-width: 479px) {
             #job-list-container { padding: 0; background: none; border: none; box-shadow: none; }
-            .ec-list-head { margin-top: var(--sp-1); }
+            .ec-list-head { margin-top: 0; }
         }
         .ec-list-head {
             display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3);
-            margin: 0 0 var(--sp-4); padding: 0 var(--sp-1);
+            margin: 0 0 var(--sp-2); padding: 0 var(--sp-1);
         }
         .ec-list-title { display: flex; align-items: center; gap: var(--sp-3); font-size: 17px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
         #stop-counter {
@@ -420,12 +420,12 @@
             background: var(--accent-soft); color: var(--accent-text);
             font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
         }
-        #job-list { display: flex; flex-direction: column; gap: var(--sp-3); }
+        #job-list { display: flex; flex-direction: column; gap: var(--sp-2); }
 
         /* Stop card */
         .job-item {
             position: relative; display: flex; align-items: center; gap: var(--sp-3);
-            min-height: 72px; padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);
+            min-height: 58px; padding: 7px var(--sp-3) 7px var(--sp-4);
             background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
             box-shadow: var(--shadow-1);
             cursor: default; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
@@ -442,7 +442,7 @@
 
         .job-number {
             display: grid; place-items: center; flex-shrink: 0;
-            width: 40px; height: 40px; margin: 0; padding: 0; cursor: pointer;
+            width: 38px; height: 38px; margin: 0; padding: 0; cursor: pointer;
             border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
             background: var(--surface-3); color: var(--text);
             font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1;
@@ -456,7 +456,7 @@
 
         .job-type-toggle {
             display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0;
-            width: 30px; height: 40px; margin: 0; padding: 0; overflow: hidden; cursor: pointer;
+            width: 30px; height: 38px; margin: 0; padding: 0; overflow: hidden; cursor: pointer;
             border: none; border-radius: var(--radius-sm);
             font-size: 14px; font-weight: 800; line-height: 1; color: #0A0A0B;
         }
@@ -470,8 +470,8 @@
         .job-info[role="button"]:active { opacity: 0.65; }
         /* Names and addresses wrap to a second line instead of being cut off */
         .job-name, .job-address { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
-        .job-name { font-size: 16px; font-weight: 600; line-height: 1.3; color: var(--text); }
-        .job-address { margin-top: 3px; font-size: 14px; line-height: 1.35; color: var(--text-2); }
+        .job-name { font-size: 16px; font-weight: 600; line-height: 1.25; color: var(--text); }
+        .job-address { margin-top: 1px; font-size: 14px; line-height: 1.3; color: var(--text-2); }
         .job-city { color: var(--text-3); }
 
         /* Done checkbox, with a bigger invisible tap zone */
@@ -488,11 +488,11 @@
         .job-item.next-stop:not(.checked) {
             background: var(--surface-3); border-color: rgba(223, 213, 73, 0.55);
             box-shadow: 0 0 0 1px rgba(223, 213, 73, 0.25), var(--shadow-2);
-            padding-top: var(--sp-4); padding-bottom: var(--sp-4);
+            padding-top: var(--sp-3); padding-bottom: var(--sp-3);
         }
         body.light-mode .job-item.next-stop:not(.checked) { background: var(--surface); border-color: var(--text); box-shadow: 0 0 0 1px var(--text), var(--shadow-2); }
         .job-item.next-stop:not(.checked) .job-info::before {
-            content: "Next stop"; display: block; margin-bottom: 4px;
+            content: "Next stop"; display: block; margin-bottom: 2px;
             font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-text);
         }
         .job-item.next-stop:not(.checked) .job-name { font-size: 17px; }
@@ -500,7 +500,7 @@
         /* Not numbered yet */
         .job-item.pending:not(.checked) { border-style: dashed; border-color: var(--pending); }
         .job-item.pending:not(.checked) .job-info::after {
-            content: "Not numbered yet"; display: block; margin-top: 4px;
+            content: "Not numbered yet"; display: block; margin-top: 2px;
             font-size: 12px; font-weight: 600; color: var(--pending);
         }
 
@@ -535,15 +535,15 @@
 
         /* Finished stops fold into a "Done (N)" row */
         .ec-done-toggle {
-            display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 48px;
-            margin-top: var(--sp-2); padding: 0 var(--sp-4);
+            display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 42px;
+            margin-top: var(--sp-1); padding: 0 var(--sp-4);
             border: 1px dashed var(--border-strong); border-radius: var(--radius); background: transparent; cursor: pointer;
             color: var(--text-2); font-size: 14px; font-weight: 600;
         }
         .ec-done-toggle:hover { background: var(--surface-2); color: var(--text); }
         .ec-done-group { display: flex; flex-direction: column; gap: var(--sp-2); }
         .ec-done-group[hidden] { display: none; }
-        .ec-done-group .job-item { min-height: 0; padding-top: var(--sp-2); padding-bottom: var(--sp-2); }
+        .ec-done-group .job-item { min-height: 0; padding-top: 5px; padding-bottom: 5px; }
 
         /* Empty list */
         #empty-state {
@@ -1040,13 +1040,9 @@
             </div>
             <div class="update-notification-body">
                 <div class="update-notification-feature">
-                    <div class="update-notification-feature-title">✨ A calmer, cleaner look</div>
-                    <p>Halloween is packed away. The colours are softer and easier on the eyes, in both dark and light mode.</p>
-                    <p>Stops now glide into place: after AUTO-OPTIMIZE, when you check one off, and when the list loads. Buttons, popups, messages and the map move smoothly too.</p>
-                </div>
-                <div class="update-notification-feature">
-                    <div class="update-notification-feature-title"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="8" cy="8" r="5.6" fill="#9E1C2C"/><circle cx="16" cy="16" r="5.6" fill="#9E1C2C"/><circle cx="16" cy="8" r="5.6" fill="#C62A3A"/><circle cx="8" cy="16" r="5.6" fill="#C62A3A"/><circle cx="12" cy="12" r="3.1" fill="#16161A"/></svg>Lest We Forget</div>
-                    <p>A poppy sits in the header for Remembrance Day, until November 11.</p>
+                    <div class="update-notification-feature-title">🧭 Stop order ends at your last stop</div>
+                    <p>AUTO-OPTIMIZE now plans the shortest drive from where you are to your last stop. The drive back to the shop no longer changes the order, so a stop near the shop isn't pushed to the end.</p>
+                    <p>New stops added to a numbered route are placed the same way.</p>
                 </div>
             </div>
             <div class="update-notification-footer">
@@ -2221,7 +2217,7 @@
         }
 
         // ---------- UPDATE NOTIFICATION (return button + pickup & delivery + route fixes) ----------
-        const UPDATE_NOTIFICATION_ID = 'clean_look_remembrance_v1';
+        const UPDATE_NOTIFICATION_ID = 'one_way_route_order_v1';
         function checkUpdateNotification() {
             if (!currentRouteKey) return;
             const askedAt = Date.now();
