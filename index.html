@@ -1958,6 +1958,7 @@
         // added on another phone in the meantime) (#2). Every change goes through
         // ecBeginLocalRouteChange / ecEndLocalRouteChange, so one finishing can't switch the
         // guard off while another is still running (#12).
+        const EC_RESUME_RECONNECT_MS = 20000; // back after this long in the background: reconnect
         let ecLocalRouteChanges = 0;
         let ecDeferredRouteSnap = null;
         let ecAssignHold = false;
@@ -2484,6 +2485,23 @@
                 if (ecConnected) flushDriverPendingWrites();
             });
             window.addEventListener('online', flushDriverPendingWrites);
+
+            // A phone that locks, or an app left in the background, can come back with a dead
+            // connection that Firebase hasn't noticed yet. Until it notices, a route the
+            // dispatcher saved meanwhile doesn't show up here. When the app comes back after
+            // a while, drop and reopen the connection so the route listener gets the newest
+            // route straight away. Writes still waiting to be sent are kept and sent on reconnect.
+            let ecHiddenAt = 0;
+            const ecResumeReconnect = () => {
+                if (ecHiddenAt && Date.now() - ecHiddenAt < EC_RESUME_RECONNECT_MS) return;
+                ecHiddenAt = 0;
+                try { db.goOffline(); db.goOnline(); } catch (e) { console.warn('Reconnect failed:', e); }
+            };
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') ecHiddenAt = Date.now();
+                else if (ecHiddenAt) ecResumeReconnect();
+            });
+            window.addEventListener('pageshow', e => { if (e.persisted) { ecHiddenAt = 0; ecResumeReconnect(); } });
 
             initPlaces();
             createRouteMainBtn = document.getElementById('create-route-main');
