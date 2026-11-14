@@ -17,8 +17,10 @@ const APP_SHELL = [
     './icon2.png',
     './icon-192.png',
     './apple-touch-icon.png',
-    './howto-top.jpg',
-    './howto-stops.jpg'
+    './howto-map.jpg',
+    './howto-mic.jpg',
+    './howto-teach.jpg',
+    './howto-record.jpg'
 ];
 // Code and fonts from other sites that the page needs before it can start. The Firebase
 // files never change at a given version number, so a saved copy is always right.
