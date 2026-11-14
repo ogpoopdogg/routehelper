@@ -1203,10 +1203,11 @@
         /* Next stop: a gold outline and a small NEXT tag instead of an extra line */
         .job-item.next-stop:not(.checked) { padding-top: 4px; padding-bottom: 4px; background: var(--surface-2); border-color: rgba(245, 197, 24, 0.55); box-shadow: 0 0 0 1px rgba(245, 197, 24, 0.22), 0 0 18px -6px rgba(245, 197, 24, 0.5); }
         body.light-mode .job-item.next-stop:not(.checked) { border-color: #d99a00; box-shadow: 0 0 0 1px rgba(217, 154, 0, 0.35); }
-        /* Next stop runs out to the right edge of the screen so it stands out. The check box stays in
-           the same column as the other stops, so the side buttons never cover it. */
+        /* The top stop (the next stop once the route is made, the newest one before that) runs out to
+           the right edge of the screen so it stands out. The check box stays in the same column as
+           the other stops, so the side buttons never cover it. */
         @media (max-width: 479px) { /* phones; wider screens put the list in a card */
-            .job-item.next-stop:not(.checked) {
+            #job-list > .job-item:first-child:not(.checked) {
                 margin-right: calc(-1 * (var(--ec-lane) + var(--gutter)));
                 padding-right: calc(var(--ec-lane) + var(--gutter) + 1px); /* +1px for the dropped right border */
                 border-right-width: 0; border-radius: 12px 0 0 12px;
@@ -4682,16 +4683,18 @@
         // otherwise cards animate to the wrong position and then visibly snap when re-rendered.
         function computeBaseDisplayOrder() {
             const pendingJobs = ecActiveStopIds();
-            let displayOrder = [];
-            if (routeState.order.length > 0) {
-                displayOrder = routeState.order.filter(ecIsActiveStop);
-                const existing = new Set(displayOrder);
-                const extra = pendingJobs.filter(id => !existing.has(id));
-                displayOrder = displayOrder.concat(extra);
-            } else {
-                displayOrder = pendingJobs.slice().sort((a, b) => jobs[a].timestamp - jobs[b].timestamp);
+            const ordered = routeState.order.filter(ecIsActiveStop);
+            const existing = new Set(ordered);
+            const extra = pendingJobs.filter(id => !existing.has(id));
+            // Route not made yet: newest first, so a stop just added shows at the top, the same as
+            // Route Planner. The order here doesn't matter: the route order is set on the map.
+            if (!routeState.isFinalized && !isOrderingMode) {
+                extra.sort((a, b) => ((Number(jobs[b].timestamp) || 0) - (Number(jobs[a].timestamp) || 0)) || (a < b ? 1 : a > b ? -1 : 0));
+                return extra.concat(ordered);
             }
-            return displayOrder;
+            // Made route, or numbering on the map: numbered stops in route order, then any not numbered yet.
+            if (routeState.order.length === 0) extra.sort((a, b) => jobs[a].timestamp - jobs[b].timestamp);
+            return ordered.concat(extra);
         }
 
         // ---------- RENDER LIST ----------
