@@ -1203,6 +1203,15 @@
         /* Next stop: a gold outline and a small NEXT tag instead of an extra line */
         .job-item.next-stop:not(.checked) { padding-top: 4px; padding-bottom: 4px; background: var(--surface-2); border-color: rgba(245, 197, 24, 0.55); box-shadow: 0 0 0 1px rgba(245, 197, 24, 0.22), 0 0 18px -6px rgba(245, 197, 24, 0.5); }
         body.light-mode .job-item.next-stop:not(.checked) { border-color: #d99a00; box-shadow: 0 0 0 1px rgba(217, 154, 0, 0.35); }
+        /* Next stop runs out to the right edge of the screen so it stands out. The check box stays in
+           the same column as the other stops, so the side buttons never cover it. */
+        @media (max-width: 479px) { /* phones; wider screens put the list in a card */
+            .job-item.next-stop:not(.checked) {
+                margin-right: calc(-1 * (var(--ec-lane) + var(--gutter)));
+                padding-right: calc(var(--ec-lane) + var(--gutter) + 1px); /* +1px for the dropped right border */
+                border-right-width: 0; border-radius: 12px 0 0 12px;
+            }
+        }
         .job-item.next-stop:not(.checked) .job-info::before { display: none; }
         .job-item.next-stop:not(.checked) .job-name { font-size: 13.5px; }
         .job-item.next-stop:not(.checked) .job-name::after {
@@ -1271,8 +1280,6 @@
         .vl-box { position: relative; max-width: 400px; padding: 22px 20px 18px; }
         .vl-close { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface-3); color: var(--text-2); font-size: 15px; cursor: pointer; }
         .vl-head { display: flex; align-items: center; gap: 12px; margin: 0 40px 18px 0; }
-        .vl-badge { flex: 0 0 auto; width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; color: #fff; background: linear-gradient(180deg, #60a5fa, #2563eb); box-shadow: 0 10px 24px -10px rgba(37, 99, 235, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
-        .vl-badge svg { width: 24px; height: 24px; }
         .vl-title { font-size: 19px; font-weight: 800; letter-spacing: -0.01em; color: var(--text); }
         .vl-sub { margin-top: 2px; font-size: 13px; color: var(--text-2); }
         .vl-label { display: block; margin: 14px 0 8px; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-2); }
@@ -1605,7 +1612,6 @@
         <div class="ec-customer-box vl-box" role="dialog" aria-modal="true" aria-labelledby="vl-title">
             <button type="button" class="vl-close" onclick="closeVoiceLearner()" aria-label="Close">✕</button>
             <div class="vl-head">
-                <div class="vl-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg></div>
                 <div>
                     <div id="vl-title" class="vl-title">Teach the mic</div>
                     <div class="vl-sub">For a customer the mic keeps getting wrong</div>
@@ -1744,7 +1750,6 @@
             <div class="ec-menu-title">Settings</div>
             <div class="ec-menu-user" id="ec-menu-user"></div>
             <button type="button" class="ec-menu-item" id="ec-menu-theme" onclick="toggleTheme()">Switch to light mode</button>
-            <button type="button" class="ec-menu-item" onclick="closeMenu(); openVoiceLearner();">Teach the mic a customer's name</button>
             <button type="button" class="ec-menu-item" onclick="closeMenu(); openDevNotes();">Send app feedback</button>
             <button type="button" class="ec-menu-item" id="ec-menu-install" onclick="installApp()" hidden>Install app</button>
             <button type="button" class="ec-menu-item ec-menu-danger" onclick="logOut()">Log out</button>
