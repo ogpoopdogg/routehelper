@@ -1157,25 +1157,26 @@
         .input-form-card .flex-row { gap: 8px; }
         .ec-field-name { flex: 1; min-width: 0; width: auto; }
         .input-panel-toggle { width: 42px; height: 42px; border-radius: 11px; border-color: var(--border-strong); background: var(--surface-2); }
-        .input-form-card.ec-form-top #input-panel-toggle { display: none; }
+        /* The fold arrow stays while the form is at the top for typing, so it can always be folded */
         /* Plain boxes with the words inside, no icons or moving labels */
         .ec-field > input { min-height: 42px; padding: 9px 14px; }
         .ec-field > input::placeholder { color: var(--text-3); }
         .ec-field-icon, .ec-float-label { display: none !important; }
         .ec-field.ec-compact > input { padding-left: 12px; }
         input, select, textarea { border-color: var(--border-strong); }
-        #f-name { padding-right: 80px; }
-        #f-address { padding-right: 98px; }
-        .suggestion-reset {
-            top: 21px; right: 6px; min-height: 28px; padding: 0 10px;
+        #f-name { padding-right: 88px; }
+        #f-address { padding-right: 138px; }
+        /* Reset and Here: same size, one above the other with their right edges lined up. The name
+           box is shorter (the fold arrow and an 8px gap sit after it: 50px), so Here sits 50px + 6px
+           in from the right of the address box, which leaves room before the map pin. */
+        .suggestion-reset, .address-here-btn {
+            top: 21px; width: 74px; height: 30px; min-height: 30px; padding: 0; justify-content: center;
             border-color: var(--accent-ring); background: var(--accent-soft); color: var(--accent-text);
-            font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+            font-size: 11.5px; font-weight: 800; border-radius: 9px;
         }
-        .address-pin-btn { top: 21px; right: 5px; width: 30px; height: 30px; border: none; background: transparent; }
-        .address-here-btn {
-            top: 21px; right: 38px; height: 30px; padding: 0 7px; gap: 3px; font-size: 12px; font-weight: 800;
-            border-color: var(--accent-ring); background: var(--accent-soft);
-        }
+        .suggestion-reset { right: 6px; letter-spacing: 0.12em; text-transform: uppercase; }
+        .address-here-btn { right: 56px; gap: 4px; letter-spacing: 0.04em; }
+        .address-pin-btn { top: 21px; right: 8px; width: 34px; height: 30px; border: none; background: transparent; }
         .address-here-btn svg { width: 15px; height: 15px; }
         /* Address and city each on their own row, so the address runs all the way to the right */
         .flex-row:has(.ec-field-address) { flex-wrap: wrap !important; row-gap: 8px; }
@@ -1185,16 +1186,15 @@
         .ec-form-body { display: flex; flex-direction: column; gap: 8px; zoom: var(--ec-form-scale, 1); }
         .ec-form-body .suggestions-box { zoom: calc(1 / var(--ec-form-scale, 1)); }
         .input-form-card { padding-bottom: 22px; }
+        /* Grab handle: two short lines in the middle of the bottom edge */
         .ec-form-resize {
-            position: absolute; right: 0; bottom: 0; z-index: 2; width: 34px; height: 24px;
-            display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 5px 4px 0;
-            color: var(--accent-text); cursor: nwse-resize; touch-action: none; user-select: none; -webkit-user-select: none;
-            border-bottom-right-radius: 16px; transition: color .2s;
+            position: absolute; left: 50%; bottom: 0; z-index: 2; width: 88px; height: 22px; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+            cursor: ns-resize; touch-action: none; user-select: none; -webkit-user-select: none;
         }
-        .ec-form-resize::before { content: ""; position: absolute; inset: -6px 0 0 -8px; } /* bigger touch area */
-        .ec-form-resize svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 3px var(--accent-ring)); transition: transform .2s; }
-        .ec-form-resize:hover svg, .ec-form-resize.is-dragging svg { transform: scale(1.2); }
-        .ec-form-resize.is-dragging { color: var(--accent); }
+        .ec-form-resize::before { content: ""; position: absolute; inset: -8px -10px 0; } /* bigger touch area */
+        .ec-form-resize span { display: block; width: 30px; height: 3px; border-radius: 2px; background: var(--border-strong); transition: background .2s, width .2s; }
+        .ec-form-resize:hover span, .ec-form-resize.is-dragging span { background: var(--accent); width: 40px; }
         #input-panel.collapsed .ec-form-resize { display: none; }
         #input-panel.collapsed .input-form-card { padding-bottom: 0; }
         .input-form-card.ec-form-top { padding-bottom: 24px; }
@@ -1300,8 +1300,16 @@
         body.light-mode #clear-fab { color: #dc2626; }
         #mic-btn-bottom { color: #60a5fa; border: 2px solid #3b82f6; box-shadow: 0 16px 34px -12px rgba(0, 0, 0, 0.75), 0 0 0 3px rgba(59, 130, 246, 0.18), 0 0 18px -4px rgba(59, 130, 246, 0.6); }
         body.light-mode #mic-btn-bottom { color: #2563eb; border-color: #2563eb; }
-        #mic-btn-bottom.is-listening { color: #fff; border-color: rgba(239, 68, 68, 0.7); background: linear-gradient(180deg, #f87171, #ef4444 60%, #dc2626); animation: ec-mic-glow 1s ease-in-out infinite; }
-        @keyframes ec-mic-glow { 50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.18), 0 0 24px rgba(239, 68, 68, 0.6); } }
+        /* Listening: the mic keeps its blue, grows a little and glows (no red) */
+        #mic-btn-bottom { transition: transform 0.2s var(--ease), box-shadow 0.25s var(--ease), scale 0.25s var(--ease), background 0.25s; }
+        #mic-btn-bottom.is-listening {
+            scale: 1.16; color: #93c5fd; border-color: #60a5fa;
+            background: linear-gradient(180deg, rgba(96, 165, 250, 0.28), rgba(37, 99, 235, 0.18)), rgba(18, 23, 35, 0.92);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25), 0 0 26px 2px rgba(59, 130, 246, 0.7);
+            animation: ec-mic-glow 1.2s ease-in-out infinite;
+        }
+        body.light-mode #mic-btn-bottom.is-listening { color: #1d4ed8; border-color: #2563eb; background: #dbeafe; }
+        @keyframes ec-mic-glow { 50% { box-shadow: 0 0 0 7px rgba(59, 130, 246, 0.16), 0 0 34px 6px rgba(59, 130, 246, 0.85); } }
         /* Map: a little map picture, glowing while stops still need numbers */
         #map-fab {
             overflow: hidden; color: #fff; border: 2px solid rgba(255, 255, 255, 0.25);
@@ -1387,28 +1395,24 @@
         #multi-add-title { font-size: 17px; font-weight: 700; }
 
         /* ---------- Stop added: the same blue burst and pulse as Route Planner ---------- */
+        /* A stop just added: a soft blue glow that fades out. Only blurred shadows, no hard ring
+           edges (Justin: more subtle, no solid line circle). */
         @keyframes job-item-new-pulse {
-            0% { background: rgba(37, 99, 235, 0.30); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5), 0 0 22px 4px rgba(96, 165, 250, 0.35); transform: scale(1.025); }
-            15% { background: rgba(37, 99, 235, 0.30); box-shadow: 0 0 0 12px rgba(59, 130, 246, 0), 0 0 22px 4px rgba(96, 165, 250, 0.35); transform: scale(1.025); }
-            40% { background: rgba(37, 99, 235, 0.14); box-shadow: 0 0 0 12px rgba(59, 130, 246, 0), 0 0 0 0 rgba(59, 130, 246, 0); transform: scale(1); }
-            100% { background: var(--surface-2); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); transform: scale(1); }
+            0% { background: rgba(37, 99, 235, 0.22); box-shadow: 0 0 26px 2px rgba(96, 165, 250, 0.30); transform: scale(1.015); }
+            20% { background: rgba(37, 99, 235, 0.20); box-shadow: 0 0 30px 4px rgba(96, 165, 250, 0.22); transform: scale(1.015); }
+            50% { background: rgba(37, 99, 235, 0.10); box-shadow: 0 0 22px 0 rgba(96, 165, 250, 0.08); transform: scale(1); }
+            100% { background: var(--surface-2); box-shadow: 0 0 0 0 rgba(96, 165, 250, 0); transform: scale(1); }
         }
-        @keyframes job-item-new-ring { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(1.08); opacity: 0; } }
         @keyframes job-item-new-in { from { opacity: 0; transform: translateY(-8px) scale(0.98); } to { opacity: 1; transform: none; } }
-        @keyframes job-item-new-pop { 0% { transform: scale(0.9); } 35% { transform: scale(1.06); } 60% { transform: scale(0.98); } 100% { transform: scale(1); } }
-        .job-item.job-item-new { animation: job-item-new-in 0.35s cubic-bezier(.34, 1.56, .64, 1), job-item-new-pulse 3.2s ease-out forwards; border-color: #3b82f6 !important; }
+        @keyframes job-item-new-pop { 0% { transform: scale(0.96); } 40% { transform: scale(1.025); } 100% { transform: scale(1); } }
+        .job-item.job-item-new { animation: job-item-new-in 0.35s cubic-bezier(.34, 1.56, .64, 1), job-item-new-pulse 3.2s ease-out forwards; border-color: rgba(96, 165, 250, 0.55) !important; }
         .job-item.job-item-new.pop { animation: job-item-new-pop 0.6s cubic-bezier(.34, 1.56, .64, 1), job-item-new-pulse 3.2s ease-out forwards; }
-        .job-item.job-item-new::after {
-            content: ""; display: block; position: absolute; inset: -2px; left: -2px; width: auto; border-radius: 15px; background: none;
-            border: 2px solid rgba(96, 165, 250, 0.6); opacity: 0; pointer-events: none; z-index: 1; animation: job-item-new-ring 1.4s ease-out;
-        }
         .add-burst {
             position: fixed; z-index: 1500; pointer-events: none; border-radius: 50%; transform: translate(-50%, -50%) scale(0);
-            background: radial-gradient(circle, rgba(96, 165, 250, 0.55) 0%, rgba(59, 130, 246, 0.28) 40%, rgba(59, 130, 246, 0) 70%);
-            animation: add-burst 0.75s cubic-bezier(.2, .7, .2, 1) forwards;
+            background: radial-gradient(circle closest-side, rgba(96, 165, 250, 0.42) 0%, rgba(59, 130, 246, 0.24) 30%, rgba(59, 130, 246, 0.09) 60%, rgba(59, 130, 246, 0) 100%);
+            animation: add-burst 1.1s cubic-bezier(.2, .7, .2, 1) forwards;
         }
-        .add-burst.ring { background: none; border: 4px solid rgba(96, 165, 250, 0.85); animation-duration: 0.9s; }
-        @keyframes add-burst { 0% { transform: translate(-50%, -50%) scale(0); opacity: 1; } 70% { opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
+        @keyframes add-burst { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.6; } 18% { opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
 
         /* ---------- What's new: Map, Mic and Teach, big pictures and few words ---------- */
         .wn-howto { max-width: 400px; padding: 16px 18px; }
@@ -1578,10 +1582,10 @@
             </div>
             <button id="add-btn-expanded" class="btn-add" onclick="onAddButtonClick()">ADD TO ROUTE</button>
           </div>
-          <!-- Drag the arrows to make the box (fields, text, buttons) bigger or smaller, like Route
-               Planner. Double-tap: normal size. -->
-          <div id="ec-form-resize" class="ec-form-resize" role="slider" tabindex="0" aria-label="Drag to resize the add a stop box. Double-tap for normal size." aria-valuemin="55" aria-valuemax="130" aria-valuenow="100" title="Drag to resize. Double-tap for normal size.">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12"/><path d="M6 12V6h6"/><path d="M18 12v6h-6"/></svg>
+          <!-- Drag the handle up or down to make the box (fields, text, buttons) smaller or bigger,
+               like Route Planner. Double-tap: normal size. -->
+          <div id="ec-form-resize" class="ec-form-resize" role="slider" tabindex="0" aria-label="Drag up or down to resize the add a stop box. Double-tap for normal size." aria-valuemin="55" aria-valuemax="130" aria-valuenow="100" title="Drag to resize. Double-tap for normal size.">
+            <span></span><span></span>
           </div>
         </div>
 
@@ -1636,6 +1640,19 @@
                         if (!addWatch && fieldsEmpty()) dropForm();
                     }, 250);
                 });
+                // Keyboard closed (Android's back key, iPhone's Done) without leaving the field: leave
+                // it, so the form can go back to its place. The fold arrow stays either way.
+                if (window.visualViewport) {
+                    var vv = window.visualViewport, lastH = vv.height;
+                    vv.addEventListener('resize', function () {
+                        var h = vv.height;
+                        if (h - lastH > 120 && card.classList.contains('ec-form-top')) {
+                            var el = document.activeElement;
+                            if (el && el.tagName === 'INPUT' && card.contains(el)) el.blur();
+                        }
+                        lastH = h;
+                    });
+                }
                 // ADD TO ROUTE: drop back to the normal spot once the stop is added and the
                 // form has cleared. If the add doesn't clear the form (missing field, duplicate,
                 // address not found) the form stays at the top.
@@ -2497,6 +2514,7 @@
                     await addJob();
                 }
                 resetFormFields();
+                if (names.length) ecFoldPanelAfterMic();
                 if (missing.length) ecToast(`Couldn't find "${missing.join('", "')}". Teach it with the Teach button at the top.`, { type: 'error', duration: 6000 });
             };
             rec.onresult = ev => {
@@ -2796,6 +2814,7 @@
                 await addJob();
             }
             resetFormFields();
+            ecFoldPanelAfterMic();
             ecToast(`Added ${chosen.length} stop${chosen.length === 1 ? '' : 's'}.`);
         }
 
@@ -3192,7 +3211,7 @@
             const grip = document.getElementById('ec-form-resize');
             const body = document.getElementById('ec-form-body');
             if (!grip || !body) return;
-            let startX = 0, startY = 0, startScale = 1, fullW = 0, fullH = 0, lastTap = 0, moved = false;
+            let startY = 0, startScale = 1, fullH = 0, lastTap = 0, moved = false;
             grip.addEventListener('pointerdown', e => {
                 e.preventDefault();
                 const now = Date.now();
@@ -3200,22 +3219,18 @@
                 lastTap = now;
                 ecFormScaleDragging = true;
                 moved = false;
-                startX = e.clientX; startY = e.clientY;
+                startY = e.clientY;
                 startScale = ecFormScale;
-                const r = body.getBoundingClientRect();
-                fullW = r.width; fullH = r.height / startScale; // height at normal size
+                fullH = body.getBoundingClientRect().height / startScale; // height at normal size
                 grip.classList.add('is-dragging');
                 try { grip.setPointerCapture(e.pointerId); } catch (err) {}
             });
             grip.addEventListener('pointermove', e => {
                 if (!ecFormScaleDragging || !fullH) return;
-                const dx = e.clientX - startX, dy = e.clientY - startY;
-                // Down or right makes it bigger, up or left smaller. The box always stays full width,
-                // so a sideways drag is measured against the width and a drag down against the height.
-                const grow = Math.abs(dy) >= Math.abs(dx)
-                    ? (fullH * startScale + dy) / (fullH * startScale)
-                    : (fullW + dx * 1.5) / fullW;
-                if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+                const dy = e.clientY - startY;
+                // Down makes it bigger, up smaller (the box always stays full width).
+                const grow = (fullH * startScale + dy) / (fullH * startScale);
+                if (Math.abs(dy) > 3) moved = true;
                 ecApplyFormScale(startScale * grow);
             });
             const end = () => {
@@ -3228,7 +3243,7 @@
             grip.addEventListener('pointercancel', end);
             // Keyboard: arrow keys resize a step
             grip.addEventListener('keydown', e => {
-                const step = (e.key === 'ArrowDown' || e.key === 'ArrowRight') ? 0.05 : (e.key === 'ArrowUp' || e.key === 'ArrowLeft') ? -0.05 : 0;
+                const step = e.key === 'ArrowDown' ? 0.05 : e.key === 'ArrowUp' ? -0.05 : 0;
                 if (!step) return;
                 e.preventDefault();
                 ecApplyFormScale(ecFormScale + step);
@@ -5160,15 +5175,14 @@
             if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
             const box = item.getBoundingClientRect();
             const size = Math.max(window.innerWidth, window.innerHeight) * 1.3;
-            ['', ' ring'].forEach(extra => {
-                const b = document.createElement('div');
-                b.className = 'add-burst' + extra;
-                b.style.left = (box.left + box.width / 2) + 'px';
-                b.style.top = (Math.min(Math.max(box.top, 70), window.innerHeight - 40) + box.height / 2) + 'px';
-                b.style.width = b.style.height = (extra ? size * 0.7 : size) + 'px';
-                document.body.appendChild(b);
-                setTimeout(() => b.remove(), 1000);
-            });
+            // One soft glow that fades out at its edge (no ring with a hard line).
+            const b = document.createElement('div');
+            b.className = 'add-burst';
+            b.style.left = (box.left + box.width / 2) + 'px';
+            b.style.top = (Math.min(Math.max(box.top, 70), window.innerHeight - 40) + box.height / 2) + 'px';
+            b.style.width = b.style.height = (size * 0.9) + 'px';
+            document.body.appendChild(b);
+            setTimeout(() => b.remove(), 1100);
         }
 
         // ---------- TOGGLE CHECKED ----------
@@ -5400,16 +5414,7 @@
             closeStopDeleteOverlay();
             const overlay = document.createElement('div');
             overlay.className = 'stop-delete-overlay';
-            const editBtn = document.createElement('button');
-            editBtn.type = 'button';
-            editBtn.className = 'stop-edit-btn';
-            editBtn.textContent = 'EDIT CUSTOMER';
-            editBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                closeStopDeleteOverlay();
-                if (jobs[id]) openCustomerEditor(jobs[id].name, id);
-            });
-            overlay.appendChild(editBtn);
+            // Customers are edited only with the pencil in the add a stop name suggestions (Justin).
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'stop-delete-btn';
@@ -6039,7 +6044,29 @@
         function toggleInputPanel() {
             const panel = document.getElementById('input-panel');
             if (!panel) return;
-            ecSetInputPanelCollapsed(!panel.classList.contains('collapsed'), true);
+            const collapse = !panel.classList.contains('collapsed');
+            if (collapse) ecDropFormFromTop();
+            ecSetInputPanelCollapsed(collapse, true);
+        }
+        // The form moved to the top of the screen for typing: put it back in its place.
+        function ecDropFormFromTop() {
+            const panel = document.getElementById('input-panel');
+            const card = panel && panel.querySelector('.input-form-card');
+            if (!card) return;
+            const el = document.activeElement;
+            if (el && el.tagName === 'INPUT' && card.contains(el)) el.blur();
+            if (card.classList.contains('ec-form-top')) {
+                card.classList.remove('ec-form-top');
+                panel.style.minHeight = '';
+            }
+        }
+        // A stop added with the mic button: fold the add a stop box away and keep it folded
+        // (saved, like the fold arrow) until the driver opens it again. The mic is all they need.
+        function ecFoldPanelAfterMic() {
+            const panel = document.getElementById('input-panel');
+            if (!panel || panel.classList.contains('collapsed')) return;
+            ecDropFormFromTop();
+            ecSetInputPanelCollapsed(true, true);
         }
         // Opens or folds the add-stop panel. The choice is kept on the phone and in Firebase at
         // developer/route_planner/ui_prefs/{driver}/input_panel_collapsed (true = folded), so it
