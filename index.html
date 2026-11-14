@@ -1652,7 +1652,9 @@
     <div id="map-modal">
         <button id="close-map-btn" class="close-map" onclick="closeMap()" aria-label="Close the map"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
         <!-- CREATE ROUTE button inside map -->
-        <button id="create-route-map" class="create-route-btn map-modal-btn" onclick="startCreateRoute()">CREATE ROUTE</button>
+        <!-- RE-CREATE ROUTE (like Route Planner's RE-CREATE): only once a route is made. The Map side
+             button makes the first route, and the button is hidden while stops are being numbered. -->
+        <button id="create-route-map" class="create-route-btn map-modal-btn" onclick="startCreateRoute()" title="Start the route over" style="display:none">RE-CREATE ROUTE</button>
         <button id="auto-optimize-btn" class="create-route-btn map-modal-btn" onclick="autoOptimizeRoute()">AUTO-OPTIMIZE</button>
         <div id="map-stop-counter"></div>
         <div id="calculating-route-indicator">Calculating route...</div>
@@ -6426,16 +6428,11 @@
             [createRouteMainBtn, createRouteMapBtn].forEach(btn => {
                 if (!btn) return;
                 if (btn.id === 'create-route-map') {
+                    // Shown only once the route is made (to start it over), never while the
+                    // stops are being numbered.
                     btn.disabled = false;
-                    if (!hasStops) {
-                        btn.classList.remove('pulse-glow', 'active');
-                    } else {
-                        if (isOrdering) {
-                            btn.classList.add('active', 'pulse-glow');
-                        } else {
-                            btn.classList.remove('pulse-glow', 'active');
-                        }
-                    }
+                    btn.classList.remove('pulse-glow', 'active');
+                    btn.style.display = (hasStops && isFinal && !isOrdering) ? '' : 'none';
                 } else {
                     // Main page button
                     const unassigned = ecRemainingStopIds().filter(id => !routeState.assignedIndices[id]).length;
