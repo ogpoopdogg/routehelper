@@ -1210,8 +1210,8 @@
         /* Made route: the next stop (top of the list) runs out to the right edge of the screen so it
            stands out, with its whole border showing right on the edge. Not before the route is made.
            Its check box sits at the right end too, so the name and address get more room. If the
-           side buttons are level with it (short phone, big font size), ecPlaceNextCheckbox() adds
-           .ec-cb-safe and the check box moves back into the same column as the other stops. */
+           side buttons are level with it, ecPlaceNextCheckbox() slides them down below the card;
+           only when there's no room does it add .ec-cb-safe (check box back in line). */
         @media (max-width: 479px) { /* phones; wider screens put the list in a card */
             .job-item.next-stop:not(.checked) {
                 margin-right: calc(-1 * (var(--ec-lane) + var(--gutter)));
@@ -1239,7 +1239,7 @@
         /* ---------- Side buttons: middle of the right edge ---------- */
         .ec-fab-rail {
             position: fixed; z-index: 940; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(50% + 24px);
-            transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none;
+            transform: translateY(calc(-50% + var(--ec-rail-shift, 0px))); display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none;
         }
         .ec-fab {
             pointer-events: auto; display: grid; place-items: center; width: 54px; height: 54px; padding: 0; cursor: pointer;
@@ -4836,17 +4836,30 @@
             setTimeout(ecPlaceNextCheckbox, 400); // again once the list animation has settled
         }
 
-        // The next stop's check box sits at the right edge of the screen, unless the side buttons
-        // are level with that card: then it moves back in line with the other check boxes, so a
-        // side button never covers it. Runs after each redraw, on scroll and on resize.
+        // The next stop's check box sits at the right edge of the screen on every phone (Justin: it
+        // should look like it does 390 px wide). If the side buttons are level with that card (short
+        // phones, big font size), they slide down just below it so they never cover the check box,
+        // and slide back to the middle as the list scrolls up. Only if there is no room below
+        // does the check box move back in line with the others (.ec-cb-safe).
+        // Runs after each redraw, on scroll and on resize.
         function ecPlaceNextCheckbox() {
-            const item = document.querySelector('#job-list > .job-item.next-stop:not(.checked)');
-            if (!item) return;
             const rail = document.querySelector('.ec-fab-rail');
-            const railBox = rail && getComputedStyle(rail).display !== 'none' ? rail.getBoundingClientRect() : null; // fixed, so no offsetParent
-            const box = item.getBoundingClientRect();
-            const level = !!railBox && railBox.height > 0 && box.bottom > railBox.top - 8 && box.top < railBox.bottom + 8;
-            item.classList.toggle('ec-cb-safe', level);
+            if (!rail) return;
+            const item = document.querySelector('#job-list > .job-item.next-stop:not(.checked)');
+            const phone = !window.matchMedia || window.matchMedia('(max-width: 479px)').matches;
+            let shift = 0, safe = false;
+            if (item && phone && getComputedStyle(rail).display !== 'none') {
+                const current = parseFloat(rail.style.getPropertyValue('--ec-rail-shift')) || 0;
+                const r = rail.getBoundingClientRect();
+                const top = r.top - current, bottom = r.bottom - current; // where the buttons sit unshifted
+                const box = item.getBoundingClientRect();
+                if (r.height > 0 && box.bottom > top - 8 && box.top < bottom + 8) {
+                    shift = Math.ceil(box.bottom + 8 - top);
+                    if (bottom + shift > window.innerHeight - 12) { shift = 0; safe = true; }
+                }
+            }
+            rail.style.setProperty('--ec-rail-shift', shift + 'px');
+            if (item) item.classList.toggle('ec-cb-safe', safe);
         }
         let ecPlaceCbQueued = false;
         function ecQueuePlaceNextCheckbox() {
