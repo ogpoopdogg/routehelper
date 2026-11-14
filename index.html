@@ -3,6 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script>
+        // iPhone / iPad: a text box with letters under 16 px makes Safari zoom the page when it's
+        // tapped (the add a stop box can be made smaller). maximum-scale stops that, and on these
+        // phones pinch-zoom still works. Not on Android, where it would turn pinch-zoom off.
+        (function () {
+            var ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            if (!ios) return;
+            var m = document.querySelector('meta[name="viewport"]');
+            if (m) m.setAttribute('content', m.getAttribute('content') + ', maximum-scale=1.0');
+        })();
+    </script>
     <title>E&C ROUTE HELPER</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icon2.png">
@@ -786,6 +797,19 @@
         }
         .ec-suggest-edit:hover { background: var(--surface-3); }
         .ec-confirm-ok.is-danger { background: var(--danger-solid); color: #FFFFFF; }
+        /* AUTO-OPTIMIZE: "Which stop is first?" - one big button per stop, the list scrolls if it's long */
+        .ec-choice-box { display: flex; flex-direction: column; max-height: calc(100dvh - 48px - var(--safe-top) - var(--safe-bottom)); }
+        .ec-choice-box #ec-choice-text { margin: 0 0 var(--sp-4); font-weight: 700; }
+        .ec-choice-options { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; margin-bottom: var(--sp-4); overscroll-behavior: contain; }
+        .ec-choice-options button {
+            display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; min-height: 52px; flex-shrink: 0;
+            padding: 10px 14px; border-radius: 12px; border: 1px solid var(--accent-ring); background: var(--accent-soft);
+            color: var(--text); text-align: left; cursor: pointer; font-family: inherit;
+        }
+        .ec-choice-options button:active { background: var(--accent); color: var(--on-accent); }
+        .ec-choice-name { font-size: 16px; font-weight: 800; line-height: 1.25; }
+        .ec-choice-sub { font-size: 13px; line-height: 1.3; color: var(--text-2); }
+        .ec-choice-options button:active .ec-choice-sub { color: inherit; }
 
         /* Menu (drops down from the header) */
         #ec-menu-overlay { z-index: 10450; align-items: flex-start; justify-content: flex-end; padding: calc(76px + var(--safe-top)) var(--gutter) var(--sp-4); background: rgba(0, 0, 0, 0.35); }
@@ -1153,10 +1177,27 @@
             border-color: var(--accent-ring); background: var(--accent-soft);
         }
         .address-here-btn svg { width: 15px; height: 15px; }
-        /* Address and city share a row, like Route Planner */
-        .flex-row:has(.ec-field-address) { flex-wrap: nowrap !important; }
-        .ec-field-address { flex: 2.1 1 0 !important; min-width: 0; }
-        .ec-field-city { flex: 1 1 0 !important; min-width: 0; }
+        /* Address and city each on their own row, so the address runs all the way to the right */
+        .flex-row:has(.ec-field-address) { flex-wrap: wrap !important; row-gap: 8px; }
+        .ec-field-address, .ec-field-city { flex: 1 1 100% !important; min-width: 0; }
+        /* Add a stop box size: dragging the corner arrows scales everything inside together
+           (zoom, like Route Planner). Name, address and city suggestions keep their normal size. */
+        .ec-form-body { display: flex; flex-direction: column; gap: 8px; zoom: var(--ec-form-scale, 1); }
+        .ec-form-body .suggestions-box { zoom: calc(1 / var(--ec-form-scale, 1)); }
+        .input-form-card { padding-bottom: 22px; }
+        .ec-form-resize {
+            position: absolute; right: 0; bottom: 0; z-index: 2; width: 34px; height: 24px;
+            display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 5px 4px 0;
+            color: var(--accent-text); cursor: nwse-resize; touch-action: none; user-select: none; -webkit-user-select: none;
+            border-bottom-right-radius: 16px; transition: color .2s;
+        }
+        .ec-form-resize::before { content: ""; position: absolute; inset: -6px 0 0 -8px; } /* bigger touch area */
+        .ec-form-resize svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 3px var(--accent-ring)); transition: transform .2s; }
+        .ec-form-resize:hover svg, .ec-form-resize.is-dragging svg { transform: scale(1.2); }
+        .ec-form-resize.is-dragging { color: var(--accent); }
+        #input-panel.collapsed .ec-form-resize { display: none; }
+        #input-panel.collapsed .input-form-card { padding-bottom: 0; }
+        .input-form-card.ec-form-top { padding-bottom: 24px; }
         /* ADD TO ROUTE: Route Planner's green */
         .btn-add {
             min-height: 44px; margin-top: 0; border-radius: 12px; color: #06240f;
@@ -1290,6 +1331,12 @@
             color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong);
         }
         .ec-menu-size-btns button[aria-pressed="true"] { color: #1a1300; background: var(--accent); border-color: var(--accent); }
+        /* Map colours: Light / Dark, each with a little map swatch */
+        .ec-menu-size-btns.ec-menu-map-btns { grid-template-columns: repeat(2, 1fr); }
+        .ec-menu-map-btns button { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; }
+        .ec-map-swatch { width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; border: 1px solid rgba(0, 0, 0, 0.25); }
+        .ec-map-swatch-light { background: linear-gradient(135deg, #f2efe9 0 38%, #ffffff 38% 50%, #aadaff 50% 70%, #c8e6b3 70%); }
+        .ec-map-swatch-dark { background: linear-gradient(135deg, #2b3a42 0 38%, #5a6b73 38% 50%, #0e1a22 50% 70%, #24343a 70%); border-color: rgba(255, 255, 255, 0.25); }
 
         /* ---------- Teach the mic + Add several stops (same as Route Planner) ---------- */
         #voice-learn-overlay { align-items: flex-start; padding-top: calc(var(--safe-top) + 12px); overflow-y: auto; }
@@ -1495,6 +1542,8 @@
         <!-- Add a stop -->
         <section id="input-panel" aria-label="Add a stop">
         <div class="input-form-card">
+          <!-- Everything in here grows and shrinks together when the corner arrows are dragged -->
+          <div id="ec-form-body" class="ec-form-body">
             <div class="flex-row">
                 <div class="rel ec-field ec-field-name">
                     <input type="text" id="f-name" class="glow-field" placeholder="Contact/Business Name" autocomplete="off" oninput="handleNameInput(this.value)" onblur="setTimeout(()=>document.getElementById('suggestions').style.display='none', 200)">
@@ -1528,6 +1577,12 @@
                 </div>
             </div>
             <button id="add-btn-expanded" class="btn-add" onclick="onAddButtonClick()">ADD TO ROUTE</button>
+          </div>
+          <!-- Drag the arrows to make the box (fields, text, buttons) bigger or smaller, like Route
+               Planner. Double-tap: normal size. -->
+          <div id="ec-form-resize" class="ec-form-resize" role="slider" tabindex="0" aria-label="Drag to resize the add a stop box. Double-tap for normal size." aria-valuemin="55" aria-valuemax="130" aria-valuenow="100" title="Drag to resize. Double-tap for normal size.">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12"/><path d="M6 12V6h6"/><path d="M18 12v6h-6"/></svg>
+          </div>
         </div>
 
         <!-- CREATE ROUTE button (main page) -->
@@ -1677,7 +1732,7 @@
         <!-- RE-CREATE ROUTE (like Route Planner's RE-CREATE): only once a route is made. The Map side
              button makes the first route, and the button is hidden while stops are being numbered. -->
         <button id="create-route-map" class="create-route-btn map-modal-btn" onclick="startCreateRoute()" title="Start the route over" style="display:none">RE-CREATE ROUTE</button>
-        <button id="auto-optimize-btn" class="create-route-btn map-modal-btn" onclick="autoOptimizeRoute()">AUTO-OPTIMIZE</button>
+        <button id="auto-optimize-btn" class="create-route-btn map-modal-btn" onclick="autoOptimizeFromFirstStop()">AUTO-OPTIMIZE</button>
         <div id="map-stop-counter"></div>
         <div id="calculating-route-indicator">Calculating route...</div>
         <div id="gps-fallback-banner">Using default location – enable GPS for accuracy.</div>
@@ -1775,6 +1830,13 @@
                     <button type="button" data-size="4" onclick="ecSetStopSize(4, true)" aria-label="Extra large font" style="font-size:25px">A</button>
                 </div>
             </div>
+            <div class="ec-menu-size" role="group" aria-labelledby="ec-menu-map-label">
+                <div class="ec-menu-size-label" id="ec-menu-map-label">Map colours</div>
+                <div class="ec-menu-size-btns ec-menu-map-btns">
+                    <button type="button" data-map="light" onclick="ecSetMapTheme('light', true)" aria-label="Light map"><span class="ec-map-swatch ec-map-swatch-light" aria-hidden="true"></span>Light</button>
+                    <button type="button" data-map="dark" onclick="ecSetMapTheme('dark', true)" aria-label="Dark map"><span class="ec-map-swatch ec-map-swatch-dark" aria-hidden="true"></span>Dark</button>
+                </div>
+            </div>
             <button type="button" class="ec-menu-item" onclick="closeMenu(); openDevNotes();">Send app feedback</button>
             <button type="button" class="ec-menu-item" id="ec-menu-install" onclick="installApp()" hidden>Install app</button>
             <button type="button" class="ec-menu-item ec-menu-danger" onclick="logOut()">Log out</button>
@@ -1823,6 +1885,17 @@
             <div class="ec-confirm-actions">
                 <button type="button" id="ec-confirm-cancel" class="ec-confirm-cancel">Cancel</button>
                 <button type="button" id="ec-confirm-ok" class="ec-confirm-ok">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pick one from a list (AUTO-OPTIMIZE: which stop is first) -->
+    <div id="ec-choice-overlay" class="ec-sheet-overlay" role="dialog" aria-modal="true" aria-labelledby="ec-choice-text">
+        <div class="ec-confirm-box ec-choice-box">
+            <p id="ec-choice-text"></p>
+            <div id="ec-choice-options" class="ec-choice-options"></div>
+            <div class="ec-confirm-actions">
+                <button type="button" id="ec-choice-cancel" class="ec-confirm-cancel">Cancel</button>
             </div>
         </div>
     </div>
@@ -2282,6 +2355,50 @@
         document.getElementById('ec-confirm-ok').addEventListener('click', () => ecCloseConfirm(true));
         document.getElementById('ec-confirm-cancel').addEventListener('click', () => ecCloseConfirm(false));
         document.getElementById('ec-confirm-overlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) ecCloseConfirm(null); });
+
+        // Pick one from a list. options: [{ label, sub }]. Answers the index, or null for Cancel.
+        let ecChoiceResolve = null;
+        function ecChoose(message, options) {
+            return new Promise(resolve => {
+                if (ecChoiceResolve) ecChoiceResolve(null);
+                ecChoiceResolve = resolve;
+                document.getElementById('ec-choice-text').textContent = message;
+                const box = document.getElementById('ec-choice-options');
+                box.innerHTML = '';
+                options.forEach((opt, i) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    const name = document.createElement('span');
+                    name.className = 'ec-choice-name';
+                    name.textContent = opt.label;
+                    btn.appendChild(name);
+                    if (opt.sub) {
+                        const sub = document.createElement('span');
+                        sub.className = 'ec-choice-sub';
+                        sub.textContent = opt.sub;
+                        btn.appendChild(sub);
+                    }
+                    btn.addEventListener('click', () => ecCloseChoice(i));
+                    box.appendChild(btn);
+                });
+                box.scrollTop = 0;
+                const overlay = document.getElementById('ec-choice-overlay');
+                ecCancelClose(overlay);
+                overlay.classList.add('is-open');
+            });
+        }
+        function ecCloseChoice(answer) {
+            const overlay = document.getElementById('ec-choice-overlay');
+            ecAnimateClose(overlay, () => overlay.classList.remove('is-open'));
+            const resolve = ecChoiceResolve;
+            ecChoiceResolve = null;
+            if (resolve) resolve(answer === undefined ? null : answer);
+        }
+        document.getElementById('ec-choice-cancel').addEventListener('click', () => ecCloseChoice(null));
+        document.getElementById('ec-choice-overlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) ecCloseChoice(null); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.getElementById('ec-choice-overlay').classList.contains('is-open')) ecCloseChoice(null);
+        });
 
         // Menu: light/dark, app feedback, log out (#14 #28 #29).
         function updateMenuLabels() {
@@ -3031,19 +3148,148 @@
             });
         }
         try { ecSetStopSize(localStorage.getItem('ec_stop_size') || 2); } catch (e) { ecSetStopSize(2); }
+
+        // Add a stop box size (the arrows in its bottom right corner), like Route Planner's stop
+        // panel: dragging scales the fields, text and buttons together. Kept on the phone and in
+        // Firebase at developer/route_planner/ui_prefs/{driver}/add_form_scale (0.55 to 1.3).
+        const EC_FORM_SCALE_MIN = 0.55, EC_FORM_SCALE_MAX = 1.3;
+        let ecFormScale = 1;
+        let ecFormScaleDragging = false;
+        function ecClampFormScale(v) {
+            v = Number(v);
+            if (!isFinite(v)) return 1;
+            return Math.round(Math.min(EC_FORM_SCALE_MAX, Math.max(EC_FORM_SCALE_MIN, v)) * 100) / 100;
+        }
+        function ecApplyFormScale(v) {
+            ecFormScale = ecClampFormScale(v);
+            const card = document.querySelector('.input-form-card');
+            if (card) card.style.setProperty('--ec-form-scale', String(ecFormScale));
+            const grip = document.getElementById('ec-form-resize');
+            if (grip) grip.setAttribute('aria-valuenow', String(Math.round(ecFormScale * 100)));
+        }
+        function ecSaveFormScale(v) {
+            v = ecClampFormScale(v);
+            try { localStorage.setItem('ec_add_form_scale', String(v)); } catch (e) {}
+            const ref = ecFormScalePrefRef();
+            if (ref) ref.set(v).catch(err => console.warn('Add a stop box size not saved:', err && err.message));
+        }
+        function ecFormScalePrefRef() {
+            if (typeof currentRouteKey === 'undefined' || !currentRouteKey || /[.#$\[\]\/]/.test(currentRouteKey)) return null;
+            return db.ref(`developer/route_planner/ui_prefs/${currentRouteKey}/add_form_scale`);
+        }
+        function ecStartFormScaleSync() {
+            const ref = ecFormScalePrefRef();
+            if (!ref) return;
+            ref.on('value', snap => {
+                const v = Number(snap.val());
+                if (snap.val() === null || !isFinite(v) || ecFormScaleDragging) return;
+                ecApplyFormScale(v);
+                try { localStorage.setItem('ec_add_form_scale', String(ecClampFormScale(v))); } catch (e) {}
+            });
+        }
+        (function ecSetupFormResize() {
+            try { ecApplyFormScale(localStorage.getItem('ec_add_form_scale') || 1); } catch (e) { ecApplyFormScale(1); }
+            const grip = document.getElementById('ec-form-resize');
+            const body = document.getElementById('ec-form-body');
+            if (!grip || !body) return;
+            let startX = 0, startY = 0, startScale = 1, fullW = 0, fullH = 0, lastTap = 0, moved = false;
+            grip.addEventListener('pointerdown', e => {
+                e.preventDefault();
+                const now = Date.now();
+                if (now - lastTap < 350) { lastTap = 0; ecApplyFormScale(1); ecSaveFormScale(1); return; } // double-tap: normal size
+                lastTap = now;
+                ecFormScaleDragging = true;
+                moved = false;
+                startX = e.clientX; startY = e.clientY;
+                startScale = ecFormScale;
+                const r = body.getBoundingClientRect();
+                fullW = r.width; fullH = r.height / startScale; // height at normal size
+                grip.classList.add('is-dragging');
+                try { grip.setPointerCapture(e.pointerId); } catch (err) {}
+            });
+            grip.addEventListener('pointermove', e => {
+                if (!ecFormScaleDragging || !fullH) return;
+                const dx = e.clientX - startX, dy = e.clientY - startY;
+                // Down or right makes it bigger, up or left smaller. The box always stays full width,
+                // so a sideways drag is measured against the width and a drag down against the height.
+                const grow = Math.abs(dy) >= Math.abs(dx)
+                    ? (fullH * startScale + dy) / (fullH * startScale)
+                    : (fullW + dx * 1.5) / fullW;
+                if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+                ecApplyFormScale(startScale * grow);
+            });
+            const end = () => {
+                if (!ecFormScaleDragging) return;
+                ecFormScaleDragging = false;
+                grip.classList.remove('is-dragging');
+                if (moved && Math.abs(ecFormScale - startScale) >= 0.01) ecSaveFormScale(ecFormScale);
+            };
+            grip.addEventListener('pointerup', end);
+            grip.addEventListener('pointercancel', end);
+            // Keyboard: arrow keys resize a step
+            grip.addEventListener('keydown', e => {
+                const step = (e.key === 'ArrowDown' || e.key === 'ArrowRight') ? 0.05 : (e.key === 'ArrowUp' || e.key === 'ArrowLeft') ? -0.05 : 0;
+                if (!step) return;
+                e.preventDefault();
+                ecApplyFormScale(ecFormScale + step);
+                ecSaveFormScale(ecFormScale);
+            });
+        })();
         function toggleTheme() {
             document.body.classList.toggle('light-mode');
             const light = document.body.classList.contains('light-mode');
             try { localStorage.setItem('ec_theme', light ? 'light' : 'dark'); } catch (e) {}
             updateMenuLabels();
         }
-        // Options shared by both maps. The maps always use Google's normal light colours,
-        // in dark mode too (Justin: no dark map anywhere).
+        // Map colours (Settings): light (Google's normal colours, the default) or dark. Separate from
+        // the app's own light/dark mode. Kept on the phone and in Firebase at
+        // developer/route_planner/ui_prefs/{driver}/map_theme ('light' or 'dark'), like Font size.
+        // Dark uses the same map colours as Route Planner's dark map.
+        const EC_DARK_MAP_STYLES = [{"featureType":"all","elementType":"all","stylers":[{"invert_lightness":true},{"saturation":10},{"lightness":30},{"gamma":0.5},{"hue":"#435158"}]}];
+        let ecMapTheme = 'light';
+        function ecSetMapTheme(mode, saveToServer) {
+            mode = mode === 'dark' ? 'dark' : 'light';
+            ecMapTheme = mode;
+            document.body.classList.toggle('ec-map-dark', mode === 'dark');
+            document.querySelectorAll('.ec-menu-map-btns button').forEach(b => b.setAttribute('aria-pressed', b.dataset.map === mode ? 'true' : 'false'));
+            try { localStorage.setItem('ec_map_theme', mode); } catch (e) {}
+            // Without a Map ID the colours can change on a map that is already open.
+            if (!EC_MAP_ID) {
+                const styles = mode === 'dark' ? EC_DARK_MAP_STYLES : [];
+                if (map) map.setOptions({ styles: styles });
+                if (pickerMap) pickerMap.setOptions({ styles: styles });
+            }
+            if (saveToServer) {
+                const ref = ecMapThemePrefRef();
+                if (ref) ref.set(mode).catch(err => {
+                    console.warn('Map colours not saved:', err && err.message);
+                    ecToast("Map colours are set on this phone, but couldn't be saved to your account.", { type: 'error' });
+                });
+            }
+        }
+        function ecMapThemePrefRef() {
+            if (typeof currentRouteKey === 'undefined' || !currentRouteKey || /[.#$\[\]\/]/.test(currentRouteKey)) return null;
+            return db.ref(`developer/route_planner/ui_prefs/${currentRouteKey}/map_theme`);
+        }
+        // At sign-in: use the map colours saved to the driver's account (nothing saved: light).
+        function ecStartMapThemeSync() {
+            const ref = ecMapThemePrefRef();
+            if (!ref) return;
+            ref.on('value', snap => {
+                const v = snap.val();
+                if (v === 'light' || v === 'dark') ecSetMapTheme(v, false);
+            });
+        }
+        try { ecSetMapTheme(localStorage.getItem('ec_map_theme') || 'light'); } catch (e) { ecSetMapTheme('light'); }
+        // Options shared by both maps, in the chosen map colours.
         function ecMapOptions(base) {
             const opts = Object.assign({ gestureHandling: 'greedy' }, base);
             if (EC_MAP_ID) {
+                // With a Map ID Google picks the colours, and only when the map is made.
                 opts.mapId = EC_MAP_ID;
-                opts.colorScheme = 'LIGHT';
+                opts.colorScheme = ecMapTheme === 'dark' ? 'DARK' : 'LIGHT';
+            } else {
+                opts.styles = ecMapTheme === 'dark' ? EC_DARK_MAP_STYLES : [];
             }
             return opts;
         }
@@ -3494,6 +3740,9 @@
 
             // Font size for the stop list, saved to the driver's account
             ecStartFontSizeSync();
+            // Map colours and the add-a-stop box size, saved to the driver's account
+            ecStartMapThemeSync();
+            ecStartFormScaleSync();
 
             // Add-stop panel open/closed, shared through Firebase
             const panelRef = ecPanelPrefRef();
@@ -4262,6 +4511,9 @@
                 saveRouteState();
                 updateUI();
                 updateAutoOptimizeButtonVisual();
+                // The stop leaves the top of the list for its numbered place, and the list doesn't
+                // scroll after it, so say where it went.
+                if (byRoad) ecToast(`${newJob.name || 'New stop'} is now stop ${routeState.assignedIndices[newId]}.`);
 
                 // Rebuild the route line from the new order. Legs are cached by their exact
                 // ends, so only the new legs are asked of Google.
@@ -4397,9 +4649,27 @@
             });
             return bestFound.path;
         }
+        // AUTO-OPTIMIZE asks which stop is first (like Route Planner), then puts the rest in order
+        // from that stop, so the route starts in the right direction. Only when no stop left has a
+        // number yet: stops already numbered by hand count as the start.
+        async function autoOptimizeFromFirstStop() {
+            const remaining = ecRemainingStopIds();
+            if (remaining.length >= 2 && !remaining.some(id => routeState.assignedIndices[id])) {
+                const ids = remaining.slice().sort((a, b) => String(jobs[a].name || '').localeCompare(String(jobs[b].name || '')));
+                const i = await ecChoose('Which stop is first? The rest are put in order from there.', ids.map(id => ({
+                    label: jobs[id].name || jobs[id].pickup_location || 'No name',
+                    sub: [jobs[id].pickup_location, jobs[id].city].filter(Boolean).join(', ')
+                })));
+                if (i === null || i === undefined || !ids[i] || !jobs[ids[i]]) return;
+                return autoOptimizeRoute({ firstId: ids[i] });
+            }
+            return autoOptimizeRoute();
+        }
         async function autoOptimizeRoute(opts) {
             opts = opts || {};
             let reorderAll = !!opts.reorderAll;
+            // The stop the driver picked to go first (autoOptimizeFromFirstStop).
+            const firstId = (!reorderAll && opts.firstId) ? opts.firstId : null;
             // Every remaining stop already has a number: offer to re-order all of them from
             // where the driver is now, instead of refusing (#2).
             if (!reorderAll) {
@@ -4432,7 +4702,11 @@
                     return;
                 }
 
-                const unassignedIds = reorderAll ? pendingIds.slice() : pendingIds.filter(id => !routeState.assignedIndices[id]);
+                if (firstId && (!pendingIds.includes(firstId) || routeState.assignedIndices[firstId])) {
+                    ecToast('That stop changed while you were choosing. Try AUTO-OPTIMIZE again.');
+                    return;
+                }
+                const unassignedIds = reorderAll ? pendingIds.slice() : pendingIds.filter(id => !routeState.assignedIndices[id] && id !== firstId);
                 if (unassignedIds.length === 0) {
                     ecToast('Every stop already has a number.');
                     return;
@@ -4442,18 +4716,22 @@
                     return;
                 }
 
-                const origin = await ecGetFreshLocation(5000, 'No GPS right now. Route ordered from your last known spot.');
                 // Stops that keep their place at the front of the route:
-                //  - normal run: the manually-numbered stops, in their tapped order;
+                //  - normal run: the manually-numbered stops, in their tapped order, then the stop
+                //    the driver picked to go first;
                 //  - re-order run: only stops already checked off (they keep their numbers).
                 // Everything else is optimized and always goes after them.
                 // Order entries for stops removed on another phone are skipped (#11).
                 const keptInFront = (reorderAll
                     ? routeState.order.filter(id => checkedStops.includes(id))
                     : routeState.order.filter(id => routeState.assignedIndices[id]))
-                    .filter(id => jobs[id]);
+                    .filter(id => jobs[id] && id !== firstId);
+                if (firstId) keptInFront.push(firstId);
                 const keptWithSpot = keptInFront.filter(ecHasSpot);
-                const routingOrigin = (!reorderAll && keptWithSpot.length > 0) ? pointFor(keptWithSpot[keptWithSpot.length - 1]) : origin;
+                // GPS is only needed when the route starts from where the driver is.
+                const fromGps = reorderAll || keptWithSpot.length === 0;
+                const origin = fromGps ? await ecGetFreshLocation(5000, 'No GPS right now. Route ordered from your last known spot.') : null;
+                const routingOrigin = fromGps ? origin : pointFor(keptWithSpot[keptWithSpot.length - 1]);
                 let orderedUnassigned = unassignedIds;
                 if (unassignedIds.length > 1) {
                     // Planned as a one-way trip that ends at the last stop: the drive back to the
@@ -4750,15 +5028,13 @@
             const ordered = routeState.order.filter(ecIsActiveStop);
             const existing = new Set(ordered);
             const extra = pendingJobs.filter(id => !existing.has(id));
-            // Route not made yet: newest first, so a stop just added shows at the top, the same as
-            // Route Planner. The order here doesn't matter: the route order is set on the map.
-            if (!routeState.isFinalized && !isOrderingMode) {
-                extra.sort((a, b) => ((Number(jobs[b].timestamp) || 0) - (Number(jobs[a].timestamp) || 0)) || (a < b ? 1 : a > b ? -1 : 0));
-                return extra.concat(ordered);
-            }
-            // Made route, or numbering on the map: numbered stops in route order, then any not numbered yet.
-            if (routeState.order.length === 0) extra.sort((a, b) => jobs[a].timestamp - jobs[b].timestamp);
-            return ordered.concat(extra);
+            // Stops without a number always show at the top, newest first, so a stop just added
+            // is at the top and the list never jumps down to it (Justin: no scrolling down).
+            // Route not made yet: that is every stop, the same as Route Planner.
+            // Made route: numbered stops follow in route order. A new stop sits at the top while
+            // its place is worked out, then moves to its numbered place.
+            extra.sort((a, b) => ((Number(jobs[b].timestamp) || 0) - (Number(jobs[a].timestamp) || 0)) || (a < b ? 1 : a > b ? -1 : 0));
+            return extra.concat(ordered);
         }
 
         // ---------- RENDER LIST ----------
