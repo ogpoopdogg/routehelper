@@ -1203,6 +1203,15 @@
         /* Next stop: a gold outline and a small NEXT tag instead of an extra line */
         .job-item.next-stop:not(.checked) { padding-top: 4px; padding-bottom: 4px; background: var(--surface-2); border-color: rgba(245, 197, 24, 0.55); box-shadow: 0 0 0 1px rgba(245, 197, 24, 0.22), 0 0 18px -6px rgba(245, 197, 24, 0.5); }
         body.light-mode .job-item.next-stop:not(.checked) { border-color: #d99a00; box-shadow: 0 0 0 1px rgba(217, 154, 0, 0.35); }
+        /* Next stop runs out to the right edge of the screen so it stands out. The check box stays in
+           the same column as the other stops, so the side buttons never cover it. */
+        @media (max-width: 479px) { /* phones; wider screens put the list in a card */
+            .job-item.next-stop:not(.checked) {
+                margin-right: calc(-1 * (var(--ec-lane) + var(--gutter)));
+                padding-right: calc(var(--ec-lane) + var(--gutter) + 1px); /* +1px for the dropped right border */
+                border-right-width: 0; border-radius: 12px 0 0 12px;
+            }
+        }
         .job-item.next-stop:not(.checked) .job-info::before { display: none; }
         .job-item.next-stop:not(.checked) .job-name { font-size: 13.5px; }
         .job-item.next-stop:not(.checked) .job-name::after {
