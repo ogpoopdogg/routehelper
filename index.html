@@ -8,7 +8,7 @@
     <link rel="icon" type="image/png" href="icon2.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <meta name="apple-mobile-web-app-title" content="Route Helper">
-    <meta name="theme-color" content="#121316">
+    <meta name="theme-color" content="#07090f">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1041,6 +1041,343 @@
             .ec-route { stroke-dashoffset: 0 !important; }
         }
     </style>
+    <style id="ec-planner-look">
+        /* =====================================================================
+           ROUTE PLANNER LOOK (Nov 2026, "Clear lane")
+           Same colours and parts as Route Planner: navy-black and gold, compact
+           stop rows, Teach / Navigate / Return / Settings in the header and the
+           Map / Clear / Mic buttons in the middle of the right edge. The stop
+           list leaves a lane on the right for those buttons, so they never sit
+           on a stop's check box.
+           ===================================================================== */
+        :root {
+            --bg: #07090f;
+            --surface: #10141f;
+            --surface-2: #0c1019;
+            --surface-3: #141a28;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-strong: rgba(255, 255, 255, 0.14);
+            --text: #f4f6fb;
+            --text-2: #a3abbb;
+            --text-3: #7c8597;
+            --accent: #f5c518;
+            --accent-hover: #ffdb4d;
+            --accent-press: #d99a00;
+            --accent-text: #f5c518;
+            --accent-soft: rgba(245, 197, 24, 0.14);
+            --accent-ring: rgba(245, 197, 24, 0.32);
+            --on-accent: #1a1300;
+            --overlay: rgba(3, 5, 10, 0.62);
+            --header-bg: rgba(7, 9, 15, 0.86);
+            --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+            --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -6px rgba(0, 0, 0, 0.55);
+            --focus-ring: 0 0 0 3px rgba(245, 197, 24, 0.3);
+            --page-glow: radial-gradient(1200px 600px at 85% -10%, rgba(245, 197, 24, 0.09), transparent 60%), radial-gradient(900px 500px at -10% 10%, rgba(59, 130, 246, 0.07), transparent 60%);
+            /* Room on the right of the stop list for the side buttons (none once the screen is wide
+               enough that the centred list already clears them) */
+            --ec-lane: max(0px, calc(76px - (100vw - min(100vw, var(--content-max))) / 2 - var(--gutter)));
+        }
+        body.light-mode {
+            --bg: #f4f5f8;
+            --surface: #ffffff;
+            --surface-2: #f6f7fa;
+            --surface-3: #eceef3;
+            --border: rgba(15, 23, 42, 0.09);
+            --border-strong: rgba(15, 23, 42, 0.16);
+            --text: #0e1220;
+            --text-2: #4b5468;
+            --text-3: #6b7487;
+            --accent: #f5c518;
+            --accent-text: #8a6100;
+            --accent-soft: rgba(217, 154, 0, 0.12);
+            --accent-ring: rgba(217, 154, 0, 0.3);
+            --header-bg: rgba(255, 255, 255, 0.86);
+            --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.06);
+            --shadow-2: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px -10px rgba(15, 23, 42, 0.14);
+            --page-glow: radial-gradient(1200px 600px at 85% -10%, rgba(245, 180, 0, 0.10), transparent 60%), radial-gradient(900px 500px at -10% 10%, rgba(59, 130, 246, 0.06), transparent 60%);
+        }
+        body { background: var(--page-glow), var(--bg); background-attachment: fixed; }
+
+        /* ---------- Header ---------- */
+        header { box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.6); }
+        header::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; pointer-events: none; background: linear-gradient(90deg, transparent, var(--accent-ring), transparent); }
+        .ec-logo-wrap { width: 36px; height: 36px; border-radius: 10px; border-color: var(--accent-ring); }
+        .ec-brand { gap: 9px; flex-shrink: 1; }
+        .ec-wordmark-main { font-size: 16px; font-weight: 800; letter-spacing: 0.06em; color: var(--accent-text); }
+        .ec-wordmark-sub { font-size: 11px; font-weight: 600; color: var(--text-2); margin-top: 1px; }
+        .ec-hdr-actions { gap: 6px; }
+        .map-btn.ec-hdr-btn {
+            min-width: 50px; height: 46px; padding: 0 4px; border-radius: 12px; border-color: var(--border-strong);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)), var(--surface);
+            box-shadow: var(--shadow-2), var(--highlight); color: var(--text-2); font-size: 10px; font-weight: 700;
+        }
+        body.light-mode .map-btn.ec-hdr-btn { background: var(--surface); }
+        #route-btn { border-color: var(--accent-ring); color: var(--accent-text); }
+        #route-btn svg { color: var(--accent-text); }
+        @media (max-width: 400px) {
+            .map-btn.ec-hdr-btn { min-width: 48px; padding: 0 3px; font-size: 9.5px; }
+            .ec-wordmark-main { font-size: 15px; }
+        }
+        @media (max-width: 360px) { .map-btn.ec-hdr-btn { min-width: 42px; } .map-btn.ec-hdr-btn span { font-size: 8.5px; } }
+
+        /* ---------- Add-a-stop form: compact, like Route Planner ---------- */
+        .ec-main { padding-top: 10px; gap: 12px; }
+        .input-form-card {
+            gap: 8px; padding: 10px; border-radius: 16px;
+            background: linear-gradient(180deg, var(--surface-3), var(--surface));
+            box-shadow: var(--shadow-2), var(--highlight);
+        }
+        body.light-mode .input-form-card { background: var(--surface); }
+        .input-form-card .flex-row { gap: 8px; }
+        .ec-field-name { flex: 1; min-width: 0; width: auto; }
+        .input-panel-toggle { width: 42px; height: 42px; border-radius: 11px; border-color: var(--border-strong); background: var(--surface-2); }
+        .input-form-card.ec-form-top #input-panel-toggle { display: none; }
+        /* Plain boxes with the words inside, no icons or moving labels */
+        .ec-field > input { min-height: 42px; padding: 9px 14px; }
+        .ec-field > input::placeholder { color: var(--text-3); }
+        .ec-field-icon, .ec-float-label { display: none !important; }
+        .ec-field.ec-compact > input { padding-left: 12px; }
+        input, select, textarea { border-color: var(--border-strong); }
+        #f-name { padding-right: 80px; }
+        #f-address { padding-right: 98px; }
+        .suggestion-reset {
+            top: 21px; right: 6px; min-height: 28px; padding: 0 10px;
+            border-color: var(--accent-ring); background: var(--accent-soft); color: var(--accent-text);
+            font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+        }
+        .address-pin-btn { top: 21px; right: 5px; width: 30px; height: 30px; border: none; background: transparent; }
+        .address-here-btn {
+            top: 21px; right: 38px; height: 30px; padding: 0 7px; gap: 3px; font-size: 12px; font-weight: 800;
+            border-color: var(--accent-ring); background: var(--accent-soft);
+        }
+        .address-here-btn svg { width: 15px; height: 15px; }
+        /* Address and city share a row, like Route Planner */
+        .flex-row:has(.ec-field-address) { flex-wrap: nowrap !important; }
+        .ec-field-address { flex: 2.1 1 0 !important; min-width: 0; }
+        .ec-field-city { flex: 1 1 0 !important; min-width: 0; }
+        /* ADD TO ROUTE: Route Planner's green */
+        .btn-add {
+            min-height: 44px; margin-top: 0; border-radius: 12px; color: #06240f;
+            background: linear-gradient(180deg, #4ade80, #22c55e 60%, #16a34a);
+            font-weight: 800; letter-spacing: 0.2em;
+            box-shadow: 0 10px 24px -12px rgba(34, 197, 94, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+        .btn-add::before { display: none; }
+        .btn-add:hover { background: linear-gradient(180deg, #5ee08e, #2bd168 60%, #18ad4e); }
+        .btn-add:active { background: linear-gradient(180deg, #3cc970, #1fae53 60%, #138f40); }
+        body.light-mode .btn-add { box-shadow: 0 8px 20px -12px rgba(22, 163, 74, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+        /* The Map button makes the route now */
+        #create-route-main { display: none !important; }
+
+        /* ---------- Stop list ---------- */
+        .ec-list-head { margin: 2px var(--ec-lane) 8px 0; padding: 0 2px; }
+        .ec-list-title { gap: 9px; font-size: 13px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+        .ec-list-title::before { content: ""; width: 4px; height: 15px; border-radius: 4px; background: linear-gradient(180deg, #ffdb4d, #d99a00); box-shadow: 0 0 10px var(--accent-ring); }
+        #stop-counter { text-transform: none; padding: 1px 9px; border: 1px solid var(--accent-ring); font-size: 12px; font-weight: 800; letter-spacing: 0; }
+        #clear-route-btn { display: none !important; } /* the X side button clears the list */
+        #job-list, #empty-state { margin-right: var(--ec-lane); }
+        #job-list { gap: 4px; }
+
+        .job-item {
+            gap: 6px; min-height: 52px; padding: 4px 0 4px 6px; border-radius: 12px;
+            background: var(--surface-2); border-color: var(--border); box-shadow: none;
+        }
+        .job-item::after { display: none; } /* the P / D button shows the type */
+        .job-number {
+            width: 28px; height: 28px; border: none; border-radius: 8px;
+            font-size: 13px; font-weight: 800; color: #1a1300;
+            background: linear-gradient(180deg, #ffe066, #f5c518 60%, #dba300);
+            box-shadow: 0 4px 12px -4px rgba(245, 197, 24, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+        .job-item .job-number.has-note { color: #fff; border: none; background: linear-gradient(180deg, #60a5fa, #3b82f6 60%, #2563eb); box-shadow: 0 4px 12px -4px rgba(59, 130, 246, 0.8); }
+        .job-item.pending .job-number { background: transparent; box-shadow: none; }
+        .job-item.checked .job-number { width: 28px; height: 28px; font-size: 13px; }
+        .job-type-toggle { width: 34px; height: 42px; border-radius: 10px; font-size: 16px; }
+        .job-type-toggle.type-both { font-size: 13px; }
+        .job-info { padding-left: 2px; }
+        .job-name { font-size: 13.5px; font-weight: 700; letter-spacing: -0.01em; }
+        .job-address { font-size: 11.5px; color: var(--text-2); }
+        .job-city { color: var(--text-2); }
+        /* Next stop: a gold outline and a small NEXT tag instead of an extra line */
+        .job-item.next-stop:not(.checked) { padding-top: 4px; padding-bottom: 4px; background: var(--surface-2); border-color: rgba(245, 197, 24, 0.55); box-shadow: 0 0 0 1px rgba(245, 197, 24, 0.22), 0 0 18px -6px rgba(245, 197, 24, 0.5); }
+        body.light-mode .job-item.next-stop:not(.checked) { border-color: #d99a00; box-shadow: 0 0 0 1px rgba(217, 154, 0, 0.35); }
+        .job-item.next-stop:not(.checked) .job-info::before { display: none; }
+        .job-item.next-stop:not(.checked) .job-name { font-size: 13.5px; }
+        .job-item.next-stop:not(.checked) .job-name::after {
+            content: "NEXT"; display: inline-block; margin-left: 6px; padding: 1px 5px; border-radius: 5px; vertical-align: 1px;
+            font-size: 9px; font-weight: 800; letter-spacing: 0.1em; color: #1a1300; background: var(--accent);
+        }
+        .job-item.pending:not(.checked) { border-color: rgba(251, 146, 60, 0.5); }
+        .job-item.pending:not(.checked) .job-info::after { margin-top: 1px; font-size: 11px; }
+        /* Done check box: a 28 px box in a 44 px tap area, at the right end of the stop */
+        .custom-checkbox { width: 44px; height: 44px; }
+        .custom-checkbox::before { inset: 0; }
+        .custom-checkbox svg { width: 42px; height: 42px; }
+        .custom-checkbox svg rect { rx: 4px; ry: 4px; stroke-width: 1.5px; stroke: rgba(255, 255, 255, 0.3); fill: var(--surface); }
+        body.light-mode .custom-checkbox svg rect { stroke: rgba(15, 23, 42, 0.3); }
+        .ec-done-toggle { min-height: 40px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; border-style: solid; border-color: var(--border); }
+        .ec-done-group { gap: 4px; }
+
+        /* ---------- Side buttons: middle of the right edge ---------- */
+        .ec-fab-rail {
+            position: fixed; z-index: 940; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(50% + 24px);
+            transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none;
+        }
+        .ec-fab {
+            pointer-events: auto; display: grid; place-items: center; width: 54px; height: 54px; padding: 0; cursor: pointer;
+            border-radius: 17px; border: 1px solid var(--border-strong); color: var(--text);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)), rgba(18, 23, 35, 0.9);
+            -webkit-backdrop-filter: blur(16px) saturate(160%); backdrop-filter: blur(16px) saturate(160%);
+            box-shadow: 0 16px 34px -12px rgba(0, 0, 0, 0.75), var(--highlight);
+            -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation;
+            transition: transform 0.2s var(--ease), box-shadow 0.25s var(--ease);
+        }
+        body.light-mode .ec-fab { background: rgba(255, 255, 255, 0.92); box-shadow: 0 16px 34px -14px rgba(15, 23, 42, 0.35), var(--highlight); }
+        .ec-fab svg { width: 24px; height: 24px; }
+        .ec-fab:active { transform: scale(0.92); }
+        .ec-fab-sm { width: 46px; height: 46px; border-radius: 14px; }
+        .ec-fab-sm svg { width: 20px; height: 20px; }
+        #clear-fab { color: #f87171; border-color: rgba(239, 68, 68, 0.55); }
+        body.light-mode #clear-fab { color: #dc2626; }
+        #mic-btn-bottom { color: #60a5fa; border: 2px solid #3b82f6; box-shadow: 0 16px 34px -12px rgba(0, 0, 0, 0.75), 0 0 0 3px rgba(59, 130, 246, 0.18), 0 0 18px -4px rgba(59, 130, 246, 0.6); }
+        body.light-mode #mic-btn-bottom { color: #2563eb; border-color: #2563eb; }
+        #mic-btn-bottom.is-listening { color: #fff; border-color: rgba(239, 68, 68, 0.7); background: linear-gradient(180deg, #f87171, #ef4444 60%, #dc2626); animation: ec-mic-glow 1s ease-in-out infinite; }
+        @keyframes ec-mic-glow { 50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.18), 0 0 24px rgba(239, 68, 68, 0.6); } }
+        /* Map: a little map picture, glowing while stops still need numbers */
+        #map-fab {
+            overflow: hidden; color: #fff; border: 2px solid rgba(255, 255, 255, 0.25);
+            background:
+                linear-gradient(180deg, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.35)),
+                linear-gradient(28deg, transparent 46%, #f6d36b 46%, #f6d36b 52%, transparent 52%),
+                linear-gradient(-62deg, transparent 47%, #ffffff 47%, #ffffff 51%, transparent 51%),
+                linear-gradient(90deg, transparent 70%, #a5d4f5 70%),
+                linear-gradient(135deg, #dfe9d8, #cfe3c6 50%, #e8ecef);
+        }
+        #map-fab svg { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8)); }
+        body:has(#job-list .job-item.pending:not(.checked)) #map-fab { border-color: #3b82f6; animation: ec-map-glow 2.2s ease-in-out infinite; }
+        @keyframes ec-map-glow {
+            0%, 100% { box-shadow: 0 16px 34px -12px rgba(0, 0, 0, 0.75), 0 0 0 3px rgba(59, 130, 246, 0.18), 0 0 14px -4px rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 16px 34px -12px rgba(0, 0, 0, 0.75), 0 0 0 6px rgba(59, 130, 246, 0.12), 0 0 26px 0 rgba(59, 130, 246, 0.75); }
+        }
+
+        /* ---------- Settings (from the header) ---------- */
+        #ec-menu-overlay { padding-top: calc(70px + var(--safe-top)); }
+        .ec-menu-title { padding: var(--sp-3) var(--sp-3) 0; font-size: 12px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-text); }
+
+        /* ---------- Teach the mic + Add several stops (same as Route Planner) ---------- */
+        #voice-learn-overlay { align-items: flex-start; padding-top: calc(var(--safe-top) + 12px); overflow-y: auto; }
+        .vl-box { position: relative; max-width: 400px; padding: 22px 20px 18px; }
+        .vl-close { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface-3); color: var(--text-2); font-size: 15px; cursor: pointer; }
+        .vl-head { display: flex; align-items: center; gap: 12px; margin: 0 40px 18px 0; }
+        .vl-badge { flex: 0 0 auto; width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; color: #fff; background: linear-gradient(180deg, #60a5fa, #2563eb); box-shadow: 0 10px 24px -10px rgba(37, 99, 235, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+        .vl-badge svg { width: 24px; height: 24px; }
+        .vl-title { font-size: 19px; font-weight: 800; letter-spacing: -0.01em; color: var(--text); }
+        .vl-sub { margin-top: 2px; font-size: 13px; color: var(--text-2); }
+        .vl-label { display: block; margin: 14px 0 8px; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-2); }
+        .vl-field { position: relative; }
+        .vl-field .suggestions-box { top: 100%; max-height: 190px; }
+        .vl-record-wrap { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--border); }
+        .vl-record { flex: 0 0 auto; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; color: #fff; border: 2px solid rgba(147, 197, 253, 0.6); background: linear-gradient(180deg, #3b82f6, #1d4ed8); box-shadow: 0 12px 26px -12px rgba(37, 99, 235, 0.9), 0 0 0 5px rgba(59, 130, 246, 0.14); }
+        .vl-record svg { width: 28px; height: 28px; }
+        .vl-record.is-listening { border-color: rgba(254, 202, 202, 0.7); background: linear-gradient(180deg, #f87171, #dc2626); animation: vl-ring 1.2s ease-out infinite; }
+        @keyframes vl-ring { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); } 100% { box-shadow: 0 0 0 18px rgba(239, 68, 68, 0); } }
+        .vl-record-label { font-size: 15px; font-weight: 700; color: var(--text); }
+        .vl-status { margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; font-size: 13.5px; font-weight: 600; line-height: 1.4; background: rgba(59, 130, 246, 0.12); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .vl-status.is-ok { background: rgba(34, 197, 94, 0.12); color: #4ade80; border-color: rgba(34, 197, 94, 0.35); }
+        .vl-status.is-error { background: rgba(239, 68, 68, 0.12); color: #f87171; border-color: rgba(239, 68, 68, 0.35); }
+        body.light-mode .vl-status { color: #1d4ed8; } body.light-mode .vl-status.is-ok { color: #15803d; } body.light-mode .vl-status.is-error { color: #b91c1c; }
+        .vl-known { margin-top: 12px; }
+        .vl-known-title { margin-bottom: 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-2); }
+        .vl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .vl-chip { display: inline-flex; align-items: center; gap: 4px; padding: 5px 6px 5px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--text); background: var(--surface-3); border: 1px solid var(--border-strong); }
+        .vl-chip button { width: 24px; height: 24px; border-radius: 50%; border: none; background: transparent; color: var(--text-2); cursor: pointer; font-size: 11px; }
+        .vl-tip { margin: 14px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--text-3); }
+        .multi-add-box { max-width: 480px; }
+        .multi-add-input { display: flex; gap: 8px; align-items: stretch; }
+        .multi-add-input textarea { flex: 1; min-width: 0; min-height: 84px; font-size: 15px; }
+        .multi-add-mic { flex: 0 0 auto; width: 56px; border-radius: 12px; display: grid; place-items: center; cursor: pointer; color: #60a5fa; border: 2px solid #3b82f6; background: var(--surface-2); }
+        .multi-add-mic[hidden] { display: none; }
+        .multi-add-mic svg { width: 26px; height: 26px; }
+        .multi-add-mic.is-listening { color: #fff; border-color: rgba(239, 68, 68, 0.7); background: linear-gradient(180deg, #f87171, #ef4444 60%, #dc2626); }
+        .multi-add-heard { margin-top: 8px; font-size: 13px; font-style: italic; color: var(--text-2); }
+        .multi-add-results { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+        .multi-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 11px; background: var(--surface-2); border: 1px solid var(--border); }
+        .multi-row input[type=checkbox] { width: 22px; height: 22px; min-height: 0; margin: 0; padding: 0; flex-shrink: 0; accent-color: var(--accent); }
+        .multi-row-body { flex: 1; min-width: 0; }
+        .multi-row select { width: 100%; min-height: 38px; padding: 6px 10px; font-size: 14px; font-weight: 700; }
+        .multi-row-heard { margin-top: 3px; font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .multi-row.is-check { border-color: var(--accent-ring); }
+        .multi-row.is-check .multi-row-heard { color: var(--accent-text); }
+        .multi-row.is-missing { border-color: rgba(239, 68, 68, 0.45); }
+        .multi-row.is-missing .multi-row-heard { color: #ef4444; }
+        .multi-row-name { font-size: 14px; font-weight: 700; }
+        .ec-confirm-ok:disabled { opacity: 0.5; cursor: default; }
+        #multi-add-title { font-size: 17px; font-weight: 700; }
+
+        /* ---------- Stop added: the same blue burst and pulse as Route Planner ---------- */
+        @keyframes job-item-new-pulse {
+            0% { background: rgba(37, 99, 235, 0.30); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5), 0 0 22px 4px rgba(96, 165, 250, 0.35); transform: scale(1.025); }
+            15% { background: rgba(37, 99, 235, 0.30); box-shadow: 0 0 0 12px rgba(59, 130, 246, 0), 0 0 22px 4px rgba(96, 165, 250, 0.35); transform: scale(1.025); }
+            40% { background: rgba(37, 99, 235, 0.14); box-shadow: 0 0 0 12px rgba(59, 130, 246, 0), 0 0 0 0 rgba(59, 130, 246, 0); transform: scale(1); }
+            100% { background: var(--surface-2); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); transform: scale(1); }
+        }
+        @keyframes job-item-new-ring { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(1.08); opacity: 0; } }
+        @keyframes job-item-new-in { from { opacity: 0; transform: translateY(-8px) scale(0.98); } to { opacity: 1; transform: none; } }
+        @keyframes job-item-new-pop { 0% { transform: scale(0.9); } 35% { transform: scale(1.06); } 60% { transform: scale(0.98); } 100% { transform: scale(1); } }
+        .job-item.job-item-new { animation: job-item-new-in 0.35s cubic-bezier(.34, 1.56, .64, 1), job-item-new-pulse 3.2s ease-out forwards; border-color: #3b82f6 !important; }
+        .job-item.job-item-new.pop { animation: job-item-new-pop 0.6s cubic-bezier(.34, 1.56, .64, 1), job-item-new-pulse 3.2s ease-out forwards; }
+        .job-item.job-item-new::after {
+            content: ""; display: block; position: absolute; inset: -2px; left: -2px; width: auto; border-radius: 15px; background: none;
+            border: 2px solid rgba(96, 165, 250, 0.6); opacity: 0; pointer-events: none; z-index: 1; animation: job-item-new-ring 1.4s ease-out;
+        }
+        .add-burst {
+            position: fixed; z-index: 1500; pointer-events: none; border-radius: 50%; transform: translate(-50%, -50%) scale(0);
+            background: radial-gradient(circle, rgba(96, 165, 250, 0.55) 0%, rgba(59, 130, 246, 0.28) 40%, rgba(59, 130, 246, 0) 70%);
+            animation: add-burst 0.75s cubic-bezier(.2, .7, .2, 1) forwards;
+        }
+        .add-burst.ring { background: none; border: 4px solid rgba(96, 165, 250, 0.85); animation-duration: 0.9s; }
+        @keyframes add-burst { 0% { transform: translate(-50%, -50%) scale(0); opacity: 1; } 70% { opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
+
+        /* ---------- What's new: Map, Mic and Teach, big pictures and few words ---------- */
+        .wn-howto { max-width: 400px; padding: 16px 18px; }
+        .wn-howto .update-notification-header { margin-bottom: 10px; padding-bottom: 10px; }
+        .wn-count { margin-left: auto; font-size: 14px; font-weight: 700; color: var(--text-3); }
+        .wn-title { margin: 0 0 10px; font-size: 28px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.15; color: var(--text); text-align: center; }
+        .wn-lead { margin: -4px 0 10px; font-size: 19px; font-weight: 600; color: var(--text-2); text-align: center; }
+        .wn-lead b { color: var(--accent-text); font-weight: 800; }
+        .wn-shot { position: relative; border-radius: 18px; overflow: hidden; border: 1px solid var(--border-strong); background: #07090f; }
+        .wn-shot img { display: block; width: 100%; height: auto; }
+        .wn-ring { position: absolute; border: 4px solid #f5c518; box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.5), 0 0 22px rgba(245, 197, 24, 0.7); pointer-events: none; animation: wn-ring 1.6s ease-in-out infinite; }
+        @keyframes wn-ring { 50% { transform: scale(1.06); } }
+        .wn-num {
+            display: inline-grid; place-items: center; flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%;
+            background: #f5c518; color: #1a1300; font-size: 20px; font-weight: 800; font-style: normal; line-height: 1;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+        .wn-steps { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+        .wn-steps li { display: flex; align-items: center; gap: 14px; font-size: 22px; font-weight: 600; line-height: 1.25; color: var(--text); }
+        .wn-steps li span b { font-weight: 800; color: var(--accent-text); }
+        .wn-rec { display: inline-block; width: 40px; height: 40px; margin: 0 4px; vertical-align: middle; border-radius: 50%; }
+        .wn-done { margin: 14px 0 0; padding: 10px 12px; border-radius: 14px; text-align: center; font-size: 20px; font-weight: 800; color: #4ade80; background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.35); }
+        body.light-mode .wn-done { color: #15803d; }
+        /* NEXT / GOT IT stay in view if a page is taller than the screen */
+        .wn-footer { position: sticky; bottom: -16px; z-index: 2; align-items: center; gap: 10px; margin: 14px -18px -16px; padding: 12px 18px 16px; background: var(--surface); border-top: 1px solid var(--border); }
+        .wn-footer .update-notification-btn { min-height: 56px; padding: 0 28px; font-size: 18px; border-radius: 14px; }
+        .wn-dots { display: flex; gap: 7px; margin-right: auto; }
+        .wn-dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--border-strong); }
+        .wn-dots i.is-on { width: 24px; border-radius: 5px; background: var(--accent); }
+        .wn-back { min-height: 56px; padding: 0 18px; border-radius: 14px; border: 1px solid var(--border-strong); background: transparent; color: var(--text); font-size: 17px; font-weight: 700; cursor: pointer; }
+        .wn-howto [hidden] { display: none !important; }
+        @media (prefers-reduced-motion: reduce) { .wn-ring { animation: none; } }
+
+        @media (prefers-reduced-motion: reduce) {
+            .add-burst { display: none; }
+            .job-item.job-item-new.pop { animation: job-item-new-pulse 3.2s ease-out forwards; }
+            body:has(#job-list .job-item.pending:not(.checked)) #map-fab, #mic-btn-bottom.is-listening { animation: none; }
+        }
+    </style>
 </head>
 <body>
     <div class="ec-bottom-shield" aria-hidden="true"></div>
@@ -1073,22 +1410,37 @@
         <p id="ec-login-status" class="ec-login-status" role="status" aria-live="polite"></p>
     </div>
 
-    <!-- Update Notification Overlay -->
+    <!-- Update Notification Overlay: how to use the Map, Mic and Teach buttons (three short pages) -->
     <div id="update-notification-overlay">
-        <div class="update-notification-box">
+        <div class="update-notification-box wn-howto">
             <div class="update-notification-header">
                 <img src="icon2.png" class="update-notification-icon" alt="Logo">
                 <span class="update-notification-title">WHAT'S NEW</span>
+                <span class="wn-count" id="wn-count">1 of 3</span>
             </div>
-            <div class="update-notification-body">
-                <div class="update-notification-feature">
-                    <div class="update-notification-feature-title">🧭 Stop order ends at your last stop</div>
-                    <p>AUTO-OPTIMIZE now plans the shortest drive from where you are to your last stop. The drive back to the shop no longer changes the order, so a stop near the shop isn't pushed to the end.</p>
-                    <p>New stops added to a numbered route are placed the same way.</p>
-                </div>
-            </div>
-            <div class="update-notification-footer">
-                <button id="update-notification-mark-read-btn" class="update-notification-btn" onclick="markUpdateNotificationRead()">GOT IT</button>
+            <section class="wn-page" data-wn-page="1">
+                <h3 class="wn-title">Map button</h3>
+                <div class="wn-shot"><img src="howto-map.jpg" alt="The Map button" width="600" height="480"><span class="wn-ring" style="left:52.67%;top:23.33%;width:42.67%;height:53.33%;border-radius:22px"></span></div>
+                <ol class="wn-steps"><li><b class="wn-num">1</b><span>Tap <b>Map</b></span></li><li><b class="wn-num">2</b><span>Tap your stops <b>in order</b></span></li></ol>
+                <p class="wn-done">✓ Route made</p>
+            </section>
+            <section class="wn-page" data-wn-page="2" hidden>
+                <h3 class="wn-title">Voice button</h3>
+                <div class="wn-shot"><img src="howto-mic.jpg" alt="The Mic button" width="600" height="480"><span class="wn-ring" style="left:52.67%;top:23.33%;width:42.67%;height:53.33%;border-radius:22px"></span></div>
+                <ol class="wn-steps"><li><b class="wn-num">1</b><span>Tap the <b>Mic</b></span></li><li><b class="wn-num">2</b><span>Say the <b>customer</b></span></li></ol>
+                <p class="wn-done">✓ Stop added</p>
+            </section>
+            <section class="wn-page" data-wn-page="3" hidden>
+                <h3 class="wn-title">Mic having trouble?</h3>
+                <p class="wn-lead">Teach it how <b>you</b> say the name.</p><div class="wn-shot"><img src="howto-teach.jpg" alt="The Teach button at the top" width="600" height="320"><span class="wn-ring" style="left:15.71%;top:3.75%;width:38.67%;height:70.00%;border-radius:16px"></span></div>
+                <ol class="wn-steps"><li><b class="wn-num">1</b><span>Tap <b>Teach</b></span></li><li><b class="wn-num">2</b><span>Pick the <b>customer</b></span></li><li><b class="wn-num">3</b><span>Tap <img class="wn-rec" src="howto-record.jpg" alt="" width="320" height="320"> say the <b>name</b></span></li></ol>
+                <p class="wn-done">✓ Now the mic gets it</p>
+            </section>
+            <div class="update-notification-footer wn-footer">
+                <span class="wn-dots" aria-hidden="true"><i class="is-on"></i><i></i><i></i></span>
+                <button type="button" class="wn-back" id="wn-back" onclick="ecWnPage(ecWnAt - 1)" hidden>Back</button>
+                <button type="button" class="update-notification-btn" id="wn-next" onclick="ecWnPage(ecWnAt + 1)">NEXT</button>
+                <button id="update-notification-mark-read-btn" class="update-notification-btn" onclick="markUpdateNotificationRead()" hidden>GOT IT</button>
             </div>
         </div>
     </div>
@@ -1100,10 +1452,10 @@
             <span class="ec-wordmark" aria-label="E&amp;C Route Helper"><span class="ec-wordmark-main">E&amp;C<span class="ec-poppy" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="5.6" fill="#9E1C2C"/><circle cx="16" cy="16" r="5.6" fill="#9E1C2C"/><circle cx="16" cy="8" r="5.6" fill="#C62A3A"/><circle cx="8" cy="16" r="5.6" fill="#C62A3A"/><circle cx="12" cy="12" r="3.1" fill="#16161A"/><circle cx="11" cy="11.2" r="0.7" fill="#3A3A40"/><circle cx="13.1" cy="12.4" r="0.6" fill="#3A3A40"/></svg></span></span><span class="ec-wordmark-sub"><span class="ec-sub-default">Route Helper</span><span class="ec-sub-remembrance">Lest We Forget</span></span></span>
         </div>
         <div class="ec-hdr-actions">
-            <button id="return-btn" class="map-btn ec-hdr-btn" aria-label="Return. Tap to drive back. Hold to choose the return spot"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg><span>Return</span></button>
+            <button id="voice-learn-open" class="map-btn ec-hdr-btn" onclick="openVoiceLearner()" aria-label="Teach the mic a customer's name"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2.5" width="6" height="11" rx="3"/><path d="M4.5 10.5a6.5 6.5 0 0 0 13 0M11 17v4"/><path d="M19.5 3.5l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5z" fill="currentColor" stroke="none"/></svg><span>Teach</span></button>
             <button id="route-btn" class="map-btn ec-hdr-btn" onclick="openExternalRoute()" aria-label="Navigate the route in Google Maps"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span>Navigate</span></button>
-            <button id="map-btn" class="map-btn ec-hdr-btn" onclick="openMap()" aria-label="Open the map"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg><span>Map</span></button>
-            <button id="menu-btn" class="map-btn ec-hdr-btn" onclick="openMenu()" aria-label="Menu" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg><span>Menu</span></button>
+            <button id="return-btn" class="map-btn ec-hdr-btn" aria-label="Return. Tap to drive back. Hold to choose the return spot"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg><span>Return</span></button>
+            <button id="settings-btn" class="map-btn ec-hdr-btn" onclick="openMenu()" aria-label="Settings" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Settings</span></button>
         </div>
         <div class="ec-progress" id="ec-progress" aria-hidden="true"><span></span></div>
     </header>
@@ -1120,10 +1472,6 @@
         <!-- Add a stop -->
         <section id="input-panel" aria-label="Add a stop">
         <div class="input-form-card">
-            <div class="input-panel-header">
-                <h2 class="ec-section-title">Add a stop</h2>
-                <button type="button" id="input-panel-toggle" class="input-panel-toggle" onclick="toggleInputPanel()" aria-label="Collapse"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 15 12 9 18 15"/></svg></button>
-            </div>
             <div class="flex-row">
                 <div class="rel ec-field ec-field-name">
                     <input type="text" id="f-name" class="glow-field" placeholder="Contact/Business Name" autocomplete="off" oninput="handleNameInput(this.value)" onblur="setTimeout(()=>document.getElementById('suggestions').style.display='none', 200)">
@@ -1132,6 +1480,7 @@
                     <div id="suggestions" class="suggestions-box"></div>
                     <button type="button" onclick="onResetClick()" class="suggestion-reset" aria-label="Clear the name, address and city">Reset</button>
                 </div>
+                <button type="button" id="input-panel-toggle" class="input-panel-toggle" onclick="toggleInputPanel()" aria-label="Collapse"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 15 12 9 18 15"/></svg></button>
             </div>
             <div class="flex-row">
                 <div class="input-wrap ec-field ec-field-address">
@@ -1154,11 +1503,6 @@
                     <label for="f-city" class="ec-float-label">City</label>
                     <div id="city-suggestions" class="suggestions-box"></div>
                 </div>
-            </div>
-            <div class="flex-row ec-type-row" role="group" aria-label="Stop type">
-                <button type="button" class="ec-type-choice" id="f-type-pickup" aria-pressed="false" onclick="setNewStopType('pickup')">Pickup</button>
-                <button type="button" class="ec-type-choice" id="f-type-both" aria-pressed="false" aria-label="Pickup and delivery" onclick="setNewStopType('both')"><span>Pickup &amp;</span><span>Delivery</span></button>
-                <button type="button" class="ec-type-choice is-on" id="f-type-delivery" aria-pressed="true" onclick="setNewStopType('delivery')">Delivery</button>
             </div>
             <button id="add-btn-expanded" class="btn-add" onclick="onAddButtonClick()">ADD TO ROUTE</button>
         </div>
@@ -1247,6 +1591,62 @@
             </div>
         </section>
     </main>
+
+    <!-- Side buttons (like Route Planner, without Save and Delete). The stop list leaves a lane
+         on the right for them, so they never sit on a stop's check box. -->
+    <div class="ec-fab-rail">
+        <button id="map-fab" class="ec-fab" onclick="ecMapFab()" aria-label="Map. Tap to make the route"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4L3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg></button>
+        <button id="clear-fab" class="ec-fab ec-fab-sm" onclick="ecClearFab()" aria-label="Clear the list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        <button id="mic-btn-bottom" class="ec-fab" onclick="quickVoiceAdd()" aria-label="Say a customer name to add it. Hold to paste or say a list."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg></button>
+    </div>
+
+    <!-- Teach the mic: shared with Route Planner (developer/route_planner/voice_aliases) -->
+    <div id="voice-learn-overlay" class="ec-sheet-overlay" onpointerdown="voiceLearnDownOnBackdrop = (event.target === this)" onclick="if (event.target === this && voiceLearnDownOnBackdrop) closeVoiceLearner()">
+        <div class="ec-customer-box vl-box" role="dialog" aria-modal="true" aria-labelledby="vl-title">
+            <button type="button" class="vl-close" onclick="closeVoiceLearner()" aria-label="Close">✕</button>
+            <div class="vl-head">
+                <div class="vl-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg></div>
+                <div>
+                    <div id="vl-title" class="vl-title">Teach the mic</div>
+                    <div class="vl-sub">For a customer the mic keeps getting wrong</div>
+                </div>
+            </div>
+            <label class="vl-label" for="voice-learn-name">1 · Customer</label>
+            <div class="vl-field">
+                <input type="text" id="voice-learn-name" placeholder="Start typing a customer name" autocomplete="off" oninput="voiceLearnSuggest(this.value)" onblur="setTimeout(() => { document.getElementById('voice-learn-suggest').style.display = 'none'; }, 200)">
+                <div id="voice-learn-suggest" class="suggestions-box"></div>
+            </div>
+            <label class="vl-label">2 · Say their name</label>
+            <div class="vl-record-wrap">
+                <button type="button" id="voice-learn-btn" class="vl-record" onclick="voiceLearnRecord()" aria-label="Record"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg></button>
+                <div id="voice-learn-btn-label" class="vl-record-label">Tap to record</div>
+            </div>
+            <p id="voice-learn-status" class="vl-status" hidden></p>
+            <div id="voice-learn-known" class="vl-known" hidden></div>
+            <p class="vl-tip">Record 2 or 3 times. Everything the phone hears is saved for this customer, in Route Helper and Route Planner, so the mic finds them next time.</p>
+        </div>
+    </div>
+
+    <!-- Add several stops: say the names or paste a list (hold the mic button) -->
+    <div id="multi-add-overlay" class="ec-sheet-overlay" onpointerdown="multiAddDownOnBackdrop = (event.target === this)" onclick="if (event.target === this && multiAddDownOnBackdrop) closeMultiAdd()">
+        <div class="ec-customer-box multi-add-box" role="dialog" aria-modal="true" aria-labelledby="multi-add-title">
+            <div class="static-note-header">
+                <span id="multi-add-title">Add several stops</span>
+                <button type="button" class="static-note-close" onclick="closeMultiAdd()" aria-label="Close">✕</button>
+            </div>
+            <p class="ec-customer-hint" style="margin-top:0">Say the customer names, or paste or type them (one per line or with commas). Each one is matched to your customers.</p>
+            <div class="multi-add-input">
+                <textarea id="multi-add-text" rows="3" placeholder="e.g. Kal Tire, Napa Auto Parts" oninput="scheduleMultiAddMatch()"></textarea>
+                <button type="button" id="multi-add-mic" class="multi-add-mic" onclick="toggleMultiAddListening()" aria-label="Say the names"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg></button>
+            </div>
+            <div id="multi-add-heard" class="multi-add-heard" hidden></div>
+            <div id="multi-add-results" class="multi-add-results"></div>
+            <div class="ec-confirm-actions" style="margin-top:16px">
+                <button type="button" class="ec-confirm-cancel" onclick="closeMultiAdd()">Cancel</button>
+                <button type="button" id="multi-add-go" class="ec-confirm-ok" onclick="confirmMultiAdd()" disabled>Add stops</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Map Modal -->
     <div id="map-modal">
@@ -1338,9 +1738,11 @@
 
     <!-- Menu -->
     <div id="ec-menu-overlay" class="ec-sheet-overlay" onclick="if (event.target === this) closeMenu()">
-        <div class="ec-menu-box" role="dialog" aria-label="Menu">
+        <div class="ec-menu-box" role="dialog" aria-label="Settings">
+            <div class="ec-menu-title">Settings</div>
             <div class="ec-menu-user" id="ec-menu-user"></div>
             <button type="button" class="ec-menu-item" id="ec-menu-theme" onclick="toggleTheme()">Switch to light mode</button>
+            <button type="button" class="ec-menu-item" onclick="closeMenu(); openVoiceLearner();">Teach the mic a customer's name</button>
             <button type="button" class="ec-menu-item" onclick="closeMenu(); openDevNotes();">Send app feedback</button>
             <button type="button" class="ec-menu-item" id="ec-menu-install" onclick="installApp()" hidden>Install app</button>
             <button type="button" class="ec-menu-item ec-menu-danger" onclick="logOut()">Log out</button>
@@ -1867,6 +2269,482 @@
             if (!menu.classList.contains('is-open')) return;
             ecAnimateClose(menu, () => menu.classList.remove('is-open'));
         }
+        // ---------- SIDE BUTTONS ----------
+        // Map: like Route Planner's Map button. Stops not numbered yet: opens the map and starts
+        // numbering them (same as CREATE ROUTE). Route already numbered, or no stops: just the map.
+        function ecMapFab() {
+            const remaining = ecRemainingStopIds();
+            if (remaining.length === 0 || (routeState.isFinalized && routeState.order.length > 0 && !isOrderingMode)) {
+                openMap(true);
+                return;
+            }
+            startCreateRoute();
+        }
+        function ecClearFab() {
+            if (ecActiveStopIds().length === 0) { ecToast('There are no stops to clear.'); return; }
+            clearAllStops();
+        }
+
+        // ---------- MIC: SAY A NAME, IT'S ADDED (same as Route Planner) ----------
+        // Tap the mic and say a customer name: it's matched to the address book (sound-alike and
+        // taught phrases included) and added straight away. Hold the mic: "Add several stops".
+        // What the mic learns is shared with Route Planner in developer/route_planner/voice_aliases
+        // (heard words -> customer), so both apps get better as anyone uses either one.
+        const VOICE_ALIASES_PATH = 'developer/route_planner/voice_aliases';
+        let voiceAliases = {};
+        let voiceAliasesListening = false;
+        function listenVoiceAliases() {
+            if (voiceAliasesListening || !auth.currentUser) return;
+            voiceAliasesListening = true;
+            db.ref(VOICE_ALIASES_PATH).on('value', snap => {
+                voiceAliases = snap.val() || {};
+            }, err => {
+                voiceAliasesListening = false;
+                console.warn('Voice aliases not readable:', err && err.message);
+            });
+        }
+        function ecVoiceSaveError(err) {
+            const denied = err && /permission/i.test(String(err.code || err.message || ''));
+            return denied ? "Not allowed to save what the mic learned. Ask the office to allow it." : 'Could not save: ' + (err && err.message ? err.message : 'no connection');
+        }
+        // The saved customer for a name (exact, or the same name with different capitals), or null.
+        function ecFindContactKey(name) {
+            const key = ecContactKeyExisting(String(name || '').trim());
+            return key && addressData[key] ? key : null;
+        }
+        function normName(t) {
+            return String(t || '').toLowerCase().replace(/&/g, ' and ').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+        }
+
+        let quickVoiceRec = null;
+        let micHoldUntil = 0;
+        function quickVoiceAdd() {
+            if (Date.now() < micHoldUntil) return; // the hold opened the list sheet instead
+            if (quickVoiceRec) { try { quickVoiceRec.stop(); } catch (e) {} return; }
+            listenVoiceAliases();
+            const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Ctor) { ecToast('Voice input is not supported on this browser.', { type: 'error' }); return; }
+            const btn = document.getElementById('mic-btn-bottom');
+            const rec = new Ctor();
+            quickVoiceRec = rec;
+            rec.lang = 'en-CA';
+            rec.continuous = false;    // the phone ends listening itself when you stop talking
+            rec.interimResults = true; // words as they come, so a sure match is added straight away
+            rec.maxAlternatives = 5;
+            let finished = false, finalText = '', noSpeech = null;
+            const finish = async (text) => {
+                if (finished) return;
+                finished = true;
+                clearTimeout(noSpeech);
+                if (quickVoiceRec === rec) quickVoiceRec = null;
+                btn.classList.remove('is-listening');
+                try { rec.abort(); } catch (e) {}
+                if (!text) { ecToast("Didn't hear a name. Tap the mic and try again.", { type: 'error' }); return; }
+                const rows = matchSpokenNames(text);
+                const names = rows.filter(r => r.pick && addressData[r.pick]).map(r => r.pick);
+                const missing = rows.filter(r => !r.pick).map(r => r.heard);
+                for (const name of names) {
+                    selectClient(name);
+                    await addJob();
+                }
+                resetFormFields();
+                if (missing.length) ecToast(`Couldn't find "${missing.join('", "')}". Teach it with the Teach button at the top.`, { type: 'error', duration: 6000 });
+            };
+            rec.onresult = ev => {
+                if (finished) return;
+                const parts = [], interim = [];
+                for (let i = 0; i < ev.results.length; i++) {
+                    const res = ev.results[i];
+                    if (res.isFinal) {
+                        const guesses = Array.from({ length: res.length }, (_, k) => res[k] && res[k].transcript.trim()).filter(Boolean);
+                        parts.push(bestGuess(guesses));
+                    } else if (res[0]) interim.push(res[0].transcript);
+                }
+                finalText = parts.filter(Boolean).join(' ');
+                if (interim.length === 0) { finish(finalText); return; }
+                // Still talking: add now if the words so far are a sure match
+                const soFar = (finalText + ' ' + interim.join(' ')).trim();
+                if (sureVoiceMatch(soFar)) finish(soFar);
+            };
+            rec.onerror = ev => { if (ev && ev.error === 'not-allowed') ecToast('The microphone is blocked for this page. Allow it in the browser settings.', { type: 'error' }); };
+            rec.onend = () => { if (!finished) finish(finalText); };
+            btn.classList.add('is-listening');
+            try {
+                rec.start();
+                noSpeech = setTimeout(() => { try { rec.stop(); } catch (e) {} }, 7000); // nothing said in 7 s: stop
+            } catch (e) { quickVoiceRec = null; btn.classList.remove('is-listening'); }
+        }
+        // Hold the mic button: the "Add several stops" sheet
+        (function setupMicHold() {
+            const btn = document.getElementById('mic-btn-bottom');
+            if (!btn) return;
+            let timer = null;
+            const cancel = () => { clearTimeout(timer); timer = null; };
+            btn.addEventListener('pointerdown', () => { cancel(); timer = setTimeout(() => { timer = null; micHoldUntil = Date.now() + 700; openMultiAdd(false); }, 550); });
+            ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => btn.addEventListener(t, cancel));
+            btn.addEventListener('contextmenu', e => e.preventDefault());
+        })();
+        // Words that are a customer's whole name or a taught phrase, and not the start of a longer name
+        function sureVoiceMatch(text) {
+            const norm = normName(text);
+            if (!norm) return false;
+            const idx = customerIndex();
+            const alias = voiceAliases[norm] && addressData[voiceAliases[norm]];
+            if (!idx.exact[norm] && !alias) return false;
+            return !idx.startsLonger[norm];
+        }
+
+        // ---- Sound-alike matching (same as Route Planner) ----
+        // Letters that sound alike share a code and vowels are dropped, so "virden", "burden"
+        // and "verdun" all match.
+        function soundKey(word) {
+            let w = String(word || '').toLowerCase().replace(/[^a-z]/g, '');
+            if (!w) return '';
+            w = w.replace(/ph/g, 'f').replace(/ck/g, 'k').replace(/^kn/, 'n').replace(/^wr/, 'r').replace(/^ps/, 's').replace(/gh/g, 'g');
+            const code = { b: '1', f: '1', p: '1', v: '1', c: '2', g: '2', j: '2', k: '2', q: '2', s: '2', x: '2', z: '2', d: '3', t: '3', l: '4', m: '5', n: '5', r: '6' };
+            let out = '', last = '';
+            for (const ch of w) {
+                const c = code[ch] || '';
+                if (c && c !== last) out += c;
+                last = c;
+            }
+            return out;
+        }
+        function editDistance(a, b) {
+            if (a === b) return 0;
+            const prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+            for (let i = 1; i <= a.length; i++) {
+                let diag = prev[0];
+                prev[0] = i;
+                for (let j = 1; j <= b.length; j++) {
+                    const tmp = prev[j];
+                    prev[j] = Math.min(prev[j] + 1, prev[j - 1] + 1, diag + (a[i - 1] === b[j - 1] ? 0 : 1));
+                    diag = tmp;
+                }
+            }
+            return prev[b.length];
+        }
+        // Customer names worked out once each time the address book loads
+        let customerIndexFor = null, customerIndexCache = null;
+        function customerIndex() {
+            if (customerIndexCache && customerIndexFor === addressData) return customerIndexCache;
+            const list = [], exact = {}, startsLonger = {};
+            Object.keys(addressData).forEach(name => {
+                const norm = normName(name);
+                if (!norm) return;
+                const words = norm.split(' ').filter(w => w && w !== 'and' && w !== 'the');
+                const joined = words.join('');
+                list.push({ name, norm, words, keys: words.map(soundKey), joined, joinedKey: soundKey(joined) });
+                if (!exact[norm] || norm.length > normName(exact[norm]).length) exact[norm] = name;
+                const all = norm.split(' ');
+                for (let i = 1; i < all.length; i++) startsLonger[all.slice(0, i).join(' ')] = true;
+            });
+            customerIndexFor = addressData;
+            customerIndexCache = { list, exact, startsLonger };
+            return customerIndexCache;
+        }
+        function likeness(a, b) { const m = Math.max(a.length, b.length); return m === 0 ? 0 : 1 - editDistance(a, b) / m; }
+        function wordLikeness(heard, have, heardKey, haveKey) {
+            if (heard === have) return 1;
+            if (heard.length >= 3 && have.length >= 3 && (have.startsWith(heard) || heard.startsWith(have))) return 0.9;
+            const ka = heardKey !== undefined ? heardKey : soundKey(heard), kb = haveKey !== undefined ? haveKey : soundKey(have);
+            const could = (x, y, need) => 1 - Math.abs(x.length - y.length) / Math.max(x.length, y.length) >= need;
+            let best = could(heard, have, 0.6) ? likeness(heard, have) : 0;
+            if (ka.length >= 2 && ka === kb) best = Math.max(best, 0.85);
+            else if (ka.length >= 3 && kb.length >= 3 && could(ka, kb, 0.75)) best = Math.max(best, likeness(ka, kb) * 0.8);
+            return best;
+        }
+        function closestCustomers(words, count) {
+            const want = words.filter(w => w.length > 1 && w !== 'and' && w !== 'the');
+            if (want.length === 0) return [];
+            const wantJoined = want.join('');
+            const wantKeys = want.map(soundKey);
+            const wantJoinedKey = soundKey(wantJoined);
+            return customerIndex().list.map(c => {
+                const name = c.name, have = c.words;
+                if (have.length === 0) return { name, score: 0 };
+                let total = 0;
+                want.forEach((w, wi) => {
+                    let best = 0;
+                    have.forEach((h, hi) => { if (best < 1) best = Math.max(best, wordLikeness(w, h, wantKeys[wi], c.keys[hi])); });
+                    if (best >= 0.6) total += best;
+                });
+                let score = (2 * total) / (want.length + have.length);
+                const joined = Math.max(likeness(wantJoined, c.joined), wantJoinedKey.length >= 3 ? likeness(wantJoinedKey, c.joinedKey) * 0.85 : 0);
+                if (joined >= 0.7) score = Math.max(score, joined);
+                return { name, score };
+            }).filter(x => x.score >= 0.25).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name)).slice(0, count || 5);
+        }
+        function guessScore(text) {
+            const norm = normName(text);
+            if (!norm) return 0;
+            if (voiceAliases[norm] && addressData[voiceAliases[norm]]) return 1.01;
+            if (customerIndex().exact[norm]) return 1;
+            const close = closestCustomers(norm.split(' '), 1);
+            return close.length ? close[0].score : 0;
+        }
+        function bestGuess(guesses) {
+            let best = guesses[0] || '', bestScore = -1;
+            for (const g of guesses) {
+                const sc = guessScore(g);
+                if (sc > bestScore + 0.02) { best = g; bestScore = sc; }
+                if (bestScore >= 1) break;
+            }
+            return best;
+        }
+        // Rows for what was said or pasted: { heard, pick, kind: 'ok'|'check'|'missing', options, on }
+        function matchSpokenNames(text) {
+            const idx = customerIndex();
+            if (!idx.byLength) idx.byLength = idx.list.slice().sort((a, b) => b.norm.length - a.norm.length);
+            const names = idx.byLength;
+            const exact = idx.exact;
+            const rows = [];
+            const addRow = (heard, pick, kind, options) => rows.push({ heard, pick, kind, options: options || (pick ? [pick] : []), on: kind !== 'missing' });
+            const aliasFor = norm => (voiceAliases[norm] && addressData[voiceAliases[norm]]) ? voiceAliases[norm] : null;
+            String(text || '').split(/[\n,;]+|\b(?:next|then)\b/i).map(t => t.trim()).filter(Boolean).forEach(piece => {
+                const norm = normName(piece);
+                if (!norm) return;
+                if (exact[norm]) { addRow(piece, exact[norm], 'ok'); return; }
+                if (aliasFor(norm)) { const a = aliasFor(norm); addRow(piece, a, 'ok', [a].concat(closestCustomers(norm.split(' '), 4).map(c => c.name).filter(n => n !== a))); return; }
+                let rest = ' ' + norm + ' ';
+                const found = [];
+                names.forEach(x => {
+                    const at = rest.indexOf(' ' + x.norm + ' ');
+                    if (x.norm.length < 3 || at === -1) return;
+                    found.push({ at, name: x.name });
+                    rest = rest.slice(0, at + 1) + '#'.repeat(x.norm.length) + rest.slice(at + 1 + x.norm.length);
+                });
+                found.sort((a, b) => a.at - b.at).forEach(f => addRow(f.name, f.name, 'ok'));
+                const leftover = rest.split(' ').filter(w => w && !/^#+$/.test(w) && w !== 'and');
+                if (leftover.length > 0 && (found.length === 0 || leftover.join('').length >= 3)) {
+                    const leftNorm = leftover.join(' ');
+                    if (aliasFor(leftNorm)) { addRow(leftNorm, aliasFor(leftNorm), 'ok'); return; }
+                    const close = closestCustomers(leftover, 5);
+                    if (close.length > 0 && close[0].score >= 0.4) addRow(leftover.join(' '), close[0].name, 'check', close.map(c => c.name));
+                    else addRow(found.length ? leftover.join(' ') : piece, '', 'missing', close.map(c => c.name));
+                }
+            });
+            return rows;
+        }
+
+        // ---------- ADD SEVERAL STOPS (hold the mic: say or paste names) ----------
+        let multiAddDownOnBackdrop = false;
+        let multiAddRecognition = null;
+        let multiAddMatchTimer = null;
+        let multiAddRows = [];
+        function openMultiAdd(listenNow) {
+            listenVoiceAliases();
+            document.getElementById('multi-add-text').value = '';
+            document.getElementById('multi-add-heard').hidden = true;
+            multiAddRows = [];
+            renderMultiAddRows();
+            const overlay = document.getElementById('multi-add-overlay');
+            ecCancelClose(overlay);
+            overlay.classList.add('is-open');
+            const canListen = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+            document.getElementById('multi-add-mic').hidden = !canListen;
+            if (listenNow && canListen) startMultiAddListening();
+            else setTimeout(() => document.getElementById('multi-add-text').focus(), 60);
+        }
+        function closeMultiAdd() {
+            stopMultiAddListening();
+            const overlay = document.getElementById('multi-add-overlay');
+            if (!overlay.classList.contains('is-open')) return;
+            ecAnimateClose(overlay, () => overlay.classList.remove('is-open'));
+        }
+        function toggleMultiAddListening() {
+            if (multiAddRecognition) stopMultiAddListening(); else startMultiAddListening();
+        }
+        function stopMultiAddListening() {
+            if (multiAddRecognition) { try { multiAddRecognition.stop(); } catch (e) {} }
+        }
+        function startMultiAddListening() {
+            const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Ctor) { ecToast('Voice input is not supported on this browser. Type or paste the names instead.', { type: 'error' }); return; }
+            const rec = new Ctor();
+            multiAddRecognition = rec;
+            rec.continuous = true;
+            rec.interimResults = true;
+            rec.lang = 'en-CA';
+            rec.maxAlternatives = 5;
+            const heardEl = document.getElementById('multi-add-heard');
+            const textEl = document.getElementById('multi-add-text');
+            const micEl = document.getElementById('multi-add-mic');
+            let silence = null;
+            const quiet = () => { clearTimeout(silence); silence = setTimeout(() => rec.stop(), 6000); };
+            let used = 0;
+            rec.onresult = ev => {
+                let interim = '';
+                for (let i = used; i < ev.results.length; i++) {
+                    const r = ev.results[i];
+                    if (r.isFinal) {
+                        const guesses = Array.from({ length: r.length }, (_, k) => r[k] && r[k].transcript.trim()).filter(Boolean);
+                        const said = bestGuess(guesses);
+                        if (said) textEl.value = (textEl.value.trim() ? textEl.value.trim() + '\n' : '') + said;
+                        used = i + 1;
+                    } else interim += r[0].transcript;
+                }
+                heardEl.hidden = !interim;
+                heardEl.textContent = interim ? 'Hearing: ' + interim : '';
+                quiet();
+                scheduleMultiAddMatch();
+            };
+            rec.onerror = ev => { if (ev && ev.error === 'not-allowed') ecToast('The microphone is blocked for this page. Allow it in the browser settings, or type the names.', { type: 'error' }); };
+            rec.onend = () => {
+                clearTimeout(silence);
+                if (multiAddRecognition === rec) multiAddRecognition = null;
+                heardEl.hidden = true;
+                micEl.classList.remove('is-listening');
+                runMultiAddMatch();
+            };
+            micEl.classList.add('is-listening');
+            try { rec.start(); quiet(); } catch (e) { multiAddRecognition = null; micEl.classList.remove('is-listening'); }
+        }
+        function scheduleMultiAddMatch() {
+            clearTimeout(multiAddMatchTimer);
+            multiAddMatchTimer = setTimeout(runMultiAddMatch, 250);
+        }
+        function runMultiAddMatch() {
+            multiAddRows = matchSpokenNames(document.getElementById('multi-add-text').value);
+            renderMultiAddRows();
+        }
+        function renderMultiAddRows() {
+            const box = document.getElementById('multi-add-results');
+            box.innerHTML = multiAddRows.map((r, i) => {
+                const opts = ['<option value="">Skip</option>'].concat(r.options.map(n => `<option value="${ecEscapeHtml(n)}"${n === r.pick ? ' selected' : ''}>${ecEscapeHtml(n)}</option>`)).join('');
+                const note = r.kind === 'ok' ? '' : (r.kind === 'check' ? `Heard "${ecEscapeHtml(r.heard)}". Check this is right` : `"${ecEscapeHtml(r.heard)}" not found${r.options.length ? '. Pick one or skip' : '. Add it by hand'}`);
+                return `<div class="multi-row is-${r.kind}">
+                    <input type="checkbox" ${r.on && r.pick ? 'checked' : ''} ${r.options.length ? '' : 'disabled'} onchange="multiAddRows[${i}].on = this.checked; updateMultiAddButton()" aria-label="Add this stop">
+                    <div class="multi-row-body">
+                        ${r.options.length > 1 || r.kind !== 'ok' ? `<select onchange="multiAddRows[${i}].pick = this.value; multiAddRows[${i}].on = !!this.value; renderMultiAddRows()">${opts}</select>` : `<div class="multi-row-name">${ecEscapeHtml(r.pick)}</div>`}
+                        ${note ? `<div class="multi-row-heard">${note}</div>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+            updateMultiAddButton();
+        }
+        function multiAddChosen() { return multiAddRows.filter(r => r.on && r.pick && addressData[r.pick]).map(r => r.pick); }
+        function updateMultiAddButton() {
+            const n = multiAddChosen().length;
+            const btn = document.getElementById('multi-add-go');
+            btn.disabled = n === 0;
+            btn.textContent = n === 0 ? 'Add stops' : `Add ${n} stop${n === 1 ? '' : 's'}`;
+        }
+        async function confirmMultiAdd() {
+            const chosen = multiAddChosen();
+            if (chosen.length === 0) return;
+            // Remember what was heard for any name that needed checking or picking (shared with Route Planner)
+            multiAddRows.forEach(r => {
+                const heard = normName(r.heard);
+                if (!r.on || !r.pick || !addressData[r.pick] || r.kind === 'ok' || !heard || heard.length > 80) return;
+                if (heard === normName(r.pick)) return;
+                voiceAliases[heard] = r.pick;
+                db.ref(VOICE_ALIASES_PATH + '/' + heard).set(r.pick).catch(err => console.warn('Voice alias not saved:', err && err.message));
+            });
+            closeMultiAdd();
+            for (const name of chosen) {
+                selectClient(name);
+                await addJob();
+            }
+            resetFormFields();
+            ecToast(`Added ${chosen.length} stop${chosen.length === 1 ? '' : 's'}.`);
+        }
+
+        // ---------- TEACH THE MIC (header button) ----------
+        // Record a customer's name; every way the phone wrote it down is sent straight to that
+        // customer from then on. Same data as Route Planner's Teach the mic.
+        let voiceLearnRec = null;
+        let voiceLearnDownOnBackdrop = false;
+        function openVoiceLearner() {
+            listenVoiceAliases();
+            voiceLearnStatus('');
+            renderVoiceLearnKnown();
+            const overlay = document.getElementById('voice-learn-overlay');
+            ecCancelClose(overlay);
+            overlay.classList.add('is-open');
+            setTimeout(() => { const el = document.getElementById('voice-learn-name'); if (el && !el.value) el.focus(); }, 60);
+        }
+        function closeVoiceLearner() {
+            if (voiceLearnRec) { try { voiceLearnRec.stop(); } catch (e) {} }
+            const overlay = document.getElementById('voice-learn-overlay');
+            if (!overlay.classList.contains('is-open')) return;
+            ecAnimateClose(overlay, () => overlay.classList.remove('is-open'));
+        }
+        function voiceLearnPick(name) {
+            document.getElementById('voice-learn-name').value = name;
+            document.getElementById('voice-learn-suggest').style.display = 'none';
+            renderVoiceLearnKnown();
+        }
+        function renderVoiceLearnKnown() {
+            const box = document.getElementById('voice-learn-known');
+            const name = ecFindContactKey(document.getElementById('voice-learn-name').value);
+            const heard = name ? Object.keys(voiceAliases).filter(h => voiceAliases[h] === name) : [];
+            box.hidden = heard.length === 0;
+            box.innerHTML = heard.length ? `<div class="vl-known-title">Already taught</div><div class="vl-chips">${heard.map(h => `<span class="vl-chip">${ecEscapeHtml(h)}<button type="button" aria-label="Forget ${ecEscapeHtml(h)}" data-heard="${ecEscapeHtml(h)}" onclick="forgetVoiceAlias(this.dataset.heard)">✕</button></span>`).join('')}</div>` : '';
+        }
+        function forgetVoiceAlias(heard) {
+            if (!heard || /[.#$\[\]\/]/.test(heard)) return;
+            delete voiceAliases[heard];
+            db.ref(VOICE_ALIASES_PATH + '/' + heard).remove().catch(err => voiceLearnStatus(ecVoiceSaveError(err), true));
+            renderVoiceLearnKnown();
+        }
+        function voiceLearnSuggest(val) {
+            const box = document.getElementById('voice-learn-suggest');
+            const matches = ecMatchList(val, Object.keys(addressData)).slice(0, 6);
+            if (matches.length === 0) { box.style.display = 'none'; return; }
+            box.innerHTML = matches.map(n => `<div class="suggestion-item" data-name="${ecEscapeHtml(n)}" onmousedown="event.preventDefault()" onclick="voiceLearnPick(this.dataset.name)">${ecEscapeHtml(n)}</div>`).join('');
+            box.style.display = 'block';
+        }
+        function voiceLearnStatus(text, isError) {
+            const el = document.getElementById('voice-learn-status');
+            el.hidden = !text;
+            el.textContent = text || '';
+            el.classList.toggle('is-error', !!isError);
+            el.classList.toggle('is-ok', !isError && /^Saved/.test(text || ''));
+        }
+        function voiceLearnRecord() {
+            if (voiceLearnRec) { try { voiceLearnRec.stop(); } catch (e) {} return; }
+            listenVoiceAliases();
+            const typed = document.getElementById('voice-learn-name').value.trim();
+            const name = ecFindContactKey(typed);
+            if (!name) { voiceLearnStatus(typed ? `"${typed}" isn't in your customers. Pick one from the list.` : 'Pick a customer first.', true); return; }
+            const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Ctor) { voiceLearnStatus('Voice input is not supported on this browser.', true); return; }
+            const rec = new Ctor();
+            voiceLearnRec = rec;
+            rec.lang = 'en-CA';
+            rec.continuous = false;
+            rec.interimResults = false;
+            rec.maxAlternatives = 5;
+            const btn = document.getElementById('voice-learn-btn');
+            const label = document.getElementById('voice-learn-btn-label');
+            btn.classList.add('is-listening');
+            label.textContent = 'Listening… tap to stop';
+            voiceLearnStatus('');
+            let got = false;
+            rec.onresult = ev => {
+                const r = ev.results[0];
+                if (!r) return;
+                const heard = Array.from({ length: r.length }, (_, k) => r[k] && normName(r[k].transcript)).filter(h => h && h.length <= 80);
+                const unique = Array.from(new Set(heard)).filter(h => h !== normName(name));
+                got = true;
+                if (unique.length === 0) { voiceLearnStatus(`Saved. The phone already hears "${name}" correctly.`); return; }
+                const updates = {};
+                unique.forEach(h => { updates[h] = name; voiceAliases[h] = name; });
+                db.ref(VOICE_ALIASES_PATH).update(updates)
+                    .then(() => { voiceLearnStatus(`Saved. Saying "${name}" with the mic should now find them.`); renderVoiceLearnKnown(); })
+                    .catch(err => voiceLearnStatus(ecVoiceSaveError(err), true));
+            };
+            rec.onerror = ev => { if (ev && ev.error === 'not-allowed') voiceLearnStatus('The microphone is blocked for this page. Allow it in the browser settings.', true); };
+            rec.onend = () => {
+                if (voiceLearnRec === rec) voiceLearnRec = null;
+                btn.classList.remove('is-listening');
+                label.textContent = 'Tap to record';
+                if (!got && !document.getElementById('voice-learn-status').classList.contains('is-error')) voiceLearnStatus("Didn't hear anything. Tap the mic and try again.", true);
+            };
+            try { rec.start(); } catch (e) { voiceLearnRec = null; btn.classList.remove('is-listening'); label.textContent = 'Tap to record'; }
+        }
+
         async function logOut() {
             closeMenu();
             const unsynced = ecHasUnsyncedChanges();
@@ -2228,8 +3106,25 @@
             }
         }
 
-        // ---------- UPDATE NOTIFICATION (return button + pickup & delivery + route fixes) ----------
-        const UPDATE_NOTIFICATION_ID = 'one_way_route_order_v1';
+        // ---------- UPDATE NOTIFICATION (how to use the Map, Mic and Teach buttons) ----------
+        // The how-to pop-up has three short pages (Map, Mic, Teach): NEXT / Back move between
+        // them, GOT IT on the last one.
+        const EC_WN_PAGES = 3;
+        let ecWnAt = 1;
+        function ecWnPage(n) {
+            const box = document.querySelector('.wn-howto');
+            if (!box) return;
+            ecWnAt = Math.max(1, Math.min(EC_WN_PAGES, n));
+            box.querySelectorAll('[data-wn-page]').forEach(sec => { sec.hidden = sec.getAttribute('data-wn-page') !== String(ecWnAt); });
+            box.querySelectorAll('.wn-dots i').forEach((dot, i) => dot.classList.toggle('is-on', i === ecWnAt - 1));
+            const last = ecWnAt === EC_WN_PAGES;
+            document.getElementById('wn-count').textContent = ecWnAt + ' of ' + EC_WN_PAGES;
+            document.getElementById('wn-back').hidden = ecWnAt === 1;
+            document.getElementById('wn-next').hidden = last;
+            document.getElementById('update-notification-mark-read-btn').hidden = !last;
+            box.scrollTop = 0;
+        }
+        const UPDATE_NOTIFICATION_ID = 'planner_layout_v1';
         function checkUpdateNotification() {
             if (!currentRouteKey) return;
             const askedAt = Date.now();
@@ -2459,6 +3354,7 @@
 
             db.ref('address_lookup').on('value', snap => {
                 addressData = snap.val() || {};
+                listenVoiceAliases();
                 // The whole book changes often; only redraw the stop list when something it
                 // shows changed (which stops have a note) (#19).
                 const sig = ecNoteSignature();
@@ -3861,6 +4757,32 @@
             const snap = ecSnapshotList(container);
             container.innerHTML = html;
             ecAnimateList(container, snap);
+            ecMaybeAddBurst(container);
+        }
+
+        // A stop just added (or matched as a duplicate): the same blue burst from the card as
+        // Route Planner, once per stop, and it's brought into view if it's off screen.
+        let ecBurstShownFor = null;
+        function ecMaybeAddBurst(container) {
+            if (!lastAddedJobId || ecBurstShownFor === lastAddedJobId) return;
+            const item = container.querySelector('.job-item.job-item-new');
+            if (!item) return;
+            ecBurstShownFor = lastAddedJobId;
+            item.classList.add('pop');
+            const r = item.getBoundingClientRect();
+            if (r.top < 70 || r.bottom > window.innerHeight) item.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            const box = item.getBoundingClientRect();
+            const size = Math.max(window.innerWidth, window.innerHeight) * 1.3;
+            ['', ' ring'].forEach(extra => {
+                const b = document.createElement('div');
+                b.className = 'add-burst' + extra;
+                b.style.left = (box.left + box.width / 2) + 'px';
+                b.style.top = (Math.min(Math.max(box.top, 70), window.innerHeight - 40) + box.height / 2) + 'px';
+                b.style.width = b.style.height = (extra ? size * 0.7 : size) + 'px';
+                document.body.appendChild(b);
+                setTimeout(() => b.remove(), 1000);
+            });
         }
 
         // ---------- TOGGLE CHECKED ----------
@@ -4909,6 +5831,7 @@
         // Briefly highlights a stop in the list (a stop just added, or the one a duplicate matched).
         function ecFlashStop(id) {
             lastAddedJobId = id;
+            ecBurstShownFor = null;
             if (lastAddedJobClearTimer) clearTimeout(lastAddedJobClearTimer);
             lastAddedJobClearTimer = setTimeout(() => {
                 lastAddedJobId = null;
