@@ -1340,6 +1340,38 @@
         .add-burst.ring { background: none; border: 4px solid rgba(96, 165, 250, 0.85); animation-duration: 0.9s; }
         @keyframes add-burst { 0% { transform: translate(-50%, -50%) scale(0); opacity: 1; } 70% { opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
 
+        /* ---------- What's new: how to use the new layout ---------- */
+        .wn-howto { max-width: 420px; padding: 18px 18px 16px; }
+        .wn-howto .update-notification-header { margin-bottom: 12px; padding-bottom: 12px; }
+        .wn-count { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--text-3); }
+        .wn-title { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.01em; color: var(--text); }
+        .wn-lead { margin: 3px 0 12px; font-size: 13.5px; line-height: 1.4; color: var(--text-2); }
+        .wn-shot { position: relative; border-radius: 14px; overflow: hidden; border: 1px solid var(--border-strong); background: #07090f; }
+        .wn-shot img { display: block; width: 100%; height: auto; }
+        .wn-ring { position: absolute; border: 2.5px solid #f5c518; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.45), 0 0 16px rgba(245, 197, 24, 0.55); pointer-events: none; }
+        .wn-num {
+            display: inline-grid; place-items: center; flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+            background: #f5c518; color: #1a1300; font-size: 12px; font-weight: 800; font-style: normal; line-height: 1;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+        }
+        .wn-ring .wn-num { position: absolute; }
+        .wn-at-b { left: 50%; bottom: -13px; transform: translateX(-50%); }
+        .wn-at-t { left: 50%; top: -13px; transform: translateX(-50%); }
+        .wn-at-l { left: -13px; top: 50%; transform: translateY(-50%); }
+        .wn-at-r { right: -13px; top: 50%; transform: translateY(-50%); }
+        .wn-steps { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+        .wn-steps li { display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; line-height: 1.4; color: var(--text-2); }
+        .wn-steps li strong { color: var(--text); font-weight: 800; }
+        .wn-tip { margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; border: 1px dashed var(--border-strong); font-size: 13px; line-height: 1.4; color: var(--text-2); }
+        .wn-tip b { color: var(--text); }
+        /* Next / GOT IT stay in view while a long page scrolls */
+        .wn-footer { position: sticky; bottom: -16px; z-index: 2; align-items: center; gap: 10px; margin: 12px -18px -16px; padding: 12px 18px 16px; background: var(--surface); border-top: 1px solid var(--border); }
+        .wn-dots { display: flex; gap: 6px; margin-right: auto; }
+        .wn-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); }
+        .wn-dots i.is-on { width: 20px; border-radius: 4px; background: var(--accent); }
+        .wn-back { min-height: 44px; padding: 0 16px; border-radius: var(--radius); border: 1px solid var(--border-strong); background: transparent; color: var(--text); font-size: 14px; font-weight: 700; cursor: pointer; }
+        .wn-howto [hidden] { display: none !important; }
+
         @media (prefers-reduced-motion: reduce) {
             .add-burst { display: none; }
             .job-item.job-item-new.pop { animation: job-item-new-pulse 3.2s ease-out forwards; }
@@ -1378,22 +1410,32 @@
         <p id="ec-login-status" class="ec-login-status" role="status" aria-live="polite"></p>
     </div>
 
-    <!-- Update Notification Overlay -->
+    <!-- Update Notification Overlay: how to use the new layout (two pages) -->
     <div id="update-notification-overlay">
-        <div class="update-notification-box">
+        <div class="update-notification-box wn-howto" data-page="1">
             <div class="update-notification-header">
                 <img src="icon2.png" class="update-notification-icon" alt="Logo">
                 <span class="update-notification-title">WHAT'S NEW</span>
+                <span class="wn-count" id="wn-count">1 of 2</span>
             </div>
-            <div class="update-notification-body">
-                <div class="update-notification-feature">
-                    <div class="update-notification-feature-title">🧭 Stop order ends at your last stop</div>
-                    <p>AUTO-OPTIMIZE now plans the shortest drive from where you are to your last stop. The drive back to the shop no longer changes the order, so a stop near the shop isn't pushed to the end.</p>
-                    <p>New stops added to a numbered route are placed the same way.</p>
-                </div>
-            </div>
-            <div class="update-notification-footer">
-                <button id="update-notification-mark-read-btn" class="update-notification-btn" onclick="markUpdateNotificationRead()">GOT IT</button>
+            <section class="wn-page" data-wn-page="1">
+                <h3 class="wn-title">Your new layout</h3>
+                <p class="wn-lead">Route Helper now works like Route Planner. Here's every button.</p>
+                <div class="wn-shot"><img src="howto-top.jpg" alt="Route Helper with the top and side buttons circled" width="780" height="890"><span class="wn-ring" style="left:40.66%;top:0.90%;width:14.36%;height:12.13%;border-radius:12px"><b class="wn-num wn-at-b">1</b></span><span class="wn-ring" style="left:54.50%;top:0.90%;width:14.73%;height:12.13%;border-radius:12px"><b class="wn-num wn-at-b">2</b></span><span class="wn-ring" style="left:68.72%;top:0.90%;width:14.36%;height:12.13%;border-radius:12px"><b class="wn-num wn-at-b">3</b></span><span class="wn-ring" style="left:82.56%;top:0.90%;width:14.36%;height:12.13%;border-radius:12px"><b class="wn-num wn-at-b">4</b></span><span class="wn-ring" style="left:82.05%;top:56.85%;width:15.90%;height:13.93%;border-radius:20px"><b class="wn-num wn-at-l">5</b></span><span class="wn-ring" style="left:83.08%;top:71.24%;width:13.85%;height:12.13%;border-radius:17px"><b class="wn-num wn-at-l">6</b></span><span class="wn-ring" style="left:82.05%;top:83.82%;width:15.90%;height:13.93%;border-radius:20px"><b class="wn-num wn-at-l">7</b></span></div>
+                <ol class="wn-steps"><li><b class="wn-num">1</b><div><strong>Teach.</strong> The mic keeps getting a customer wrong? Pick the customer, tap record and say the name 2 or 3 times.</div></li><li><b class="wn-num">2</b><div><strong>Navigate.</strong> Opens your whole route in Google Maps, in stop order.</div></li><li><b class="wn-num">3</b><div><strong>Return.</strong> Tap to drive back to the shop. Hold it to pick a different return spot.</div></li><li><b class="wn-num">4</b><div><strong>Settings.</strong> Light or dark look, send feedback, log out.</div></li><li><b class="wn-num">5</b><div><strong>Map.</strong> Glows blue when stops need numbers. Tap it, then tap the pins in the order you'll drive (or AUTO-OPTIMIZE).</div></li><li><b class="wn-num">6</b><div><strong>Clear.</strong> Removes every stop from your list. It asks first.</div></li><li><b class="wn-num">7</b><div><strong>Mic.</strong> Tap and say a customer's name: the stop is added. Hold it to say or paste several names at once.</div></li></ol>
+            </section>
+            <section class="wn-page" data-wn-page="2" hidden>
+                <h3 class="wn-title">Your stops</h3>
+                <p class="wn-lead">Each stop is smaller now, so more fit on the screen.</p>
+                <div class="wn-shot"><img src="howto-stops.jpg" alt="Three stops with their buttons circled" width="668" height="372"><span class="wn-ring" style="left:5.69%;top:40.32%;width:10.78%;height:19.35%;border-radius:10px"><b class="wn-num wn-at-l">8</b></span><span class="wn-ring" style="left:15.87%;top:67.74%;width:12.57%;height:26.88%;border-radius:12px"><b class="wn-num wn-at-b">9</b></span><span class="wn-ring" style="left:28.14%;top:8.38%;width:51.50%;height:20.87%;border-radius:8px"><b class="wn-num wn-at-r">10</b></span><span class="wn-ring" style="left:80.54%;top:38.17%;width:13.17%;height:23.66%;border-radius:12px"><b class="wn-num wn-at-r">11</b></span></div>
+                <ol class="wn-steps"><li><b class="wn-num">8</b><div><strong>Number.</strong> Tap to read or add notes for that customer. Blue means there's a note.</div></li><li><b class="wn-num">9</b><div><strong>P / D.</strong> Tap to switch between Pickup, Delivery or both. New stops start as Delivery.</div></li><li><b class="wn-num">10</b><div><strong>Name.</strong> Tap to navigate to just that stop.</div></li><li><b class="wn-num">11</b><div><strong>Check box.</strong> Tap when the stop is done. It moves down to the Done list.</div></li><li><b class="wn-num">12</b><div><strong>Hold a stop.</strong> Edit the customer or delete the stop.</div></li></ol>
+                <p class="wn-tip">Adding by hand works the same: type the name, pick it from the list, tap <b>ADD TO ROUTE</b>.</p>
+            </section>
+            <div class="update-notification-footer wn-footer">
+                <span class="wn-dots" aria-hidden="true"><i class="is-on"></i><i></i></span>
+                <button type="button" class="wn-back" id="wn-back" onclick="ecWnPage(1)" hidden>Back</button>
+                <button type="button" class="update-notification-btn" id="wn-next" onclick="ecWnPage(2)">NEXT</button>
+                <button id="update-notification-mark-read-btn" class="update-notification-btn" onclick="markUpdateNotificationRead()" hidden>GOT IT</button>
             </div>
         </div>
     </div>
@@ -3059,8 +3101,21 @@
             }
         }
 
-        // ---------- UPDATE NOTIFICATION (return button + pickup & delivery + route fixes) ----------
-        const UPDATE_NOTIFICATION_ID = 'one_way_route_order_v1';
+        // ---------- UPDATE NOTIFICATION (how to use the Route Planner style layout) ----------
+        // The how-to pop-up has two pages: Next / Back move between them, GOT IT on the last one.
+        function ecWnPage(n) {
+            const box = document.querySelector('.wn-howto');
+            if (!box) return;
+            box.querySelectorAll('[data-wn-page]').forEach(sec => { sec.hidden = sec.getAttribute('data-wn-page') !== String(n); });
+            box.querySelectorAll('.wn-dots i').forEach((dot, i) => dot.classList.toggle('is-on', i === n - 1));
+            const last = n === 2;
+            document.getElementById('wn-count').textContent = n + ' of 2';
+            document.getElementById('wn-back').hidden = !last;
+            document.getElementById('wn-next').hidden = last;
+            document.getElementById('update-notification-mark-read-btn').hidden = !last;
+            box.scrollTop = 0;
+        }
+        const UPDATE_NOTIFICATION_ID = 'planner_layout_v1';
         function checkUpdateNotification() {
             if (!currentRouteKey) return;
             const askedAt = Date.now();

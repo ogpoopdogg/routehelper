@@ -9,14 +9,16 @@
 //     copy, the saved copy is replaced and the open app is told, so it can offer a Refresh
 //     (index.html shows "A new version of Route Helper is ready"). The next open uses it.
 // Bumping CACHE_NAME also deletes the old cache.
-const CACHE_NAME = 'ec-route-helper-v6';
+const CACHE_NAME = 'ec-route-helper-v7';
 const APP_SHELL = [
     './',
     './index.html',
     './manifest.json',
     './icon2.png',
     './icon-192.png',
-    './apple-touch-icon.png'
+    './apple-touch-icon.png',
+    './howto-top.jpg',
+    './howto-stops.jpg'
 ];
 // Code and fonts from other sites that the page needs before it can start. The Firebase
 // files never change at a given version number, so a saved copy is always right.
