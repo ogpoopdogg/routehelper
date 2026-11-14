@@ -1181,30 +1181,35 @@
         #job-list { gap: 4px; }
 
         .job-item {
-            gap: 6px; min-height: 52px; padding: 4px 0 4px 6px; border-radius: 12px;
+            gap: calc(6px * var(--ec-stop, 1)); min-height: calc(52px * var(--ec-stop, 1)); padding: calc(4px * var(--ec-stop, 1)) 0 calc(4px * var(--ec-stop, 1)) calc(6px * var(--ec-stop, 1)); border-radius: 12px;
             background: var(--surface-2); border-color: var(--border); box-shadow: none;
         }
         .job-item::after { display: none; } /* the P / D button shows the type */
+        /* Stop size (Settings): scales the whole stop card - text, number, P / D button and check box */
+        body.ec-stop-size-1 { --ec-stop: 0.85; }
+        body.ec-stop-size-3 { --ec-stop: 1.2; }
+        body.ec-stop-size-4 { --ec-stop: 1.4; }
         .job-number {
-            width: 28px; height: 28px; border: none; border-radius: 8px;
-            font-size: 13px; font-weight: 800; color: #1a1300;
+            width: calc(28px * var(--ec-stop, 1)); height: calc(28px * var(--ec-stop, 1)); border: none; border-radius: calc(8px * var(--ec-stop, 1));
+            font-size: calc(13px * var(--ec-stop, 1)); font-weight: 800; color: #1a1300;
             background: linear-gradient(180deg, #ffe066, #f5c518 60%, #dba300);
             box-shadow: 0 4px 12px -4px rgba(245, 197, 24, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.5);
         }
         .job-item .job-number.has-note { color: #fff; border: none; background: linear-gradient(180deg, #60a5fa, #3b82f6 60%, #2563eb); box-shadow: 0 4px 12px -4px rgba(59, 130, 246, 0.8); }
         .job-item.pending .job-number { background: transparent; box-shadow: none; }
-        .job-item.checked .job-number { width: 28px; height: 28px; font-size: 13px; }
-        .job-type-toggle { width: 34px; height: 42px; border-radius: 10px; font-size: 16px; }
-        .job-type-toggle.type-both { font-size: 13px; }
+        .job-item.checked .job-number { width: calc(28px * var(--ec-stop, 1)); height: calc(28px * var(--ec-stop, 1)); font-size: calc(13px * var(--ec-stop, 1)); }
+        .job-type-toggle { width: calc(34px * var(--ec-stop, 1)); height: calc(42px * var(--ec-stop, 1)); border-radius: calc(10px * var(--ec-stop, 1)); font-size: calc(16px * var(--ec-stop, 1)); }
+        .job-type-toggle.type-both { font-size: calc(13px * var(--ec-stop, 1)); }
         .job-info { padding-left: 2px; }
-        .job-name { font-size: 13.5px; font-weight: 700; letter-spacing: -0.01em; }
-        .job-address { font-size: 11.5px; color: var(--text-2); }
+        .job-name { font-size: calc(13.5px * var(--ec-stop, 1)); font-weight: 700; letter-spacing: -0.01em; }
+        .job-address { font-size: calc(11.5px * var(--ec-stop, 1)); color: var(--text-2); }
         .job-city { color: var(--text-2); }
         /* Next stop: a gold outline and a small NEXT tag instead of an extra line */
-        .job-item.next-stop:not(.checked) { padding-top: 4px; padding-bottom: 4px; background: var(--surface-2); border-color: rgba(245, 197, 24, 0.55); box-shadow: 0 0 0 1px rgba(245, 197, 24, 0.22), 0 0 18px -6px rgba(245, 197, 24, 0.5); }
+        .job-item.next-stop:not(.checked) { padding-top: calc(4px * var(--ec-stop, 1)); padding-bottom: calc(4px * var(--ec-stop, 1)); background: var(--surface-2); border-color: rgba(245, 197, 24, 0.55); box-shadow: 0 0 0 1px rgba(245, 197, 24, 0.22), 0 0 18px -6px rgba(245, 197, 24, 0.5); }
         body.light-mode .job-item.next-stop:not(.checked) { border-color: #d99a00; box-shadow: 0 0 0 1px rgba(217, 154, 0, 0.35); }
-        /* Next stop runs out to the right edge of the screen so it stands out. The check box stays in
-           the same column as the other stops, so the side buttons never cover it. */
+        /* Made route: the next stop (top of the list) runs out to the right edge of the screen so it
+           stands out. Not before the route is made. The check box stays in the same column as the
+           other stops, so the side buttons never cover it. */
         @media (max-width: 479px) { /* phones; wider screens put the list in a card */
             .job-item.next-stop:not(.checked) {
                 margin-right: calc(-1 * (var(--ec-lane) + var(--gutter)));
@@ -1213,17 +1218,17 @@
             }
         }
         .job-item.next-stop:not(.checked) .job-info::before { display: none; }
-        .job-item.next-stop:not(.checked) .job-name { font-size: 13.5px; }
+        .job-item.next-stop:not(.checked) .job-name { font-size: calc(13.5px * var(--ec-stop, 1)); }
         .job-item.next-stop:not(.checked) .job-name::after {
             content: "NEXT"; display: inline-block; margin-left: 6px; padding: 1px 5px; border-radius: 5px; vertical-align: 1px;
-            font-size: 9px; font-weight: 800; letter-spacing: 0.1em; color: #1a1300; background: var(--accent);
+            font-size: calc(9px * var(--ec-stop, 1)); font-weight: 800; letter-spacing: 0.1em; color: #1a1300; background: var(--accent);
         }
         .job-item.pending:not(.checked) { border-color: rgba(251, 146, 60, 0.5); }
-        .job-item.pending:not(.checked) .job-info::after { margin-top: 1px; font-size: 11px; }
+        .job-item.pending:not(.checked) .job-info::after { margin-top: 1px; font-size: calc(11px * var(--ec-stop, 1)); }
         /* Done check box: a 28 px box in a 44 px tap area, at the right end of the stop */
-        .custom-checkbox { width: 44px; height: 44px; }
+        .custom-checkbox { width: calc(44px * var(--ec-stop, 1)); height: calc(44px * var(--ec-stop, 1)); }
         .custom-checkbox::before { inset: 0; }
-        .custom-checkbox svg { width: 42px; height: 42px; }
+        .custom-checkbox svg { width: calc(42px * var(--ec-stop, 1)); height: calc(42px * var(--ec-stop, 1)); }
         .custom-checkbox svg rect { rx: 4px; ry: 4px; stroke-width: 1.5px; stroke: rgba(255, 255, 255, 0.3); fill: var(--surface); }
         body.light-mode .custom-checkbox svg rect { stroke: rgba(15, 23, 42, 0.3); }
         .ec-done-toggle { min-height: 40px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; border-style: solid; border-color: var(--border); }
@@ -1274,6 +1279,15 @@
         /* ---------- Settings (from the header) ---------- */
         #ec-menu-overlay { padding-top: calc(70px + var(--safe-top)); }
         .ec-menu-title { padding: var(--sp-3) var(--sp-3) 0; font-size: 12px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-text); }
+        /* Stop size: four A buttons, small to extra large. The list behind the menu changes as you tap. */
+        .ec-menu-size { padding: var(--sp-2) var(--sp-3) var(--sp-3); }
+        .ec-menu-size-label { margin-bottom: 8px; font-size: 15px; font-weight: 500; color: var(--text); }
+        .ec-menu-size-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        .ec-menu-size-btns button {
+            height: 48px; padding: 0; border-radius: 12px; cursor: pointer; font-weight: 800; line-height: 1;
+            color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong);
+        }
+        .ec-menu-size-btns button[aria-pressed="true"] { color: #1a1300; background: var(--accent); border-color: var(--accent); }
 
         /* ---------- Teach the mic + Add several stops (same as Route Planner) ---------- */
         #voice-learn-overlay { align-items: flex-start; padding-top: calc(var(--safe-top) + 12px); overflow-y: auto; }
@@ -1750,6 +1764,15 @@
             <div class="ec-menu-title">Settings</div>
             <div class="ec-menu-user" id="ec-menu-user"></div>
             <button type="button" class="ec-menu-item" id="ec-menu-theme" onclick="toggleTheme()">Switch to light mode</button>
+            <div class="ec-menu-size" role="group" aria-labelledby="ec-menu-size-label">
+                <div class="ec-menu-size-label" id="ec-menu-size-label">Stop size</div>
+                <div class="ec-menu-size-btns">
+                    <button type="button" data-size="1" onclick="ecSetStopSize(1)" aria-label="Small stops" style="font-size:13px">A</button>
+                    <button type="button" data-size="2" onclick="ecSetStopSize(2)" aria-label="Normal stops" style="font-size:16px">A</button>
+                    <button type="button" data-size="3" onclick="ecSetStopSize(3)" aria-label="Large stops" style="font-size:20px">A</button>
+                    <button type="button" data-size="4" onclick="ecSetStopSize(4)" aria-label="Extra large stops" style="font-size:25px">A</button>
+                </div>
+            </div>
             <button type="button" class="ec-menu-item" onclick="closeMenu(); openDevNotes();">Send app feedback</button>
             <button type="button" class="ec-menu-item" id="ec-menu-install" onclick="installApp()" hidden>Install app</button>
             <button type="button" class="ec-menu-item ec-menu-danger" onclick="logOut()">Log out</button>
@@ -2969,6 +2992,14 @@
 
         // Theme
         try { if (localStorage.getItem('ec_theme') === 'light') document.body.classList.add('light-mode'); } catch (e) {}
+        // Stop size (Settings): 1 small, 2 normal, 3 large, 4 extra large. Saved on this phone.
+        function ecSetStopSize(n) {
+            n = [1, 2, 3, 4].includes(Number(n)) ? Number(n) : 2;
+            [1, 3, 4].forEach(k => document.body.classList.toggle('ec-stop-size-' + k, k === n));
+            document.querySelectorAll('.ec-menu-size-btns button').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.size) === n ? 'true' : 'false'));
+            try { localStorage.setItem('ec_stop_size', String(n)); } catch (e) {}
+        }
+        try { ecSetStopSize(localStorage.getItem('ec_stop_size') || 2); } catch (e) { ecSetStopSize(2); }
         function toggleTheme() {
             document.body.classList.toggle('light-mode');
             const light = document.body.classList.contains('light-mode');
@@ -4682,16 +4713,18 @@
         // otherwise cards animate to the wrong position and then visibly snap when re-rendered.
         function computeBaseDisplayOrder() {
             const pendingJobs = ecActiveStopIds();
-            let displayOrder = [];
-            if (routeState.order.length > 0) {
-                displayOrder = routeState.order.filter(ecIsActiveStop);
-                const existing = new Set(displayOrder);
-                const extra = pendingJobs.filter(id => !existing.has(id));
-                displayOrder = displayOrder.concat(extra);
-            } else {
-                displayOrder = pendingJobs.slice().sort((a, b) => jobs[a].timestamp - jobs[b].timestamp);
+            const ordered = routeState.order.filter(ecIsActiveStop);
+            const existing = new Set(ordered);
+            const extra = pendingJobs.filter(id => !existing.has(id));
+            // Route not made yet: newest first, so a stop just added shows at the top, the same as
+            // Route Planner. The order here doesn't matter: the route order is set on the map.
+            if (!routeState.isFinalized && !isOrderingMode) {
+                extra.sort((a, b) => ((Number(jobs[b].timestamp) || 0) - (Number(jobs[a].timestamp) || 0)) || (a < b ? 1 : a > b ? -1 : 0));
+                return extra.concat(ordered);
             }
-            return displayOrder;
+            // Made route, or numbering on the map: numbered stops in route order, then any not numbered yet.
+            if (routeState.order.length === 0) extra.sort((a, b) => jobs[a].timestamp - jobs[b].timestamp);
+            return ordered.concat(extra);
         }
 
         // ---------- RENDER LIST ----------
