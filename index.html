@@ -1391,7 +1391,7 @@
         .multi-add-mic { flex: 0 0 auto; width: 56px; border-radius: 12px; display: grid; place-items: center; cursor: pointer; color: #60a5fa; border: 2px solid #3b82f6; background: var(--surface-2); }
         .multi-add-mic[hidden] { display: none; }
         .multi-add-mic svg { width: 26px; height: 26px; }
-        .multi-add-mic.is-listening { color: #fff; border-color: rgba(239, 68, 68, 0.7); background: linear-gradient(180deg, #f87171, #ef4444 60%, #dc2626); }
+        .multi-add-mic.is-listening { color: #fff; border-color: #bae6fd; background: radial-gradient(circle at 50% 35%, #7dd3fc, #38bdf8 45%, #2563eb); box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.3), 0 0 26px 6px rgba(56, 189, 248, 0.7); }
         .multi-add-heard { margin-top: 8px; font-size: 13px; font-style: italic; color: var(--text-2); }
         .multi-add-results { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
         .multi-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 11px; background: var(--surface-2); border: 1px solid var(--border); }
@@ -1404,6 +1404,30 @@
         .multi-row.is-missing { border-color: rgba(239, 68, 68, 0.45); }
         .multi-row.is-missing .multi-row-heard { color: #ef4444; }
         .multi-row-name { font-size: 14px; font-weight: 700; }
+        /* Said earlier: what the mic heard and what it added, newest first */
+        .said-earlier { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border); }
+        .said-earlier[hidden] { display: none; }
+        .said-earlier-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+        .said-earlier-head > span:first-child { font-size: 13px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-text); }
+        .said-earlier-sub { font-size: 12px; color: var(--text-2); }
+        .said-earlier-list { display: flex; flex-direction: column; gap: 8px; }
+        .said-row { padding: 9px 10px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+        .said-row.is-missing { border-color: rgba(239, 68, 68, 0.45); }
+        .said-row.is-fixed { border-color: rgba(34, 197, 94, 0.5); }
+        .said-line { display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: var(--text-2); }
+        .said-line b { flex-shrink: 0; width: 46px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+        .said-text { flex: 1; min-width: 0; font-style: italic; color: var(--text); overflow-wrap: anywhere; }
+        .said-when { flex-shrink: 0; font-size: 11px; color: var(--text-3); }
+        .said-fix { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+        .said-fix b { flex-shrink: 0; width: 46px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+        .said-fix select, .said-fix input { flex: 1; min-width: 0; min-height: 40px; padding: 6px 10px; font-size: 14px; font-weight: 700; }
+        .said-row.is-missing .said-fix select { color: #ef4444; }
+        .said-btn { flex: 0 0 auto; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border-radius: 11px; cursor: pointer; background: var(--surface); border: 1px solid var(--border-strong); color: var(--text-2); }
+        .said-btn svg { width: 20px; height: 20px; }
+        .said-mic { color: #60a5fa; border: 2px solid #3b82f6; }
+        .said-mic.is-listening { color: #fff; border-color: #bae6fd; background: radial-gradient(circle at 50% 35%, #7dd3fc, #38bdf8 45%, #2563eb); box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.3), 0 0 22px 4px rgba(56, 189, 248, 0.7); }
+        .said-note { margin-top: 5px; font-size: 12px; color: #22c55e; }
+        .said-row.is-missing .said-note { color: #ef4444; }
         .ec-confirm-ok:disabled { opacity: 0.5; cursor: default; }
         #multi-add-title { font-size: 17px; font-weight: 700; }
 
@@ -1753,6 +1777,13 @@
                 <button type="button" class="ec-confirm-cancel" onclick="closeMultiAdd()">Cancel</button>
                 <button type="button" id="multi-add-go" class="ec-confirm-ok" onclick="confirmMultiAdd()" disabled>Add stops</button>
             </div>
+            <!-- Everything the mic added to this list: what was said, and what was added. Fix any
+                 it got wrong (say it again, or pick the right customer). -->
+            <div id="said-earlier" class="said-earlier" hidden>
+                <div class="said-earlier-head"><span>Said earlier</span><span class="said-earlier-sub">Fix any the mic got wrong</span></div>
+                <div id="said-earlier-list" class="said-earlier-list"></div>
+            </div>
+            <datalist id="said-customers"></datalist>
         </div>
     </div>
 
@@ -2523,10 +2554,15 @@
                 const rows = matchSpokenNames(text);
                 const names = rows.filter(r => r.pick && addressData[r.pick]).map(r => r.pick);
                 const missing = rows.filter(r => !r.pick).map(r => r.heard);
-                for (const name of names) {
-                    selectClient(name);
-                    await addJob();
+                const log = [];
+                for (const r of rows) {
+                    if (r.pick && addressData[r.pick]) {
+                        selectClient(r.pick);
+                        await addJob();
+                        log.push({ said: r.heard, added: r.pick, stop: ecLastAddedStopFor(r.pick) });
+                    } else log.push({ said: r.heard, added: '' });
                 }
+                ecLogVoice(log, 'tap');
                 resetFormFields();
                 if (names.length) ecFoldPanelAfterMic();
                 if (missing.length) ecToast(`Couldn't find "${missing.join('", "')}". Teach it with the Teach button at the top.`, { type: 'error', duration: 6000 });
@@ -2732,13 +2768,16 @@
             document.getElementById('multi-add-heard').hidden = true;
             multiAddRows = [];
             renderMultiAddRows();
+            renderSaidEarlier();
+            requestScreenWakeLock(); // keep the screen on while saying the stops
             const overlay = document.getElementById('multi-add-overlay');
             ecCancelClose(overlay);
             overlay.classList.add('is-open');
             const canListen = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
             document.getElementById('multi-add-mic').hidden = !canListen;
             if (listenNow && canListen) startMultiAddListening();
-            else setTimeout(() => document.getElementById('multi-add-text').focus(), 60);
+            // With a "Said earlier" list to look at, don't pop the keyboard up over it.
+            else if (ecVisibleVoiceLog().length === 0) setTimeout(() => document.getElementById('multi-add-text').focus(), 60);
         }
         function closeMultiAdd() {
             stopMultiAddListening();
@@ -2780,6 +2819,7 @@
                 }
                 heardEl.hidden = !interim;
                 heardEl.textContent = interim ? 'Hearing: ' + interim : '';
+                requestScreenWakeLock();
                 quiet();
                 scheduleMultiAddMatch();
             };
@@ -2835,14 +2875,250 @@
                 voiceAliases[heard] = r.pick;
                 db.ref(VOICE_ALIASES_PATH + '/' + heard).set(r.pick).catch(err => console.warn('Voice alias not saved:', err && err.message));
             });
+            const rowsNow = multiAddRows.slice();
             closeMultiAdd();
-            for (const name of chosen) {
-                selectClient(name);
-                await addJob();
+            const log = [];
+            for (const r of rowsNow) {
+                if (r.on && r.pick && addressData[r.pick]) {
+                    selectClient(r.pick);
+                    await addJob();
+                    log.push({ said: r.heard, added: r.pick, stop: ecLastAddedStopFor(r.pick) });
+                } else if (!r.pick) {
+                    log.push({ said: r.heard, added: '' }); // not found: kept so it can be fixed later
+                }
             }
+            ecLogVoice(log, 'list');
             resetFormFields();
             ecFoldPanelAfterMic();
             ecToast(`Added ${chosen.length} stop${chosen.length === 1 ? '' : 's'}.`);
+        }
+
+        // ---------- SAID EARLIER (what the mic heard, and what it added) ----------
+        // Every stop added with the mic (a tap, or the hold-mic list) is written down with what
+        // was said, per driver at developer/route_planner/voice_log/{driver}/{id}:
+        //   { said, added (customer name, '' if not found), stop (stop id if known), at, how, fixed }.
+        // The hold-mic screen lists them newest first, so a wrong one can be fixed: say it again
+        // or pick the right customer. Fixing swaps the stop in place (same spot, same number) and
+        // teaches the mic (shared voice_aliases). An entry goes away when its stop leaves the
+        // list, and all of them with Clear all.
+        let ecVoiceLog = {};
+        let ecSaidListening = null;
+        function ecVoiceLogRef(key) {
+            if (typeof currentRouteKey === 'undefined' || !currentRouteKey || /[.#$\[\]\/]/.test(currentRouteKey)) return null;
+            return db.ref(`developer/route_planner/voice_log/${currentRouteKey}` + (key ? '/' + key : ''));
+        }
+        function ecStartVoiceLogSync() {
+            const ref = ecVoiceLogRef();
+            if (!ref) return;
+            ref.on('value', snap => {
+                ecVoiceLog = snap.val() || {};
+                const overlay = document.getElementById('multi-add-overlay');
+                if (overlay && overlay.classList.contains('is-open') && !ecSaidListening) renderSaidEarlier();
+            }, err => console.warn('Mic history not readable:', err && err.message));
+        }
+        // The stop just added for this customer (ecSaveNewStop marks it), or '' if not known yet.
+        function ecLastAddedStopFor(name) {
+            const id = lastAddedJobId;
+            return id && jobs[id] && String(jobs[id].name || '').trim().toLowerCase() === String(name).trim().toLowerCase() ? id : '';
+        }
+        function ecLogVoice(entries, how) {
+            const ref = ecVoiceLogRef();
+            if (!ref || !entries || !entries.length) return;
+            entries.forEach(e => {
+                const said = String(e.said || '').trim().slice(0, 200);
+                if (!said) return;
+                const entry = { said: said, added: e.added || '', stop: e.stop || '', at: Date.now(), how: how };
+                const child = ref.push();
+                ecVoiceLog[child.key] = entry;
+                child.set(entry).catch(err => console.warn('Mic history not saved:', err && err.message));
+            });
+        }
+        // The stop an entry belongs to: its own stop if still there, else a stop with that name.
+        function ecStopForLog(e) {
+            if (!e || !e.added) return null;
+            if (e.stop && jobs[e.stop]) return e.stop;
+            const want = String(e.added).trim().toLowerCase();
+            const ids = Object.keys(jobs).filter(id => jobs[id] && String(jobs[id].name || '').trim().toLowerCase() === want);
+            return ids.find(id => !checkedStops.includes(id)) || ids[0] || null;
+        }
+        function ecVisibleVoiceLog() {
+            return Object.keys(ecVoiceLog)
+                .filter(k => { const e = ecVoiceLog[k]; return e && e.said && (!e.added || ecStopForLog(e)); })
+                .sort((a, b) => (Number(ecVoiceLog[b].at) || 0) - (Number(ecVoiceLog[a].at) || 0));
+        }
+        // A stop was deleted: its entries go too.
+        function ecForgetVoiceForStop(id) {
+            Object.keys(ecVoiceLog).forEach(k => {
+                const e = ecVoiceLog[k];
+                if (!e || !e.added || ecStopForLog(e)) return;
+                delete ecVoiceLog[k];
+                const ref = ecVoiceLogRef(k);
+                if (ref) ref.remove().catch(() => {});
+            });
+        }
+        function ecClearVoiceLog() {
+            ecVoiceLog = {};
+            const ref = ecVoiceLogRef();
+            if (ref) ref.remove().catch(err => console.warn('Mic history not cleared:', err && err.message));
+        }
+        function ecSaidOptions(e) {
+            const words = normName(e.alt || e.said).split(' ');
+            const close = closestCustomers(words, 6).map(c => c.name);
+            const first = e.added && addressData[e.added] ? [e.added] : [];
+            return first.concat(close.filter(n => n !== e.added));
+        }
+        function renderSaidEarlier() {
+            const wrap = document.getElementById('said-earlier');
+            const list = document.getElementById('said-earlier-list');
+            if (!wrap || !list) return;
+            const keys = ecVisibleVoiceLog();
+            wrap.hidden = keys.length === 0;
+            const dl = document.getElementById('said-customers');
+            if (dl && keys.length && dl.childElementCount !== Object.keys(addressData).length) {
+                dl.innerHTML = Object.keys(addressData).sort((a, b) => a.localeCompare(b)).map(n => `<option value="${ecEscapeHtml(n)}"></option>`).join('');
+            }
+            const micSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg>';
+            list.innerHTML = keys.map(k => {
+                const e = ecVoiceLog[k];
+                const missing = !e.added;
+                const when = e.at ? new Date(Number(e.at)).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+                const opts = ecSaidOptions(e);
+                const optHtml = (missing ? '<option value="" selected>Pick one</option>' : '')
+                    + opts.map(n => `<option value="${ecEscapeHtml(n)}"${n === e.added ? ' selected' : ''}>${ecEscapeHtml(n)}</option>`).join('')
+                    + '<option value="__type">Type a name…</option>';
+                const note = e.fixed ? `Fixed${e.was ? ` (was ${ecEscapeHtml(e.was)})` : ''}. The mic will know this next time.` : (missing ? 'Nothing was added for this one.' : '');
+                return `<div class="said-row${missing ? ' is-missing' : ''}${e.fixed ? ' is-fixed' : ''}" data-key="${ecEscapeHtml(k)}">
+                    <div class="said-line"><b>Said</b><span class="said-text">“${ecEscapeHtml(e.said)}”</span><span class="said-when">${ecEscapeHtml(when)}</span></div>
+                    <div class="said-fix"><b>Added</b>
+                        <select aria-label="Customer added for this" onchange="ecSaidPicked(this)">${optHtml}</select>
+                        <button type="button" class="said-btn said-mic" onclick="ecSayAgain(this.closest('.said-row').dataset.key, this)" aria-label="Say it again">${micSvg}</button>
+                        ${missing ? `<button type="button" class="said-btn" onclick="ecDismissSaid(this.closest('.said-row').dataset.key)" aria-label="Remove from this list">✕</button>` : ''}
+                    </div>
+                    ${note ? `<div class="said-note">${note}</div>` : ''}
+                </div>`;
+            }).join('');
+        }
+        function ecSaidPicked(sel) {
+            const row = sel.closest('.said-row');
+            const key = row && row.dataset.key;
+            if (!key) return;
+            if (sel.value === '__type') {
+                // Swap the list for a box that suggests every customer as you type.
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.setAttribute('list', 'said-customers');
+                input.placeholder = 'Start typing a customer';
+                input.autocomplete = 'off';
+                const done = () => {
+                    const v = input.value.trim();
+                    const name = Object.keys(addressData).find(n => n.toLowerCase() === v.toLowerCase());
+                    if (name) ecFixSaid(key, name); else if (v) ecToast(`"${v}" isn't one of your customers.`, { type: 'error' });
+                };
+                input.addEventListener('change', done);
+                input.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); } });
+                input.addEventListener('blur', () => setTimeout(() => { if (input.isConnected && !input.value.trim()) renderSaidEarlier(); }, 200));
+                sel.replaceWith(input);
+                input.focus();
+                return;
+            }
+            if (sel.value) ecFixSaid(key, sel.value);
+        }
+        function ecDismissSaid(key) {
+            delete ecVoiceLog[key];
+            const ref = ecVoiceLogRef(key);
+            if (ref) ref.remove().catch(() => {});
+            renderSaidEarlier();
+        }
+        // Say the name again for one entry: a sure match is used straight away, otherwise the
+        // list shows the closest customers to what was just said.
+        function ecSayAgain(key, btn) {
+            const e = ecVoiceLog[key];
+            if (!e) return;
+            if (ecSaidListening) { try { ecSaidListening.stop(); } catch (err) {} return; }
+            const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Ctor) { ecToast('Voice input is not supported on this browser. Pick from the list instead.', { type: 'error' }); return; }
+            stopMultiAddListening();
+            const rec = new Ctor();
+            ecSaidListening = rec;
+            rec.lang = 'en-CA';
+            rec.continuous = false;
+            rec.interimResults = false;
+            rec.maxAlternatives = 5;
+            let text = '';
+            rec.onresult = ev => {
+                const r = ev.results[ev.results.length - 1];
+                const guesses = Array.from({ length: r.length }, (_, k) => r[k] && r[k].transcript.trim()).filter(Boolean);
+                text = bestGuess(guesses);
+            };
+            rec.onerror = ev => { if (ev && ev.error === 'not-allowed') ecToast('The microphone is blocked for this page. Allow it in the browser settings.', { type: 'error' }); };
+            rec.onend = () => {
+                if (ecSaidListening === rec) ecSaidListening = null;
+                if (btn) btn.classList.remove('is-listening');
+                if (!text) { renderSaidEarlier(); ecToast("Didn't hear a name. Tap the mic and try again."); return; }
+                const rows = matchSpokenNames(text);
+                const sure = rows.find(r => r.pick && r.kind === 'ok' && addressData[r.pick]);
+                if (sure) { ecFixSaid(key, sure.pick); return; }
+                e.alt = text; // show the customers closest to what was just said
+                renderSaidEarlier();
+                ecToast(`Heard "${text}". Pick the right customer from the list.`, { duration: 6000 });
+            };
+            if (btn) btn.classList.add('is-listening');
+            try { rec.start(); } catch (err) { ecSaidListening = null; if (btn) btn.classList.remove('is-listening'); }
+        }
+        // Puts the right customer on the stop for this entry (same place and number), or adds it
+        // if nothing was added, then teaches the mic what was said.
+        async function ecFixSaid(key, name) {
+            const e = ecVoiceLog[key];
+            const data = addressData[name];
+            if (!e || !data) { renderSaidEarlier(); return; }
+            if (name === e.added) { renderSaidEarlier(); return; }
+            const was = e.added || '';
+            let stopId = ecStopForLog(e);
+            if (stopId) {
+                const want = name.trim().toLowerCase();
+                const dup = Object.keys(jobs).find(id => id !== stopId && jobs[id] && !checkedStops.includes(id) && String(jobs[id].name || '').trim().toLowerCase() === want);
+                if (dup) {
+                    const ok = await ecConfirm(`"${name}" is already on the list. Remove the wrong stop "${was}"?`, { okLabel: 'Remove it' });
+                    if (!ok) { renderSaidEarlier(); return; }
+                    // Point the entry at the right stop first, so deleting the wrong stop keeps it.
+                    const wrongId = stopId;
+                    e.added = name; e.stop = dup;
+                    stopId = dup;
+                    deleteJob(wrongId);
+                } else {
+                    const job = jobs[stopId];
+                    const spot = ecContactSpot(data);
+                    const address = String(data.address || '').trim(), city = String(data.city || '').trim();
+                    const fields = { name: name, pickup_location: address, city: city,
+                        lat: spot ? spot.lat : null, lng: spot ? spot.lng : null, pinned: spot ? true : null };
+                    ecEditStop(stopId, fields);
+                    ecFlashStop(stopId);
+                    updateUI();
+                    if (map) redrawRouteFromCurrentState();
+                    if (!spot && job) {
+                        geocodeJob(stopId, { force: true }).then(() => { updateUI(); if (map) redrawRouteFromCurrentState(); })
+                            .catch(() => ecToast(`Couldn't find "${address}, ${city}" on the map. Check the customer's address.`, { type: 'error', duration: 8000 }));
+                    }
+                }
+            } else {
+                selectClient(name);
+                await addJob();
+                resetFormFields();
+                stopId = ecLastAddedStopFor(name) || null;
+            }
+            // Teach the mic: what was said means this customer (shared with Route Planner).
+            const heard = normName(e.said);
+            if (heard && heard.length <= 80 && heard !== normName(name)) {
+                voiceAliases[heard] = name;
+                db.ref(VOICE_ALIASES_PATH + '/' + heard).set(name).catch(err => console.warn('Voice alias not saved:', err && err.message));
+            }
+            const update = { added: name, stop: stopId || '', fixed: true, was: was };
+            Object.assign(e, update);
+            delete e.alt;
+            const ref = ecVoiceLogRef(key);
+            if (ref) ref.update(update).catch(err => console.warn('Mic history not saved:', err && err.message));
+            renderSaidEarlier();
+            ecToast(was ? `Changed "${was}" to "${name}".` : `Added "${name}".`);
         }
 
         // ---------- TEACH THE MIC (header button) ----------
@@ -3785,6 +4061,8 @@
             // Map colours and the add-a-stop box size, saved to the driver's account
             ecStartMapThemeSync();
             ecStartFormScaleSync();
+            // What the mic heard and added, for the hold-mic screen's "Said earlier" list
+            ecStartVoiceLogSync();
 
             // Add-stop panel open/closed, shared through Firebase
             const panelRef = ecPanelPrefRef();
@@ -5393,6 +5671,7 @@
             delete pendingJobIds[id];
             delete pendingStopEdits[id];
             delete ecInsertWhenLocated[id];
+            ecForgetVoiceForStop(id);
             // Remove from checkedStops
             const idx = checkedStops.indexOf(id);
             if (idx !== -1) {
@@ -5514,7 +5793,12 @@
             screenWakeLockPending = true;
             try {
                 screenWakeLock = await navigator.wakeLock.request('screen');
-                screenWakeLock.addEventListener('release', () => { screenWakeLock = null; });
+                screenWakeLock.addEventListener('release', () => {
+                    screenWakeLock = null;
+                    // Let go by the phone while the mic is in use (the driver isn't touching the
+                    // screen, so nothing else would ask again): ask again straight away.
+                    if (ecMicInUse()) setTimeout(requestScreenWakeLock, 250);
+                });
             } catch (err) {
                 screenWakeLock = null;
             } finally {
@@ -5525,6 +5809,14 @@
             if (document.visibilityState === 'visible') requestScreenWakeLock();
         });
         document.addEventListener('pointerdown', requestScreenWakeLock, { passive: true });
+        // The mic in use: the hold-mic "Add several stops" screen is open, or the mic is listening.
+        // While it is, the screen is kept on: asked for again every 10 seconds in case the phone
+        // let go of it, since the driver is talking, not touching the screen.
+        function ecMicInUse() {
+            const sheet = document.getElementById('multi-add-overlay');
+            return !!((sheet && sheet.classList.contains('is-open')) || multiAddRecognition || quickVoiceRec || ecSaidListening);
+        }
+        setInterval(() => { if (ecMicInUse()) requestScreenWakeLock(); }, 10000);
 
         // ---------- CLEAR ALL STOPS ----------
         async function clearAllStops() {
@@ -5550,6 +5842,7 @@
             pendingJobIds = {};
             pendingStopEdits = {};
             ecInsertWhenLocated = {};
+            ecClearVoiceLog();
             checkedStops = [];
             saveCheckedStops();
 
