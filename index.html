@@ -1185,7 +1185,7 @@
             background: var(--surface-2); border-color: var(--border); box-shadow: none;
         }
         .job-item::after { display: none; } /* the P / D button shows the type */
-        /* Stop size (Settings): scales the whole stop card - text, number, P / D button and check box */
+        /* Font size (Settings): scales the whole stop card - text, number, P / D button and check box */
         body.ec-stop-size-1 { --ec-stop: 0.85; }
         body.ec-stop-size-3 { --ec-stop: 1.2; }
         body.ec-stop-size-4 { --ec-stop: 1.4; }
@@ -1208,14 +1208,16 @@
         .job-item.next-stop:not(.checked) { padding-top: calc(4px * var(--ec-stop, 1)); padding-bottom: calc(4px * var(--ec-stop, 1)); background: var(--surface-2); border-color: rgba(245, 197, 24, 0.55); box-shadow: 0 0 0 1px rgba(245, 197, 24, 0.22), 0 0 18px -6px rgba(245, 197, 24, 0.5); }
         body.light-mode .job-item.next-stop:not(.checked) { border-color: #d99a00; box-shadow: 0 0 0 1px rgba(217, 154, 0, 0.35); }
         /* Made route: the next stop (top of the list) runs out to the right edge of the screen so it
-           stands out. Not before the route is made. The check box stays in the same column as the
-           other stops, so the side buttons never cover it. */
+           stands out, with its whole border showing right on the edge. Not before the route is made.
+           Its check box sits at the right end too, so the name and address get more room. If the
+           side buttons are level with it (short phone, big font size), ecPlaceNextCheckbox() adds
+           .ec-cb-safe and the check box moves back into the same column as the other stops. */
         @media (max-width: 479px) { /* phones; wider screens put the list in a card */
             .job-item.next-stop:not(.checked) {
                 margin-right: calc(-1 * (var(--ec-lane) + var(--gutter)));
-                padding-right: calc(var(--ec-lane) + var(--gutter) + 1px); /* +1px for the dropped right border */
-                border-right-width: 0; border-radius: 12px 0 0 12px;
+                padding-right: 6px;
             }
+            .job-item.next-stop.ec-cb-safe:not(.checked) { padding-right: calc(var(--ec-lane) + var(--gutter)); }
         }
         .job-item.next-stop:not(.checked) .job-info::before { display: none; }
         .job-item.next-stop:not(.checked) .job-name { font-size: calc(13.5px * var(--ec-stop, 1)); }
@@ -1279,7 +1281,7 @@
         /* ---------- Settings (from the header) ---------- */
         #ec-menu-overlay { padding-top: calc(70px + var(--safe-top)); }
         .ec-menu-title { padding: var(--sp-3) var(--sp-3) 0; font-size: 12px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-text); }
-        /* Stop size: four A buttons, small to extra large. The list behind the menu changes as you tap. */
+        /* Font size: four A buttons, small to extra large. The list behind the menu changes as you tap. */
         .ec-menu-size { padding: var(--sp-2) var(--sp-3) var(--sp-3); }
         .ec-menu-size-label { margin-bottom: 8px; font-size: 15px; font-weight: 500; color: var(--text); }
         .ec-menu-size-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -1765,12 +1767,12 @@
             <div class="ec-menu-user" id="ec-menu-user"></div>
             <button type="button" class="ec-menu-item" id="ec-menu-theme" onclick="toggleTheme()">Switch to light mode</button>
             <div class="ec-menu-size" role="group" aria-labelledby="ec-menu-size-label">
-                <div class="ec-menu-size-label" id="ec-menu-size-label">Stop size</div>
+                <div class="ec-menu-size-label" id="ec-menu-size-label">Font size</div>
                 <div class="ec-menu-size-btns">
-                    <button type="button" data-size="1" onclick="ecSetStopSize(1)" aria-label="Small stops" style="font-size:13px">A</button>
-                    <button type="button" data-size="2" onclick="ecSetStopSize(2)" aria-label="Normal stops" style="font-size:16px">A</button>
-                    <button type="button" data-size="3" onclick="ecSetStopSize(3)" aria-label="Large stops" style="font-size:20px">A</button>
-                    <button type="button" data-size="4" onclick="ecSetStopSize(4)" aria-label="Extra large stops" style="font-size:25px">A</button>
+                    <button type="button" data-size="1" onclick="ecSetStopSize(1, true)" aria-label="Small font" style="font-size:13px">A</button>
+                    <button type="button" data-size="2" onclick="ecSetStopSize(2, true)" aria-label="Normal font" style="font-size:16px">A</button>
+                    <button type="button" data-size="3" onclick="ecSetStopSize(3, true)" aria-label="Large font" style="font-size:20px">A</button>
+                    <button type="button" data-size="4" onclick="ecSetStopSize(4, true)" aria-label="Extra large font" style="font-size:25px">A</button>
                 </div>
             </div>
             <button type="button" class="ec-menu-item" onclick="closeMenu(); openDevNotes();">Send app feedback</button>
@@ -2992,12 +2994,41 @@
 
         // Theme
         try { if (localStorage.getItem('ec_theme') === 'light') document.body.classList.add('light-mode'); } catch (e) {}
-        // Stop size (Settings): 1 small, 2 normal, 3 large, 4 extra large. Saved on this phone.
-        function ecSetStopSize(n) {
+        // Font size (Settings): 1 small, 2 normal, 3 large, 4 extra large. It scales the whole stop
+        // card. Kept on the phone (applies instantly, works offline) and, when the driver picks one,
+        // in Firebase at developer/route_planner/ui_prefs/{driver}/stop_font_size, so it follows
+        // them to another phone. The Firebase value is loaded at sign-in (ecStartFontSizeSync).
+        function ecSetStopSize(n, saveToServer) {
             n = [1, 2, 3, 4].includes(Number(n)) ? Number(n) : 2;
             [1, 3, 4].forEach(k => document.body.classList.toggle('ec-stop-size-' + k, k === n));
             document.querySelectorAll('.ec-menu-size-btns button').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.size) === n ? 'true' : 'false'));
             try { localStorage.setItem('ec_stop_size', String(n)); } catch (e) {}
+            if (typeof ecPlaceNextCheckbox === 'function') ecPlaceNextCheckbox();
+            if (saveToServer) {
+                const ref = ecFontSizePrefRef();
+                if (ref) ref.set(n).catch(err => {
+                    console.warn('Font size not saved:', err && err.message);
+                    ecToast("Font size is set on this phone, but couldn't be saved to your account.", { type: 'error' });
+                });
+            }
+        }
+        function ecFontSizePrefRef() {
+            if (typeof currentRouteKey === 'undefined' || !currentRouteKey || /[.#$\[\]\/]/.test(currentRouteKey)) return null;
+            return db.ref(`developer/route_planner/ui_prefs/${currentRouteKey}/stop_font_size`);
+        }
+        // At sign-in: use the size saved to the driver's account. Nothing saved yet: save this phone's.
+        function ecStartFontSizeSync() {
+            const ref = ecFontSizePrefRef();
+            if (!ref) return;
+            ref.on('value', snap => {
+                const v = Number(snap.val());
+                if ([1, 2, 3, 4].includes(v)) { ecSetStopSize(v, false); return; }
+                if (snap.val() === null) {
+                    let local = 2;
+                    try { local = Number(localStorage.getItem('ec_stop_size')) || 2; } catch (e) {}
+                    ref.set([1, 2, 3, 4].includes(local) ? local : 2).catch(() => {});
+                }
+            });
         }
         try { ecSetStopSize(localStorage.getItem('ec_stop_size') || 2); } catch (e) { ecSetStopSize(2); }
         function toggleTheme() {
@@ -3460,6 +3491,9 @@
 
             // Return button spot (shop unless the driver picked their own)
             ecStartReturnPointSync();
+
+            // Font size for the stop list, saved to the driver's account
+            ecStartFontSizeSync();
 
             // Add-stop panel open/closed, shared through Firebase
             const panelRef = ecPanelPrefRef();
@@ -4798,7 +4832,30 @@
             container.innerHTML = html;
             ecAnimateList(container, snap);
             ecMaybeAddBurst(container);
+            ecPlaceNextCheckbox();
+            setTimeout(ecPlaceNextCheckbox, 400); // again once the list animation has settled
         }
+
+        // The next stop's check box sits at the right edge of the screen, unless the side buttons
+        // are level with that card: then it moves back in line with the other check boxes, so a
+        // side button never covers it. Runs after each redraw, on scroll and on resize.
+        function ecPlaceNextCheckbox() {
+            const item = document.querySelector('#job-list > .job-item.next-stop:not(.checked)');
+            if (!item) return;
+            const rail = document.querySelector('.ec-fab-rail');
+            const railBox = rail && getComputedStyle(rail).display !== 'none' ? rail.getBoundingClientRect() : null; // fixed, so no offsetParent
+            const box = item.getBoundingClientRect();
+            const level = !!railBox && railBox.height > 0 && box.bottom > railBox.top - 8 && box.top < railBox.bottom + 8;
+            item.classList.toggle('ec-cb-safe', level);
+        }
+        let ecPlaceCbQueued = false;
+        function ecQueuePlaceNextCheckbox() {
+            if (ecPlaceCbQueued) return;
+            ecPlaceCbQueued = true;
+            requestAnimationFrame(() => { ecPlaceCbQueued = false; ecPlaceNextCheckbox(); });
+        }
+        window.addEventListener('scroll', ecQueuePlaceNextCheckbox, { passive: true });
+        window.addEventListener('resize', ecQueuePlaceNextCheckbox);
 
         // A stop just added (or matched as a duplicate): the same blue burst from the card as
         // Route Planner, once per stop, and it's brought into view if it's off screen.
