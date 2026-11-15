@@ -1372,8 +1372,9 @@
         .vl-record-wrap { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--border); }
         .vl-record { flex: 0 0 auto; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; color: #fff; border: 2px solid rgba(147, 197, 253, 0.6); background: linear-gradient(180deg, #3b82f6, #1d4ed8); box-shadow: 0 12px 26px -12px rgba(37, 99, 235, 0.9), 0 0 0 5px rgba(59, 130, 246, 0.14); }
         .vl-record svg { width: 28px; height: 28px; }
-        .vl-record.is-listening { border-color: rgba(254, 202, 202, 0.7); background: linear-gradient(180deg, #f87171, #dc2626); animation: vl-ring 1.2s ease-out infinite; }
-        @keyframes vl-ring { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); } 100% { box-shadow: 0 0 0 18px rgba(239, 68, 68, 0); } }
+        /* Recording: the same sky-blue as the other mics while they listen (no red anywhere) */
+        .vl-record.is-listening { border-color: #bae6fd; background: radial-gradient(circle at 50% 35%, #7dd3fc, #38bdf8 45%, #2563eb); animation: vl-ring 1.2s ease-out infinite; }
+        @keyframes vl-ring { 0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.65), 0 0 24px 4px rgba(56, 189, 248, 0.6); } 100% { box-shadow: 0 0 0 18px rgba(56, 189, 248, 0), 0 0 24px 4px rgba(56, 189, 248, 0.6); } }
         .vl-record-label { font-size: 15px; font-weight: 700; color: var(--text); }
         .vl-status { margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; font-size: 13.5px; font-weight: 600; line-height: 1.4; background: rgba(59, 130, 246, 0.12); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
         .vl-status.is-ok { background: rgba(34, 197, 94, 0.12); color: #4ade80; border-color: rgba(34, 197, 94, 0.35); }
@@ -2502,13 +2503,19 @@
         // What the mic learns is shared with Route Planner in developer/route_planner/voice_aliases
         // (heard words -> customer), so both apps get better as anyone uses either one.
         const VOICE_ALIASES_PATH = 'developer/route_planner/voice_aliases';
-        let voiceAliases = {};
+        // Kept on the phone too, so the mic knows what it was taught even when the app opens
+        // with no signal (the Firebase web code keeps nothing on the phone by itself).
+        const EC_ALIAS_CACHE_KEY = 'ec_voice_aliases_cache_v1';
+        let voiceAliases = (() => {
+            try { const v = JSON.parse(localStorage.getItem(EC_ALIAS_CACHE_KEY) || 'null'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; }
+        })();
         let voiceAliasesListening = false;
         function listenVoiceAliases() {
             if (voiceAliasesListening || !auth.currentUser) return;
             voiceAliasesListening = true;
             db.ref(VOICE_ALIASES_PATH).on('value', snap => {
                 voiceAliases = snap.val() || {};
+                try { localStorage.setItem(EC_ALIAS_CACHE_KEY, JSON.stringify(voiceAliases)); } catch (e) {}
             }, err => {
                 voiceAliasesListening = false;
                 console.warn('Voice aliases not readable:', err && err.message);
@@ -2517,6 +2524,15 @@
         function ecVoiceSaveError(err) {
             const denied = err && /permission/i.test(String(err.code || err.message || ''));
             return denied ? "Not allowed to save what the mic learned. Ask the office to allow it." : 'Could not save: ' + (err && err.message ? err.message : 'no connection');
+        }
+        // What to tell the driver when the phone's speech service gives up with an error, or
+        // null when the error just means nothing was said (then "Didn't hear a name" is right).
+        function ecMicErrorText(code) {
+            if (code === 'not-allowed' || code === 'service-not-allowed') return 'The microphone is blocked for this page. Allow it in the browser settings.';
+            if (code === 'network') return 'The mic needs signal to understand names. Try again when you have signal, or type the name.';
+            if (code === 'audio-capture') return "The phone's microphone isn't working right now. Try again, or type the name.";
+            if (code === 'language-not-supported' || code === 'bad-grammar') return "The phone's speech service can't listen right now. Type the name instead.";
+            return null;
         }
         // The saved customer for a name (exact, or the same name with different capitals), or null.
         function ecFindContactKey(name) {
@@ -2542,7 +2558,7 @@
             rec.continuous = false;    // the phone ends listening itself when you stop talking
             rec.interimResults = true; // words as they come, so a sure match is added straight away
             rec.maxAlternatives = 5;
-            let finished = false, finalText = '', noSpeech = null;
+            let finished = false, finalText = '', noSpeech = null, micError = null;
             const finish = async (text) => {
                 if (finished) return;
                 finished = true;
@@ -2550,10 +2566,16 @@
                 if (quickVoiceRec === rec) quickVoiceRec = null;
                 btn.classList.remove('is-listening');
                 try { rec.abort(); } catch (e) {}
-                if (!text) { ecToast("Didn't hear a name. Tap the mic and try again.", { type: 'error' }); return; }
+                // An error from the phone's speech service says why, instead of "didn't hear" (its
+                // own message used to be replaced at once by that one).
+                if (!text) { ecToast(ecMicErrorText(micError) || "Didn't hear a name. Tap the mic and try again.", { type: 'error', duration: micError ? 7000 : undefined }); return; }
                 const rows = matchSpokenNames(text);
                 const names = rows.filter(r => r.pick && addressData[r.pick]).map(r => r.pick);
                 const missing = rows.filter(r => !r.pick).map(r => r.heard);
+                if (Object.keys(addressData).length === 0) {
+                    ecToast("Your customer list hasn't loaded yet (no signal). Try the mic again when the signal is back.", { type: 'error', duration: 7000 });
+                    return;
+                }
                 const log = [];
                 for (const r of rows) {
                     if (r.pick && addressData[r.pick]) {
@@ -2565,7 +2587,9 @@
                 ecLogVoice(log, 'tap');
                 resetFormFields();
                 if (names.length) ecFoldPanelAfterMic();
-                if (missing.length) ecToast(`Couldn't find "${missing.join('", "')}". Teach it with the Teach button at the top.`, { type: 'error', duration: 6000 });
+                if (missing.length) ecToast(ecAddressBookLive
+                    ? `Couldn't find "${missing.join('", "')}". Teach it with the Teach button at the top.`
+                    : `Couldn't find "${missing.join('", "')}". With no signal the phone uses the customer list from last time, so a new customer may be missing.`, { type: 'error', duration: 7000 });
             };
             rec.onresult = ev => {
                 if (finished) return;
@@ -2583,7 +2607,7 @@
                 const soFar = (finalText + ' ' + interim.join(' ')).trim();
                 if (sureVoiceMatch(soFar)) finish(soFar);
             };
-            rec.onerror = ev => { if (ev && ev.error === 'not-allowed') ecToast('The microphone is blocked for this page. Allow it in the browser settings.', { type: 'error' }); };
+            rec.onerror = ev => { micError = ev && ev.error; };
             rec.onend = () => { if (!finished) finish(finalText); };
             btn.classList.add('is-listening');
             try {
@@ -2722,6 +2746,37 @@
             }
             return best;
         }
+        // Splits what was said or pasted into one piece per customer: at new lines, commas and
+        // semicolons, and at the spoken words "next" and "then" ("Kal Tire then Napa"), except
+        // where those words are part of a customer's name ("Next Level Auto" stays whole).
+        function ecSplitSpokenList(text, idx) {
+            if (!idx.withJoinWords) idx.withJoinWords = idx.list.filter(c => /(^| )(next|then)( |$)/.test(c.norm)).map(c => c.norm);
+            const out = [];
+            text.split(/[\n,;]+/).map(t => t.trim()).filter(Boolean).forEach(chunk => {
+                const whole = normName(chunk);
+                if (!/\b(?:next|then)\b/i.test(chunk) || idx.exact[whole] || (voiceAliases[whole] && addressData[voiceAliases[whole]])) { out.push(chunk); return; }
+                const words = normName(chunk).split(' ').filter(Boolean);
+                // Words that belong to a customer name with "next" or "then" in it
+                const kept = new Array(words.length).fill(false);
+                const padded = ' ' + words.join(' ') + ' ';
+                idx.withJoinWords.forEach(n => {
+                    let at = padded.indexOf(' ' + n + ' ');
+                    while (at !== -1) {
+                        const first = padded.slice(0, at + 1).trim().split(' ').filter(Boolean).length;
+                        const count = n.split(' ').length;
+                        for (let i = first; i < first + count; i++) kept[i] = true;
+                        at = padded.indexOf(' ' + n + ' ', at + 1);
+                    }
+                });
+                let piece = [];
+                words.forEach((w, i) => {
+                    if ((w === 'next' || w === 'then') && !kept[i]) { if (piece.length) out.push(piece.join(' ')); piece = []; }
+                    else piece.push(w);
+                });
+                if (piece.length) out.push(piece.join(' '));
+            });
+            return out;
+        }
         // Rows for what was said or pasted: { heard, pick, kind: 'ok'|'check'|'missing', options, on }
         function matchSpokenNames(text) {
             const idx = customerIndex();
@@ -2731,7 +2786,7 @@
             const rows = [];
             const addRow = (heard, pick, kind, options) => rows.push({ heard, pick, kind, options: options || (pick ? [pick] : []), on: kind !== 'missing' });
             const aliasFor = norm => (voiceAliases[norm] && addressData[voiceAliases[norm]]) ? voiceAliases[norm] : null;
-            String(text || '').split(/[\n,;]+|\b(?:next|then)\b/i).map(t => t.trim()).filter(Boolean).forEach(piece => {
+            ecSplitSpokenList(String(text || ''), idx).forEach(piece => {
                 const norm = normName(piece);
                 if (!norm) return;
                 if (exact[norm]) { addRow(piece, exact[norm], 'ok'); return; }
@@ -2823,7 +2878,7 @@
                 quiet();
                 scheduleMultiAddMatch();
             };
-            rec.onerror = ev => { if (ev && ev.error === 'not-allowed') ecToast('The microphone is blocked for this page. Allow it in the browser settings, or type the names.', { type: 'error' }); };
+            rec.onerror = ev => { const msg = ecMicErrorText(ev && ev.error); if (msg) ecToast(msg, { type: 'error', duration: 7000 }); };
             rec.onend = () => {
                 clearTimeout(silence);
                 if (multiAddRecognition === rec) multiAddRecognition = null;
@@ -3044,17 +3099,22 @@
             rec.continuous = false;
             rec.interimResults = false;
             rec.maxAlternatives = 5;
-            let text = '';
+            let text = '', micError = null;
             rec.onresult = ev => {
                 const r = ev.results[ev.results.length - 1];
                 const guesses = Array.from({ length: r.length }, (_, k) => r[k] && r[k].transcript.trim()).filter(Boolean);
                 text = bestGuess(guesses);
             };
-            rec.onerror = ev => { if (ev && ev.error === 'not-allowed') ecToast('The microphone is blocked for this page. Allow it in the browser settings.', { type: 'error' }); };
+            rec.onerror = ev => { micError = ev && ev.error; };
             rec.onend = () => {
                 if (ecSaidListening === rec) ecSaidListening = null;
                 if (btn) btn.classList.remove('is-listening');
-                if (!text) { renderSaidEarlier(); ecToast("Didn't hear a name. Tap the mic and try again."); return; }
+                if (!text) {
+                    renderSaidEarlier();
+                    const msg = ecMicErrorText(micError);
+                    ecToast(msg || "Didn't hear a name. Tap the mic and try again.", msg ? { type: 'error', duration: 7000 } : undefined);
+                    return;
+                }
                 const rows = matchSpokenNames(text);
                 const sure = rows.find(r => r.pick && r.kind === 'ok' && addressData[r.pick]);
                 if (sure) { ecFixSaid(key, sure.pick); return; }
@@ -3206,7 +3266,7 @@
                     .then(() => { voiceLearnStatus(`Saved. Saying "${name}" with the mic should now find them.`); renderVoiceLearnKnown(); })
                     .catch(err => voiceLearnStatus(ecVoiceSaveError(err), true));
             };
-            rec.onerror = ev => { if (ev && ev.error === 'not-allowed') voiceLearnStatus('The microphone is blocked for this page. Allow it in the browser settings.', true); };
+            rec.onerror = ev => { const msg = ecMicErrorText(ev && ev.error); if (msg) voiceLearnStatus(msg, true); };
             rec.onend = () => {
                 if (voiceLearnRec === rec) voiceLearnRec = null;
                 btn.classList.remove('is-listening');
@@ -3440,7 +3500,7 @@
         function ecSetStopSize(n, saveToServer) {
             n = [1, 2, 3, 4].includes(Number(n)) ? Number(n) : 2;
             [1, 3, 4].forEach(k => document.body.classList.toggle('ec-stop-size-' + k, k === n));
-            document.querySelectorAll('.ec-menu-size-btns button').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.size) === n ? 'true' : 'false'));
+            document.querySelectorAll('.ec-menu-size-btns button[data-size]').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.size) === n ? 'true' : 'false'));
             try { localStorage.setItem('ec_stop_size', String(n)); } catch (e) {}
             if (typeof ecPlaceNextCheckbox === 'function') ecPlaceNextCheckbox();
             if (saveToServer) {
@@ -3983,10 +4043,13 @@
             // Firebase has even reconnected (see the cache note above
             // saveRouteState).
             loadDriverRouteCacheFromStorage();
+            ecLoadAddressBookCache();
             updateUI();
 
             db.ref('address_lookup').on('value', snap => {
                 addressData = snap.val() || {};
+                ecAddressBookLive = true;
+                ecSaveAddressBookSoon();
                 listenVoiceAliases();
                 // The whole book changes often; only redraw the stop list when something it
                 // shows changed (which stops have a note) (#19).
@@ -4115,6 +4178,59 @@
                 // Redraw route polylines based on current state
                 redrawRouteFromCurrentState();
             });
+        }
+
+        // ---------- CUSTOMER LIST KEPT ON THE PHONE ----------
+        // The Firebase web code keeps nothing on the phone, so an app opened with no signal had
+        // no customers: no name suggestions, and the mic couldn't find anyone. A copy of the
+        // customer list (name, address, city, map spot, notes) is kept on the phone and used
+        // until the server's list arrives. Changing or deleting a customer waits for the real list.
+        const EC_BOOK_CACHE_KEY = 'ec_address_book_cache_v1';
+        const EC_BOOK_CACHE_MAX_CHARS = 1500000; // leave room on the phone for the route itself
+        let ecAddressBookLive = false;
+        let ecBookSaveTimer = null;
+        function ecLoadAddressBookCache() {
+            if (ecAddressBookLive || Object.keys(addressData).length) return;
+            try {
+                const v = JSON.parse(localStorage.getItem(EC_BOOK_CACHE_KEY) || 'null');
+                if (v && typeof v === 'object') addressData = v;
+            } catch (e) { /* unreadable: start empty */ }
+        }
+        function ecSaveAddressBookSoon() {
+            clearTimeout(ecBookSaveTimer);
+            ecBookSaveTimer = setTimeout(() => {
+                const slim = withNotes => {
+                    const out = {};
+                    Object.keys(addressData).forEach(k => {
+                        const c = addressData[k];
+                        if (!c || typeof c !== 'object') return;
+                        const e = { address: c.address || '', city: c.city || '' };
+                        if (typeof c.lat === 'number' && typeof c.lng === 'number') { e.lat = c.lat; e.lng = c.lng; }
+                        if (withNotes && c.notes && typeof c.notes === 'object') {
+                            const notes = {};
+                            Object.keys(c.notes).forEach(id => {
+                                const n = c.notes[id];
+                                if (n && n.text && !n.deleted) notes[id] = { text: n.text, created_by: n.created_by || '', created_at: n.created_at || 0, deleted: false };
+                            });
+                            if (Object.keys(notes).length) e.notes = notes;
+                        }
+                        out[k] = e;
+                    });
+                    return JSON.stringify(out);
+                };
+                try {
+                    let text = slim(true);
+                    if (text.length > EC_BOOK_CACHE_MAX_CHARS) text = slim(false);
+                    if (text.length > EC_BOOK_CACHE_MAX_CHARS) { localStorage.removeItem(EC_BOOK_CACHE_KEY); return; }
+                    localStorage.setItem(EC_BOOK_CACHE_KEY, text);
+                } catch (e) { /* phone storage full: the list still works while the app is open */ }
+            }, 2000);
+        }
+        // Changing a customer needs the server's list (the phone's copy has no history and may be old).
+        function ecNeedLiveAddressBook() {
+            if (ecAddressBookLive) return true;
+            ecToast("The customer list is still loading (no signal). Try again when the signal is back.", { type: 'error', duration: 6000 });
+            return false;
         }
 
         // Which stops currently show a note, as one string (#19).
@@ -5465,6 +5581,13 @@
         }
         window.addEventListener('scroll', ecQueuePlaceNextCheckbox, { passive: true });
         window.addEventListener('resize', ecQueuePlaceNextCheckbox);
+        // The add a stop box opening, folding or being resized moves the list up or down without
+        // a scroll or a redraw, so the side buttons could end up on the next stop's check box.
+        // Watch its size (every frame of the open/fold animation included) and place them again.
+        if (window.ResizeObserver) {
+            const ecPanelWatch = new ResizeObserver(ecQueuePlaceNextCheckbox);
+            ['input-panel', 'job-list'].forEach(id => { const el = document.getElementById(id); if (el) ecPanelWatch.observe(el); });
+        }
 
         // A stop just added (or matched as a duplicate): the same blue burst from the card as
         // Route Planner, once per stop, and it's brought into view if it's off screen.
@@ -6398,6 +6521,9 @@
             const toggleBtn = document.getElementById('input-panel-toggle');
             if (toggleBtn) toggleBtn.setAttribute('aria-label', collapsed ? 'Expand' : 'Collapse');
             try { localStorage.setItem('ec_input_panel_collapsed', collapsed ? '1' : '0'); } catch (e) {}
+            // The list moved: keep the side buttons off the next stop's check box (also watched
+            // by a ResizeObserver; this covers phones without one, once the fold animation ends).
+            setTimeout(ecPlaceNextCheckbox, 260);
             if (saveToServer) {
                 const ref = ecPanelPrefRef();
                 if (ref) ref.set(!!collapsed).catch(err => console.warn('Panel setting not saved:', err && err.message));
@@ -6465,10 +6591,7 @@
 
             // Only stops not done yet count as duplicates, so a second visit to the same
             // customer later in the day can be added (#11).
-            const duplicateId = Object.keys(jobs).find(id => {
-                const existing = jobs[id];
-                return existing && existing.name && !checkedStops.includes(id) && existing.name.trim().toLowerCase() === name.toLowerCase();
-            });
+            const duplicateId = ecFindOpenStopNamed(name);
             if (duplicateId) {
                 ecToast(`"${name}" is already in the list.`, { type: 'error' });
                 ecFlashStop(duplicateId);
@@ -6504,38 +6627,60 @@
             }
 
             // Numbered route: find the address first, so the stop can get its number.
+            // The add finishes (and this function's promise resolves) only once the stop is saved,
+            // so the mic, adding several stops in a row, waits for each one: the next one's
+            // duplicate check then sees it, and the button label is always put back right.
             const addBtn = document.getElementById('add-btn-expanded');
-            const addBtnOriginalText = addBtn ? addBtn.textContent : 'ADD TO ROUTE';
             if (addBtn) { addBtn.disabled = true; addBtn.textContent = 'Finding address…'; }
-            ecLookupNewStop(address + ', ' + city, pickedLoc, (results, status) => {
-                if (addBtn) { addBtn.disabled = false; addBtn.textContent = addBtnOriginalText; }
-                // Google answered that the address doesn't exist: don't add it.
-                if (status === 'ZERO_RESULTS' || status === 'INVALID_REQUEST') {
-                    ecToast("Couldn't find that address, so the stop was not added. Check it, or use the pin button to drop it on the map.", { type: 'error', duration: 8000 });
-                    return;
-                }
-                // Any other failure (no signal, Google busy, map not loaded) is not the
-                // address's fault: the stop is saved now and gets its number once the address
-                // is found (#10).
-                const located = status === 'OK' && results && results.length > 0;
+            ecAddLookups++;
+            const [results, status] = await new Promise(resolve => ecLookupNewStop(address + ', ' + city, pickedLoc, (r, s) => resolve([r, s])));
+            ecAddLookups--;
+            if (addBtn && ecAddLookups === 0) { addBtn.disabled = false; addBtn.textContent = 'ADD TO ROUTE'; }
+            // Google answered that the address doesn't exist: don't add it.
+            if (status === 'ZERO_RESULTS' || status === 'INVALID_REQUEST') {
+                ecToast("Couldn't find that address, so the stop was not added. Check it, or use the pin button to drop it on the map.", { type: 'error', duration: 8000 });
+                return;
+            }
+            // Added meanwhile (the same customer added another way while Google was answering).
+            const addedMeanwhile = ecFindOpenStopNamed(name);
+            if (addedMeanwhile) {
+                ecToast(`"${name}" is already in the list.`, { type: 'error' });
+                ecFlashStop(addedMeanwhile);
+                updateUI();
+                return;
+            }
+            // Any other failure (no signal, Google busy, map not loaded) is not the
+            // address's fault: the stop is saved now and gets its number once the address
+            // is found (#10).
+            const located = status === 'OK' && results && results.length > 0;
+            if (located) {
+                const loc = results[0].geometry.location;
+                newJob.lat = loc.lat();
+                newJob.lng = loc.lng();
+            }
+            // Numbering starts before the stop is sent, so the route-listener hold is
+            // already taken when the send fires Firebase's local update. Numbering from the
+            // phone's own copy also means a stop added on weak signal still gets its number,
+            // even if the app is closed before the server answers.
+            ecSaveNewStop(newJob, contact, newId => {
                 if (located) {
-                    const loc = results[0].geometry.location;
-                    newJob.lat = loc.lat();
-                    newJob.lng = loc.lng();
+                    insertStopIntoFinalizedRoute(newId).catch(err => console.warn("Route insertion failed:", err));
+                } else {
+                    ecInsertWhenLocated[newId] = true;
+                    persistDriverRouteCache();
+                    ecToast(ecLookupFailureText(status), { duration: 7000 });
                 }
-                // Numbering starts before the stop is sent, so the route-listener hold is
-                // already taken when the send fires Firebase's local update. Numbering from the
-                // phone's own copy also means a stop added on weak signal still gets its number,
-                // even if the app is closed before the server answers.
-                ecSaveNewStop(newJob, contact, newId => {
-                    if (located) {
-                        insertStopIntoFinalizedRoute(newId).catch(err => console.warn("Route insertion failed:", err));
-                    } else {
-                        ecInsertWhenLocated[newId] = true;
-                        persistDriverRouteCache();
-                        ecToast(ecLookupFailureText(status), { duration: 7000 });
-                    }
-                });
+            });
+        }
+        // Address lookups for new stops still waiting for Google (ADD TO ROUTE says "Finding
+        // address…" until the last one answers).
+        let ecAddLookups = 0;
+        // A stop on the list, not done yet, for this name (any capitals), or undefined.
+        function ecFindOpenStopNamed(name) {
+            const want = String(name || '').trim().toLowerCase();
+            return Object.keys(jobs).find(id => {
+                const existing = jobs[id];
+                return existing && existing.name && !checkedStops.includes(id) && existing.name.trim().toLowerCase() === want;
             });
         }
 
@@ -6693,6 +6838,7 @@
         let ecCustomerPlacesReady = false;
         const ecSameText = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
         function openCustomerEditor(name, fromStopId) {
+            if (!ecNeedLiveAddressBook()) return;
             const key = ecContactKeyExisting(name);
             const data = (key && addressData[key]) || null;
             const stop = fromStopId ? jobs[fromStopId] : null;
@@ -6837,6 +6983,7 @@
         function saveCustomerEdit() {
             const ed = ecCustomerEdit;
             if (!ed) return;
+            if (!ecNeedLiveAddressBook()) return;
             const name = document.getElementById('ec-customer-name').value.trim();
             const address = document.getElementById('ec-customer-address').value.trim();
             const city = document.getElementById('ec-customer-city').value.trim();
@@ -6890,6 +7037,7 @@
         async function deleteCustomerFromEditor() {
             const ed = ecCustomerEdit;
             if (!ed || !ed.key) return;
+            if (!ecNeedLiveAddressBook()) return;
             const key = ed.key;
             const record = addressData[key];
             if (!record) { ecToast(`"${key}" is no longer in address lookup.`, { type: 'error' }); closeCustomerEditor(); return; }
@@ -7133,18 +7281,10 @@
             if (!job) return;
             // Cycle: pickup -> delivery -> pickup & delivery -> pickup
             job.type = job.type === 'pickup' ? 'delivery' : (job.type === 'both' ? 'pickup' : 'both');
-            // Remembered on the phone until Firebase confirms, so it survives a reopen (#3).
-            const fields = { type: job.type };
-            pendingStopEdits[jobId] = fields;
-            const stopRef = getOwnRouteRef(`stops/${jobId}`);
-            if (stopRef) {
-                // A stop not on the server yet gets its type with its full write (flush).
-                const write = pendingJobIds[jobId] ? stopRef.set(job) : ecUpdateStopIfExists(stopRef, fields);
-                write.then(() => {
-                    if (pendingStopEdits[jobId] === fields) { delete pendingStopEdits[jobId]; persistDriverRouteCache(); }
-                }).catch(err => console.warn("Stop type not confirmed yet (will retry):", err));
-            }
-            persistDriverRouteCache();
+            // Remembered on the phone until Firebase confirms, so it survives a reopen (#3). Added to
+            // any other change on this stop that hasn't been sent yet (it used to replace it, so a
+            // customer fix made with no signal was lost when P / D was tapped).
+            ecEditStop(jobId, { type: job.type });
             renderList();
             if (map) updateMapMarkers();
         }
