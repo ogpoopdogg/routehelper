@@ -1059,6 +1059,32 @@
         @keyframes ec-poppy-bloom { from { opacity: 0; transform: scale(0.3) rotate(-60deg); } }
         @media (max-width: 400px) { .ec-poppy { width: 18px; height: 18px; } }
 
+        /* ---------- CHRISTMAS ----------
+           A wreath with a red bow around the E&C logo and "Merry Christmas" under E&C. Shown from
+           1 to 26 December (the phone's date); the script right after the header turns it on.
+           Nothing else on the screen changes. */
+        .ec-wreath, .ec-sub-christmas { display: none; }
+        body.ec-christmas .ec-sub-default { display: none; }
+        body.ec-christmas .ec-sub-christmas { display: inline; color: #e7c25a; }
+        body.ec-christmas.light-mode .ec-sub-christmas { color: #8a6100; }
+        body.ec-christmas .ec-logo-wrap { position: relative; overflow: visible; }
+        body.ec-christmas .ec-wreath {
+            display: block; position: absolute; left: 50%; top: 50%; width: 50px; height: 55px;
+            transform: translate(-50%, -46%); pointer-events: none;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+        }
+        body.ec-christmas.light-mode .ec-wreath { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18)); }
+        .ec-wreath svg { display: block; width: 100%; height: 100%; animation: ec-wreath-in 0.7s var(--ease-spring) 0.2s both; }
+        @keyframes ec-wreath-in { from { opacity: 0; transform: scale(0.6) rotate(-25deg); } }
+        /* Room for the wreath's leaves, so they don't touch the screen edge or the words */
+        body.ec-christmas .ec-brand { gap: 13px; padding-left: 6px; }
+        /* Narrow phones: slightly smaller words, and "Merry Christmas" goes onto two short lines
+           when it doesn't fit beside the header buttons (the header stays the same height) */
+        @media (max-width: 400px) {
+            body.ec-christmas .ec-brand { gap: 11px; padding-left: 4px; }
+            body.ec-christmas .ec-wordmark-sub { font-size: 10.5px; line-height: 1.1; white-space: normal; }
+        }
+
         /* ---------- REDUCED MOTION ---------- */
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
@@ -1561,8 +1587,8 @@
     <!-- Header -->
     <header>
         <div class="ec-brand">
-            <span class="ec-logo-wrap"><img src="icon-192.png" class="header-logo" alt="Logo"></span>
-            <span class="ec-wordmark" aria-label="E&amp;C Route Helper"><span class="ec-wordmark-main">E&amp;C<span class="ec-poppy" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="5.6" fill="#9E1C2C"/><circle cx="16" cy="16" r="5.6" fill="#9E1C2C"/><circle cx="16" cy="8" r="5.6" fill="#C62A3A"/><circle cx="8" cy="16" r="5.6" fill="#C62A3A"/><circle cx="12" cy="12" r="3.1" fill="#16161A"/><circle cx="11" cy="11.2" r="0.7" fill="#3A3A40"/><circle cx="13.1" cy="12.4" r="0.6" fill="#3A3A40"/></svg></span></span><span class="ec-wordmark-sub"><span class="ec-sub-default">Route Helper</span><span class="ec-sub-remembrance">Lest We Forget</span></span></span>
+            <span class="ec-logo-wrap"><img src="icon-192.png" class="header-logo" alt="Logo"><span class="ec-wreath" aria-hidden="true"><svg viewBox="0 0 60 66"><ellipse cx="55.0" cy="30.0" rx="3.2" ry="7" fill="#1f7a46" transform="rotate(62 55.0 30.0)"/><ellipse cx="54.3" cy="36.0" rx="3.2" ry="7" fill="#17643a" transform="rotate(132 54.3 36.0)"/><ellipse cx="52.1" cy="41.6" rx="3.2" ry="7" fill="#2a8f55" transform="rotate(90 52.1 41.6)"/><ellipse cx="48.7" cy="46.6" rx="3.2" ry="7" fill="#1f7a46" transform="rotate(160 48.7 46.6)"/><ellipse cx="44.2" cy="50.6" rx="3.2" ry="7" fill="#17643a" transform="rotate(117 44.2 50.6)"/><ellipse cx="38.9" cy="53.4" rx="3.2" ry="7" fill="#2a8f55" transform="rotate(187 38.9 53.4)"/><ellipse cx="33.0" cy="54.8" rx="3.2" ry="7" fill="#1f7a46" transform="rotate(145 33.0 54.8)"/><ellipse cx="27.0" cy="54.8" rx="3.2" ry="7" fill="#17643a" transform="rotate(215 27.0 54.8)"/><ellipse cx="21.1" cy="53.4" rx="3.2" ry="7" fill="#2a8f55" transform="rotate(173 21.1 53.4)"/><ellipse cx="15.8" cy="50.6" rx="3.2" ry="7" fill="#1f7a46" transform="rotate(243 15.8 50.6)"/><ellipse cx="11.3" cy="46.6" rx="3.2" ry="7" fill="#17643a" transform="rotate(200 11.3 46.6)"/><ellipse cx="7.9" cy="41.6" rx="3.2" ry="7" fill="#2a8f55" transform="rotate(270 7.9 41.6)"/><ellipse cx="5.7" cy="36.0" rx="3.2" ry="7" fill="#1f7a46" transform="rotate(228 5.7 36.0)"/><ellipse cx="5.0" cy="30.0" rx="3.2" ry="7" fill="#17643a" transform="rotate(298 5.0 30.0)"/><ellipse cx="5.7" cy="24.0" rx="3.2" ry="7" fill="#2a8f55" transform="rotate(256 5.7 24.0)"/><ellipse cx="7.9" cy="18.4" rx="3.2" ry="7" fill="#1f7a46" transform="rotate(326 7.9 18.4)"/><ellipse cx="11.3" cy="13.4" rx="3.2" ry="7" fill="#17643a" transform="rotate(284 11.3 13.4)"/><ellipse cx="15.8" cy="9.4" rx="3.2" ry="7" fill="#2a8f55" transform="rotate(353 15.8 9.4)"/><ellipse cx="21.1" cy="6.6" rx="3.2" ry="7" fill="#1f7a46" transform="rotate(311 21.1 6.6)"/><ellipse cx="27.0" cy="5.2" rx="3.2" ry="7" fill="#17643a" transform="rotate(381 27.0 5.2)"/><ellipse cx="33.0" cy="5.2" rx="3.2" ry="7" fill="#2a8f55" transform="rotate(339 33.0 5.2)"/><ellipse cx="38.9" cy="6.6" rx="3.2" ry="7" fill="#1f7a46" transform="rotate(409 38.9 6.6)"/><ellipse cx="44.2" cy="9.4" rx="3.2" ry="7" fill="#17643a" transform="rotate(367 44.2 9.4)"/><ellipse cx="48.7" cy="13.4" rx="3.2" ry="7" fill="#2a8f55" transform="rotate(436 48.7 13.4)"/><ellipse cx="52.1" cy="18.4" rx="3.2" ry="7" fill="#1f7a46" transform="rotate(394 52.1 18.4)"/><ellipse cx="54.3" cy="24.0" rx="3.2" ry="7" fill="#17643a" transform="rotate(464 54.3 24.0)"/><circle cx="45.5" cy="49.6" r="2.6" fill="#d61f3a"/><circle cx="13.3" cy="48.6" r="2.6" fill="#c8102e"/><circle cx="7.6" cy="18.9" r="2.6" fill="#d61f3a"/><circle cx="41.7" cy="7.9" r="2.6" fill="#c8102e"/><g transform="translate(30 55)"><path d="M0 0 L-9 -5 L-9 5 Z M0 0 L9 -5 L9 5Z" fill="#c8102e"/><path d="M0 0 L-5 9 M0 0 L5 9" stroke="#c8102e" stroke-width="2.6" stroke-linecap="round"/><circle r="2.4" fill="#e2384f"/></g></svg></span></span>
+            <span class="ec-wordmark" aria-label="E&amp;C Route Helper"><span class="ec-wordmark-main">E&amp;C<span class="ec-poppy" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="5.6" fill="#9E1C2C"/><circle cx="16" cy="16" r="5.6" fill="#9E1C2C"/><circle cx="16" cy="8" r="5.6" fill="#C62A3A"/><circle cx="8" cy="16" r="5.6" fill="#C62A3A"/><circle cx="12" cy="12" r="3.1" fill="#16161A"/><circle cx="11" cy="11.2" r="0.7" fill="#3A3A40"/><circle cx="13.1" cy="12.4" r="0.6" fill="#3A3A40"/></svg></span></span><span class="ec-wordmark-sub"><span class="ec-sub-default">Route Helper</span><span class="ec-sub-remembrance">Lest We Forget</span><span class="ec-sub-christmas">Merry Christmas</span></span></span>
         </div>
         <div class="ec-hdr-actions">
             <button id="voice-learn-open" class="map-btn ec-hdr-btn" onclick="openVoiceLearner()" aria-label="Teach the mic a customer's name"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2.5" width="6" height="11" rx="3"/><path d="M4.5 10.5a6.5 6.5 0 0 0 13 0M11 17v4"/><path d="M19.5 3.5l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5z" fill="currentColor" stroke="none"/></svg><span>Teach</span></button>
@@ -1575,9 +1601,12 @@
     <script>
         // Remembrance Day: poppy and "Lest We Forget" in the header from 1 to 11 November,
         // every year, by the phone's date. Gone again from 12 November.
+        // Christmas: wreath and "Merry Christmas" from 1 to 26 December, every year. Gone from 27 December.
         (function () {
             var d = new Date();
             if (d.getMonth() === 10 && d.getDate() <= 11) document.body.classList.add('ec-remembrance');
+            // Christmas: a wreath around the logo and "Merry Christmas" from 1 to 26 December.
+            if (d.getMonth() === 11 && d.getDate() <= 26) document.body.classList.add('ec-christmas');
         })();
     </script>
 
